@@ -6,33 +6,20 @@ use core::arch::global_asm;
 mod puts;
 mod exit;
 mod rust_no_std;
+#[macro_use]
 mod print;
+mod csr;
+mod syscall;
+mod trap;
+mod batch;
 
 global_asm!(include_str!("entry.s"));
+global_asm!(include_str!("link_app.s"));
 
 #[no_mangle]
 fn rust_main() {
-    extern "C" {
-        fn stext(); // begin addr of text segment
-        fn etext(); // end addr of text segment
-        fn srodata(); // start addr of Read-Only data segment
-        fn erodata(); // end addr of Read-Only data ssegment
-        fn sdata(); // start addr of data segment
-        fn edata(); // end addr of data segment
-        fn sbss(); // start addr of BSS segment
-        fn ebss(); // end addr of BSS segment
-        fn boot_stack(); // stack bottom
-        fn boot_stack_top(); // stack top
-    }
-    
-    println!(".text [{:#x}, {:#x})", stext as usize, etext as usize);
-    println!(".rodata [{:#x}, {:#x})", srodata as usize, erodata as usize);
-    println!(".data [{:#x}, {:#x})", sdata as usize, edata as usize);
-    println!(
-        "boot_stack [{:#x}, {:#x})",
-        boot_stack as usize, boot_stack_top as usize
-    );
-    println!(".bss [{:#x}, {:#x})", sbss as usize, ebss as usize);
-    
-    exit::exit();
+    println!("[kernel] Hello, world!");
+    trap::init();
+    batch::init();
+    batch::run_next_app();
 }
