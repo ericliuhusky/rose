@@ -30,8 +30,7 @@ __save_regs:
         .set n, n+1
     .endr
 
-    # 在保存完所有通用寄存器后，就可以自由使用所有通用寄存器，即可以不再使用汇编进入rust代码
-    # 稍后在rust代码中将已经换到sscratch中的用户栈栈顶地址保存在上下文中
+    # 在保存完所有通用寄存器后，就可以自由使用所有通用寄存器
 
     # 保存控制和状态寄存器    
     csrr t0, sstatus
@@ -39,6 +38,7 @@ __save_regs:
     csrr t2, sscratch
     sd t0, 32*8(sp)
     sd t1, 33*8(sp)
+    # 保存用户栈
     sd t2, 2*8(sp)
 
     mv a0, sp
@@ -54,6 +54,7 @@ __restore_regs:
     ld t2, 2*8(sp)
     csrw sstatus, t0
     csrw sepc, t1
+    # 恢复用户栈
     csrw sscratch, t2
 
     # 从上下文恢复除sp(x2)外的所有通用寄存器
