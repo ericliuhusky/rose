@@ -1,8 +1,11 @@
-# 允许宏
 .altmacro
 
 .macro SAVE_REG n
     sd x\n, \n*8(sp)
+.endm
+
+.macro RESTORE_REG n
+    ld x\n, \n*8(sp)
 .endm
 
 
@@ -29,5 +32,42 @@ __save_regs:
 
     # 在保存完所有通用寄存器后，就可以自由使用所有通用寄存器，即可以不再使用汇编进入rust代码
     # 稍后在rust代码中将已经换到sscratch中的用户栈栈顶地址保存在上下文中
+
+    # 保存控制和状态寄存器    
+    csrr t0, sstatus
+    csrr t1, sepc
+    csrr t2, sscratch
+    sd t0, 32*8(sp)
+    sd t1, 33*8(sp)
+    sd t2, 2*8(sp)
+
     mv a0, sp
     call trap_handler
+
+
+__restore_regs:
+    mv sp, a0
+
+    # 恢复控制和状态寄存器
+    ld t0, 32*8(sp)
+    ld t1, 33*8(sp)
+    ld t2, 2*8(sp)
+    csrw sstatus, t0
+    csrw sepc, t1
+    csrw sscratch, t2
+
+    # 从上下文恢复除sp(x2)外的所有通用寄存器
+    ld x1, 1*8(sp)
+    .set n, 3
+    .rept 29
+        RESTORE_REG %n
+        .set n, n+1
+    .endr
+
+    # 在内核栈上释放上下文
+    addi sp, sp, 34*8
+    # 换栈，sp指向用户栈，sp原先存放的内核栈栈顶地址存放在sscratch
+    csrrw sp, sscratch, sp
+
+    # 返回sepc指向的地址继续执行
+    sret

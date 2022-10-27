@@ -5,8 +5,7 @@ use core::arch::{global_asm};
 mod context;
 use context::TrapContext;
 
-global_asm!(include_str!("__save_regs.s"));
-global_asm!(include_str!("__restore_regs.s"));
+global_asm!(include_str!("trap.s"));
 
 /// 设置trap入口地址为__save_regs
 pub fn init() {
@@ -20,9 +19,7 @@ pub fn init() {
 
 #[no_mangle] 
 /// 处理中断、异常或系统调用
-pub fn trap_handler(cx: &mut TrapContext) {
-    cx.save_csr();
-
+pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
     match scause::read().cause() {
         scause::Exception::UserEnvCall => {
             // sepc寄存器记录触发中断的指令地址
@@ -42,13 +39,5 @@ pub fn trap_handler(cx: &mut TrapContext) {
             
         }
     }
-
-    cx.restore_csr();
-
-    extern "C" {
-        fn __restore_regs(cx: &mut TrapContext);
-    }
-    unsafe {
-        __restore_regs(cx);
-    }
+    cx
 }
