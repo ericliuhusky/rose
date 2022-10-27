@@ -10,10 +10,10 @@ global_asm!(include_str!("trap.s"));
 /// 设置trap入口地址为__save_regs
 pub fn init() {
     extern "C" {
-        fn __save_regs();
+        fn __trap_entry();
     }
     // stvec寄存器设置中断跳转地址
-    stvec::write(__save_regs as usize);
+    stvec::write(__trap_entry as usize);
 }
 
 

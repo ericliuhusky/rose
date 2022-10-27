@@ -9,7 +9,7 @@
 .endm
 
 
-__save_regs:
+__trap_entry:
     # 在rust代码中无法保证换栈指令位于分配指令之前，有可能先分配后换栈，这样会导致上下文分配到用户栈上；
     # 所以用汇编精细控制先换栈再分配上下文
 
@@ -45,7 +45,7 @@ __save_regs:
     call trap_handler
 
 
-__restore_regs:
+__restore:
     mv sp, a0
 
     # 恢复控制和状态寄存器
