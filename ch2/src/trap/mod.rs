@@ -7,7 +7,7 @@ use context::TrapContext;
 
 global_asm!(include_str!("trap.s"));
 
-/// 设置trap入口地址为__save_regs
+/// 设置trap入口地址为__trap_entry
 pub fn init() {
     extern "C" {
         fn __trap_entry();
