@@ -1,6 +1,6 @@
 KERNEL_ELF := target/riscv64gc-unknown-none-elf/release/rcore
 KERNEL_BIN := $(KERNEL_ELF).bin
-BOOTLOADER := ./rustsbi-qemu.bin
+BOOTLOADER := ../rustsbi-qemu.bin
 KERNEL_ENTRY_PA := 0x80200000
 
 all: run
