@@ -3,7 +3,7 @@ use crate::syscall::syscall;
 use crate::csr::{scause, stvec};
 use core::arch::{global_asm};
 mod context;
-use context::TrapContext;
+pub use context::TrapContext;
 
 global_asm!(include_str!("trap.s"));
 

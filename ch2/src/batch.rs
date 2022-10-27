@@ -1,6 +1,7 @@
 //! batch subsystem
 
 use core::arch::asm;
+use crate::trap::TrapContext;
 use crate::csr::{sepc, sscratch};
 
 const USER_STACK_SIZE: usize = 4096 * 2;
@@ -29,6 +30,14 @@ static USER_STACK: UserStack = UserStack {
 impl KernelStack {
     fn get_sp(&self) -> usize {
         self.data.as_ptr() as usize + KERNEL_STACK_SIZE
+    }
+
+    pub fn push_context(&self, cx: TrapContext) -> &'static mut TrapContext {
+        let cx_ptr = (self.get_sp() - core::mem::size_of::<TrapContext>()) as *mut TrapContext;
+        unsafe {
+            *cx_ptr = cx;
+        }
+        unsafe { cx_ptr.as_mut().unwrap() }
     }
 }
 
@@ -108,9 +117,14 @@ pub fn run_next_app() {
         APP_MANAGER.load_app(current_app);
         APP_MANAGER.current_app += 1;
 
-        sepc::write(APP_BASE_ADDRESS);
-        sscratch::write(KERNEL_STACK.get_sp());
-        asm!("mv sp, {}", in(reg) USER_STACK.get_sp());
-        asm!("sret");
+        extern "C" {
+            fn __restore(cx_addr: usize);
+        }
+        unsafe {
+            __restore(KERNEL_STACK.push_context(TrapContext::app_init_context(
+                APP_BASE_ADDRESS,
+                USER_STACK.get_sp(),
+            )) as *const _ as usize);
+        }
     }
 }

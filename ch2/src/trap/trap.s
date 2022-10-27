@@ -8,7 +8,9 @@
     ld x\n, \n*8(sp)
 .endm
 
-
+    .section .text
+    .globl __trap_entry
+    .globl __restore
 __trap_entry:
     # 在rust代码中无法保证换栈指令位于分配指令之前，有可能先分配后换栈，这样会导致上下文分配到用户栈上；
     # 所以用汇编精细控制先换栈再分配上下文
