@@ -1,8 +1,8 @@
 use crate::batch::run_next_app;
 use crate::syscall::syscall;
-use crate::csr::{scause, stvec};
 use core::arch::{global_asm};
 mod context;
+mod scause;
 pub use context::TrapContext;
 
 global_asm!(include_str!("trap.s"));
@@ -13,7 +13,9 @@ pub fn init() {
         fn __trap_entry();
     }
     // stvec寄存器设置中断跳转地址
-    stvec::write(__trap_entry as usize);
+    unsafe {
+        core::arch::asm!("csrw stvec, {}", in(reg) __trap_entry as usize);
+    }
 }
 
 

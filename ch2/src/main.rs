@@ -8,7 +8,6 @@ mod exit;
 mod rust_no_std;
 #[macro_use]
 mod print;
-mod csr;
 mod syscall;
 mod trap;
 mod batch;
