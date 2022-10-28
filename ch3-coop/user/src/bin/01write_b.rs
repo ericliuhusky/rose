@@ -8,8 +8,8 @@ use user::yield_;
 
 #[no_mangle]
 fn main() -> i32 {
-    for i in 1..=2 {
-        println!("B [{}/{}]", i, 2);
+    for i in 1..=3 {
+        println!("B [{}/{}]", i, 3);
         yield_::yield_();
     }
     0
