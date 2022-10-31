@@ -3,8 +3,21 @@ pub struct Scause {
 }
 
 impl Scause {
-    pub fn cause(&self) -> Exception {
-        Exception::from(self.bits)
+    pub fn cause(&self) -> Trap {
+        if self.is_interrupt() {
+            Trap::Interrupt(Interrupt::from(self.code()))
+        } else {
+            Trap::Exception(Exception::from(self.code()))
+        }
+    }
+
+    fn is_interrupt(&self) -> bool {
+        (self.bits & (1 << (core::mem::size_of::<usize>() * 8 - 1))) != 0
+    }
+
+    fn code(&self) -> usize {
+        let bit = 1 << (core::mem::size_of::<usize>() * 8 - 1);
+        self.bits & !bit
     }
 }
 
@@ -24,6 +37,16 @@ pub enum Exception {
     Unknown
 }
 
+pub enum Interrupt {
+    SupervisorTimer,
+    Unknown
+}
+
+pub enum Trap {
+    Interrupt(Interrupt),
+    Exception(Exception),
+}
+
 impl Exception {
     fn from(n: usize) -> Self {
         match n {
@@ -32,6 +55,15 @@ impl Exception {
             15 => Exception::StorePageFault,
             8 => Exception::UserEnvCall,
             _ => Exception::Unknown
+        }
+    }
+}
+
+impl Interrupt {
+    pub fn from(n: usize) -> Self {
+        match n {
+            5 => Interrupt::SupervisorTimer,
+            _ => Interrupt::Unknown
         }
     }
 }
