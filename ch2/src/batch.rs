@@ -1,126 +1,118 @@
-//! batch subsystem
+use crate::trap::陷入上下文;
+use crate::格式化输出并换行;
+use crate::退出::退出;
 
-use crate::trap::TrapContext;
+const 用户栈大小: usize = 4096 * 2;
+const 内核栈大小: usize = 4096 * 2;
+const 应用程序内存区起始地址: usize = 0x80400000;
+const 应用程序内存区大小限制: usize = 0x20000;
 
-const USER_STACK_SIZE: usize = 4096 * 2;
-const KERNEL_STACK_SIZE: usize = 4096 * 2;
-const MAX_APP_NUM: usize = 16;
-const APP_BASE_ADDRESS: usize = 0x80400000;
-const APP_SIZE_LIMIT: usize = 0x20000;
-
-#[repr(align(4096))]
-struct KernelStack {
-    data: [u8; KERNEL_STACK_SIZE],
+struct 内核栈 {
+    数据: [u8; 内核栈大小],
 }
 
-#[repr(align(4096))]
-struct UserStack {
-    data: [u8; USER_STACK_SIZE],
+struct 用户栈 {
+    数据: [u8; 用户栈大小],
 }
 
-static KERNEL_STACK: KernelStack = KernelStack {
-    data: [0; KERNEL_STACK_SIZE],
-};
-static USER_STACK: UserStack = UserStack {
-    data: [0; USER_STACK_SIZE],
-};
+static 内核栈: 内核栈 = 内核栈 { 数据: [0; 内核栈大小] };
+static 用户栈: 用户栈 = 用户栈 { 数据: [0; 用户栈大小] };
 
-impl KernelStack {
-    fn get_sp(&self) -> usize {
-        self.data.as_ptr() as usize + KERNEL_STACK_SIZE
-    }
-
-    fn push_context(&self, cx: TrapContext) -> usize {
-        let cx_ptr = (self.get_sp() - core::mem::size_of::<TrapContext>()) as *mut TrapContext;
+impl 内核栈 {
+    fn 将上下文压入内核栈后的栈顶(&self, 上下文: 陷入上下文) -> usize {
+        let mut 栈顶 = self.数据.as_ptr() as usize + 内核栈大小;
+        栈顶 -= core::mem::size_of::<陷入上下文>();
+        let 上下文指针 = 栈顶 as *mut 陷入上下文;
         unsafe {
-            *cx_ptr = cx;
+            *上下文指针 = 上下文;
         }
-        cx_ptr as usize
+        栈顶
     }
 }
 
-impl UserStack {
-    fn get_sp(&self) -> usize {
-        self.data.as_ptr() as usize + USER_STACK_SIZE
+impl 用户栈 {
+    fn 栈顶(&self) -> usize {
+        self.数据.as_ptr() as usize + 用户栈大小
     }
 }
 
-struct AppManager {
-    num_app: usize,
-    current_app: usize,
-    app_start: [usize; MAX_APP_NUM + 1],
+pub struct 批处理系统 {
+    应用程序数目: usize,
+    当前应用程序索引: usize
 }
 
-impl AppManager {
-    pub fn print_app_info(&self) {
-        println!("[kernel] num_app = {}", self.num_app);
-        for i in 0..self.num_app {
-            println!(
-                "[kernel] app_{} [{:#x}, {:#x})",
-                i,
-                self.app_start[i],
-                self.app_start[i + 1]
+impl 批处理系统 {
+    fn 加载应用程序到应用程序内存区(&self, 应用程序索引: usize) {
+        if 应用程序索引 >= self.应用程序数目 {
+            格式化输出并换行!("[kernel] All applications completed!");
+            退出();
+        }
+        格式化输出并换行!("[kernel] Loading app_{}", 应用程序索引);
+        unsafe {
+            // 清空应用程序内存区
+            core::slice::from_raw_parts_mut(应用程序内存区起始地址 as *mut u8, 应用程序内存区大小限制).fill(0);
+
+            let 应用程序数据 = 读取应用程序数据(应用程序索引);
+            let 应用程序占用的内存 = core::slice::from_raw_parts_mut(应用程序内存区起始地址 as *mut u8, 应用程序数据.len());
+            应用程序占用的内存.copy_from_slice(应用程序数据);
+        }
+    }
+
+    pub fn 初始化() {
+        unsafe {
+            let 应用程序数目 = 读取应用程序数目();
+            批处理系统 = Self {
+                应用程序数目,
+                当前应用程序索引: 0,
+            };
+    
+            格式化输出并换行!("[kernel] num_app = {}", 应用程序数目);
+        }
+    }
+
+    pub fn 运行下一个应用程序() {
+        unsafe {
+            let 当前应用程序索引 = 批处理系统.当前应用程序索引;
+            批处理系统.加载应用程序到应用程序内存区(当前应用程序索引);
+            批处理系统.当前应用程序索引 += 1;
+
+            extern "C" {
+                fn __restore(cx_addr: usize);
+            }
+            __restore(
+                内核栈.将上下文压入内核栈后的栈顶(
+                    陷入上下文::应用程序初始上下文(
+                        应用程序内存区起始地址,
+                        用户栈.栈顶()
+                    )
+                )
             );
         }
     }
-
-    unsafe fn load_app(&self, app_id: usize) {
-        if app_id >= self.num_app {
-            println!("[kernel] All applications completed!");
-
-            crate::exit::exit();
-        }
-        println!("[kernel] Loading app_{}", app_id);
-        // clear app area
-        core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, APP_SIZE_LIMIT).fill(0);
-        let app_src = core::slice::from_raw_parts(
-            self.app_start[app_id] as *const u8,
-            self.app_start[app_id + 1] - self.app_start[app_id],
-        );
-        let app_dst = core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, app_src.len());
-        app_dst.copy_from_slice(app_src);
-    }
 }
 
 
-static mut APP_MANAGER: AppManager = AppManager {num_app:0, current_app:0, app_start:[0; MAX_APP_NUM + 1]};
+static mut 批处理系统: 批处理系统 = 批处理系统 {应用程序数目:0, 当前应用程序索引:0};
 
-/// init batch subsystem
-pub fn init() {
-    unsafe {
-        extern "C" {
-            fn _num_app();
-        }
-        let num_app_ptr = _num_app as usize as *const usize;
-        let num_app = num_app_ptr.read_volatile();
-        let mut app_start: [usize; MAX_APP_NUM + 1] = [0; MAX_APP_NUM + 1];
-        let app_start_raw: &[usize] =
-            core::slice::from_raw_parts(num_app_ptr.add(1), num_app + 1);
-        app_start[..=num_app].copy_from_slice(app_start_raw);
-        APP_MANAGER = AppManager {
-            num_app,
-            current_app: 0,
-            app_start,
-        };
-
-        APP_MANAGER.print_app_info();
+fn 读取应用程序数目() -> usize {
+    extern "C" {
+        fn _num_app();
     }
+    unsafe { (_num_app as usize as *const usize).read_volatile() }
 }
 
-
-/// run next app
-pub fn run_next_app() {
+fn 读取应用程序数据(应用程序索引: usize) -> &'static [u8] {
+    extern "C" {
+        fn _num_app();
+    }
+    let 应用程序数目 = 读取应用程序数目();
+    let 应用程序数目指针 = _num_app as usize as *const usize;
     unsafe {
-        let current_app = APP_MANAGER.current_app;
-        APP_MANAGER.load_app(current_app);
-        APP_MANAGER.current_app += 1;
-
-        extern "C" {
-            fn __restore(cx_addr: usize);
-        }
-        __restore(KERNEL_STACK.push_context(TrapContext::app_init_context(
-            APP_BASE_ADDRESS,
-            USER_STACK.get_sp(),
-        )));
+        let 应用程序数据起始地址指针 = 应用程序数目指针.add(1);
+        let 应用程序数据起始地址列表 = core::slice::from_raw_parts(应用程序数据起始地址指针, 应用程序数目 + 1);
+        core::slice::from_raw_parts(
+            应用程序数据起始地址列表[应用程序索引] as *const u8,
+            应用程序数据起始地址列表[应用程序索引 + 1] - 应用程序数据起始地址列表[应用程序索引],
+        )
     }
 }

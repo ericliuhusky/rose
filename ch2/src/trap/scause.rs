@@ -1,37 +1,27 @@
-pub struct Scause {
-    pub bits: usize
-}
-
-impl Scause {
-    pub fn cause(&self) -> Exception {
-        Exception::from(self.bits)
-    }
-}
-
-pub fn read() -> Scause {
-    let bits: usize;
+pub fn 读取异常类型() -> 异常类型 {
+    let 触发异常原因代码: usize;
     unsafe {
-        core::arch::asm!("csrr {}, scause", out(reg) bits);
+        core::arch::asm!("csrr {}, scause", out(reg) 触发异常原因代码);
     }
-    Scause { bits }
+    异常类型::解析(触发异常原因代码)
 }
 
-pub enum Exception {
-    UserEnvCall,
-    StoreFault,
-    StorePageFault,
-    IllegalInstruction,
-    Unknown
+pub enum 异常类型 {
+    用户系统调用,
+    存储错误,
+    存储页错误,
+    非法指令,
+    其它
 }
 
-impl Exception {
-    fn from(n: usize) -> Self {
-        match n {
-            2 => Exception::IllegalInstruction,
-            7 => Exception::StoreFault,
-            15 => Exception::StorePageFault,
-            8 => Exception::UserEnvCall,
-            _ => Exception::Unknown
+impl 异常类型 {
+    fn 解析(触发异常原因代码: usize) -> Self {
+        match 触发异常原因代码 {
+            2 => 异常类型::非法指令,
+            7 => 异常类型::存储错误,
+            15 => 异常类型::存储页错误,
+            8 => 异常类型::用户系统调用,
+            _ => 异常类型::其它
         }
     }
 }

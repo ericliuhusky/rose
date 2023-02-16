@@ -1,23 +1,17 @@
-/// Trap Context
 #[repr(C)]
-pub struct TrapContext {
-    /// general regs[0..31]
-    pub x: [usize; 32],
-    /// CSR sstatus
-    pub sstatus: usize,
-    /// CSR sepc
-    pub sepc: usize,
+pub struct 陷入上下文 {
+    // x1~x31
+    pub 通用寄存器: [usize; 32],
+    pub 触发异常指令地址: usize,
 }
 
-impl TrapContext {
-    /// init app context
-    pub fn app_init_context(entry: usize, sp: usize) -> Self {
-        let mut cx = Self {
-            x: [0; 32],
-            sstatus: 0,
-            sepc: entry, // entry point of app
+impl 陷入上下文 {
+    pub fn 应用程序初始上下文(应用程序入口地址: usize, 栈寄存器: usize) -> Self {
+        let mut 上下文 = Self {
+            通用寄存器: [0; 32],
+            触发异常指令地址: 应用程序入口地址,
         };
-        cx.x[2] = sp;
-        cx // return initial Trap Context of app
+        上下文.通用寄存器[2] = 栈寄存器;
+        上下文
     }
 }
