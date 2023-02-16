@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
 
-use 输出模块::输出;
-use 退出模块::退出;
+use 输出::输出;
+use 退出::退出;
 
 #[no_mangle]
 fn _start() {
@@ -10,7 +10,7 @@ fn _start() {
     退出();
 }
 
-mod 输出模块 {
+mod 输出 {
     use core::arch::asm;
 
     pub fn 输出(字符串: &str) {
@@ -26,7 +26,7 @@ mod 输出模块 {
     }
 }
 
-mod 退出模块 {
+mod 退出 {
     use core::arch::asm;
 
     pub fn 退出() {

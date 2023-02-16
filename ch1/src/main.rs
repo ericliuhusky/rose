@@ -2,7 +2,7 @@
 #![no_main]
 
 use core::arch::global_asm;
-use 退出模块::退出;
+use 退出::退出;
 
 global_asm!(include_str!("entry.s"));
 
@@ -33,7 +33,7 @@ fn rust_main() {
     退出();
 }
 
-mod 输出模块 {
+mod 输出 {
     use core::arch::asm;
     use core::fmt::{self, Write};
 
@@ -63,12 +63,12 @@ mod 输出模块 {
     #[macro_export]
     macro_rules! 格式化输出并换行 {
         ($fmt: literal $(, $($arg: tt)+)?) => {
-            $crate::输出模块::格式化输出(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
+            $crate::输出::格式化输出(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
         }
     }
 }
 
-mod 退出模块 {
+mod 退出 {
     use core::arch::asm;
 
     pub fn 退出() {
