@@ -15,8 +15,8 @@ mod switch;
 #[allow(clippy::module_inception)]
 mod task;
 
-use crate::config::MAX_APP_NUM;
-use crate::loader::{get_num_app, init_app_cx};
+use crate::loader::{get_app_data, get_num_app};
+use alloc::vec::Vec;
 use switch::__switch;
 use task::{TaskControlBlock, TaskStatus};
 
@@ -35,7 +35,7 @@ pub struct TaskManager {
     /// total number of tasks
     num_app: usize,
     /// task list
-    tasks: [TaskControlBlock; MAX_APP_NUM],
+    tasks: Vec<TaskControlBlock>,
     /// id of current `Running` task
     current_task: usize,
 }
@@ -43,7 +43,7 @@ pub struct TaskManager {
 /// Global variable: TASK_MANAGER
 pub static mut TASK_MANAGER: TaskManager = TaskManager {
     num_app: 0,
-    tasks: [TaskControlBlock {task_status: TaskStatus::UnInit, task_cx: TaskContext {ra:0, sp:0, s:[0;12]}}; MAX_APP_NUM],
+    tasks: Vec::new(),
     current_task: 0
 };
 
@@ -86,6 +86,11 @@ impl TaskManager {
             .find(|id| self.tasks[*id].task_status == TaskStatus::Ready)
     }
 
+    /// Get the current 'Running' task's ControlBlock.
+    pub fn current_task(&self) -> &TaskControlBlock {
+        &self.tasks[self.current_task]
+    }
+
     /// Switch current `Running` task to the task we have found,
     /// or there is no `Ready` task and we can exit with all applications completed
     fn run_next_task(&mut self) {
@@ -111,13 +116,9 @@ impl TaskManager {
 /// run first task
 pub fn run_first_task() {
     let num_app = get_num_app();
-    let mut tasks = [TaskControlBlock {
-        task_cx: TaskContext::zero_init(),
-        task_status: TaskStatus::UnInit,
-    }; MAX_APP_NUM];
-    for (i, task) in tasks.iter_mut().enumerate() {
-        task.task_cx = TaskContext::goto_restore(init_app_cx(i));
-        task.task_status = TaskStatus::Ready;
+    let mut tasks: Vec<TaskControlBlock> = Vec::new();
+    for i in 0..num_app {
+        tasks.push(TaskControlBlock::new(get_app_data(i), i));
     }
     unsafe {
         TASK_MANAGER = TaskManager {
