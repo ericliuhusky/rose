@@ -6,9 +6,7 @@ pub use context::TrapContext;
 use scause::{Trap, Exception, Interrupt};
 use crate::timer::set_next_trigger;
 use crate::config::{TRAMPOLINE, TRAP_CONTEXT};
-use crate::task::{
-    TASK_MANAGER, exit_current_and_run_next, suspend_current_and_run_next,
-};
+use crate::task::TASK_MANAGER;
 
 global_asm!(include_str!("trap2.s"));
 
@@ -48,15 +46,21 @@ pub fn trap_handler() {
         }
         Trap::Exception(Exception::StoreFault) | Trap::Exception(Exception::StorePageFault) => {
             println!("[kernel] PageFault in application, kernel killed it.");
-            exit_current_and_run_next();
+            unsafe {
+                TASK_MANAGER.exit_and_run_next();
+            }
         }
         Trap::Exception(Exception::IllegalInstruction) => {
             println!("[kernel] IllegalInstruction in application, kernel killed it.");
-            exit_current_and_run_next();
+            unsafe {
+                TASK_MANAGER.exit_and_run_next();
+            }
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
             set_next_trigger();
-            suspend_current_and_run_next();
+            unsafe {
+                TASK_MANAGER.suspend_and_run_next();
+            }
         }
         _ => {
             

@@ -64,18 +64,6 @@ impl TaskManager {
         panic!("unreachable in run_first_task!");
     }
 
-    /// Change the status of current `Running` task into `Ready`.
-    fn mark_current_suspended(&mut self) {
-        let current = self.current_task;
-        self.tasks[current].task_status = TaskStatus::Ready;
-    }
-
-    /// Change the status of current `Running` task into `Exited`.
-    fn mark_current_exited(&mut self) {
-        let current = self.current_task;
-        self.tasks[current].task_status = TaskStatus::Exited;
-    }
-
     /// Find next task to run and return app id.
     ///
     /// In this case, we only return the first `Ready` task in task list.
@@ -87,8 +75,8 @@ impl TaskManager {
     }
 
     /// Get the current 'Running' task's ControlBlock.
-    pub fn current_task(&self) -> &TaskControlBlock {
-        &self.tasks[self.current_task]
+    pub fn current_task(&mut self) -> &mut TaskControlBlock {
+        &mut self.tasks[self.current_task]
     }
 
     /// Switch current `Running` task to the task we have found,
@@ -111,6 +99,16 @@ impl TaskManager {
             crate::exit::exit();
         }
     }
+
+    pub fn suspend_and_run_next(&mut self) {
+        self.current_task().task_status = TaskStatus::Ready;
+        self.run_next_task();
+    }
+
+    pub fn exit_and_run_next(&mut self) {
+        self.current_task().task_status = TaskStatus::Exited;
+        self.run_next_task();
+    }
 }
 
 /// run first task
@@ -128,37 +126,4 @@ pub fn run_first_task() {
         };
         TASK_MANAGER.run_first_task();
     }
-}
-
-/// rust next task
-fn run_next_task() {
-    unsafe {
-        TASK_MANAGER.run_next_task();
-    }
-}
-
-/// suspend current task
-fn mark_current_suspended() {
-    unsafe {
-        TASK_MANAGER.mark_current_suspended();
-    }
-}
-
-/// exit current task
-fn mark_current_exited() {
-    unsafe {
-        TASK_MANAGER.mark_current_exited();
-    }
-}
-
-/// suspend current task, then run next task
-pub fn suspend_current_and_run_next() {
-    mark_current_suspended();
-    run_next_task();
-}
-
-/// exit current task,  then run next task
-pub fn exit_current_and_run_next() {
-    mark_current_exited();
-    run_next_task();
 }
