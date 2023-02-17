@@ -1,39 +1,19 @@
 use crate::trap::陷入上下文;
 use crate::格式化输出并换行;
 use crate::退出::退出;
-
-const 用户栈大小: usize = 4096 * 2;
-const 内核栈大小: usize = 4096 * 2;
 const 应用程序内存区起始地址: usize = 0x80400000;
 const 应用程序内存区大小限制: usize = 0x20000;
+const 用户栈栈顶: usize = 0x80422000;
+const 内核栈栈顶: usize = 0x80424000;
 
-struct 内核栈 {
-    数据: [u8; 内核栈大小],
-}
-
-struct 用户栈 {
-    数据: [u8; 用户栈大小],
-}
-
-static 内核栈: 内核栈 = 内核栈 { 数据: [0; 内核栈大小] };
-static 用户栈: 用户栈 = 用户栈 { 数据: [0; 用户栈大小] };
-
-impl 内核栈 {
-    fn 将上下文压入内核栈后的栈顶(&self, 上下文: 陷入上下文) -> usize {
-        let mut 栈顶 = self.数据.as_ptr() as usize + 内核栈大小;
-        栈顶 -= core::mem::size_of::<陷入上下文>();
-        let 上下文指针 = 栈顶 as *mut 陷入上下文;
-        unsafe {
-            *上下文指针 = 上下文;
-        }
-        栈顶
+fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文) -> usize {
+    let mut 栈顶 = 内核栈栈顶;
+    栈顶 -= core::mem::size_of::<陷入上下文>();
+    let 上下文指针 = 栈顶 as *mut 陷入上下文;
+    unsafe {
+        *上下文指针 = 上下文;
     }
-}
-
-impl 用户栈 {
-    fn 栈顶(&self) -> usize {
-        self.数据.as_ptr() as usize + 用户栈大小
-    }
+    栈顶
 }
 
 pub struct 批处理系统 {
@@ -80,10 +60,10 @@ impl 批处理系统 {
                 fn __restore(cx_addr: usize);
             }
             __restore(
-                内核栈.将上下文压入内核栈后的栈顶(
+                将上下文压入内核栈后的栈顶(
                     陷入上下文::应用程序初始上下文(
                         应用程序内存区起始地址,
-                        用户栈.栈顶()
+                        用户栈栈顶
                     )
                 )
             );
