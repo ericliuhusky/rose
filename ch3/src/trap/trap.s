@@ -35,13 +35,11 @@ __trap_entry:
     # 在保存完所有通用寄存器后，就可以自由使用所有通用寄存器
 
     # 保存控制和状态寄存器    
-    csrr t0, sstatus
-    csrr t1, sepc
-    csrr t2, sscratch
+    csrr t0, sepc
+    csrr t1, sscratch
     sd t0, 32*8(sp)
-    sd t1, 33*8(sp)
     # 保存用户栈
-    sd t2, 2*8(sp)
+    sd t1, 2*8(sp)
 
     mv a0, sp
     call trap_handler
@@ -51,12 +49,10 @@ __restore:
 
     # 恢复控制和状态寄存器
     ld t0, 32*8(sp)
-    ld t1, 33*8(sp)
-    ld t2, 2*8(sp)
-    csrw sstatus, t0
-    csrw sepc, t1
+    ld t1, 2*8(sp)
+    csrw sepc, t0
     # 恢复用户栈
-    csrw sscratch, t2
+    csrw sscratch, t1
 
     # 从上下文恢复除sp(x2)外的所有通用寄存器
     ld x1, 1*8(sp)

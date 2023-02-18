@@ -15,12 +15,13 @@ mod switch;
 #[allow(clippy::module_inception)]
 mod task;
 
-use crate::config::MAX_APP_NUM;
-use crate::loader::{get_num_app, init_app_cx};
+use crate::loader::{读取应用程序数目, init_app_cx};
 use switch::__switch;
 use task::{TaskControlBlock, TaskStatus};
+use crate::格式化输出并换行;
+use crate::退出::退出;
 
-pub use context::TaskContext;
+pub use context::任务上下文;
 
 /// The task manager, where all the tasks are managed.
 ///
@@ -35,7 +36,7 @@ pub struct TaskManager {
     /// total number of tasks
     num_app: usize,
     /// task list
-    tasks: [TaskControlBlock; MAX_APP_NUM],
+    tasks: [TaskControlBlock; 3],
     /// id of current `Running` task
     current_task: usize,
 }
@@ -43,7 +44,7 @@ pub struct TaskManager {
 /// Global variable: TASK_MANAGER
 pub static mut TASK_MANAGER: TaskManager = TaskManager {
     num_app: 0,
-    tasks: [TaskControlBlock {task_status: TaskStatus::UnInit, task_cx: TaskContext {ra:0, sp:0, s:[0;12]}}; MAX_APP_NUM],
+    tasks: [TaskControlBlock {task_status: TaskStatus::Ready, task_cx: 任务上下文 {返回地址寄存器:0, 栈寄存器:0, 被调用者保存寄存器:[0;12]}}; 3],
     current_task: 0
 };
 
@@ -55,11 +56,11 @@ impl TaskManager {
     fn run_first_task(&mut self) -> ! {
         let task0 = &mut self.tasks[0];
         task0.task_status = TaskStatus::Running;
-        let next_task_cx_ptr = &task0.task_cx as *const TaskContext;
-        let mut _unused = TaskContext::zero_init();
+        let next_task_cx_ptr = &task0.task_cx as *const 任务上下文;
+        let mut _unused = 任务上下文::zero_init();
         // before this, we should drop local variables that must be dropped manually
         unsafe {
-            __switch(&mut _unused as *mut TaskContext, next_task_cx_ptr);
+            __switch(&mut _unused as *mut 任务上下文, next_task_cx_ptr);
         }
         panic!("unreachable in run_first_task!");
     }
@@ -93,32 +94,38 @@ impl TaskManager {
             let current = self.current_task;
             self.tasks[next].task_status = TaskStatus::Running;
             self.current_task = next;
-            let current_task_cx_ptr = &mut self.tasks[current].task_cx as *mut TaskContext;
-            let next_task_cx_ptr = &self.tasks[next].task_cx as *const TaskContext;
+            let current_task_cx_ptr = &mut self.tasks[current].task_cx as *mut 任务上下文;
+            let next_task_cx_ptr = &self.tasks[next].task_cx as *const 任务上下文;
             // before this, we should drop local variables that must be dropped manually
             unsafe {
                 __switch(current_task_cx_ptr, next_task_cx_ptr);
             }
             // go back to user mode
         } else {
-            println!("[Kernel] All applications completed!");
+            格式化输出并换行!("[Kernel] All applications completed!");
 
-            crate::exit::exit();
+            退出();
         }
     }
 }
 
 /// run first task
 pub fn run_first_task() {
-    let num_app = get_num_app();
-    let mut tasks = [TaskControlBlock {
-        task_cx: TaskContext::zero_init(),
-        task_status: TaskStatus::UnInit,
-    }; MAX_APP_NUM];
-    for (i, task) in tasks.iter_mut().enumerate() {
-        task.task_cx = TaskContext::goto_restore(init_app_cx(i));
-        task.task_status = TaskStatus::Ready;
-    }
+    let num_app = 读取应用程序数目();
+    let tasks = [
+        TaskControlBlock {
+            task_cx: 任务上下文::goto_restore(init_app_cx(0)),
+            task_status: TaskStatus::Ready
+        },
+        TaskControlBlock {
+            task_cx: 任务上下文::goto_restore(init_app_cx(1)),
+            task_status: TaskStatus::Ready
+        },
+        TaskControlBlock {
+            task_cx: 任务上下文::goto_restore(init_app_cx(2)),
+            task_status: TaskStatus::Ready
+        }
+    ];
     unsafe {
         TASK_MANAGER = TaskManager {
             num_app,

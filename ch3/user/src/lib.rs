@@ -1,7 +1,6 @@
 #![no_std]
 
 pub mod print;
-pub mod yield_;
 mod puts;
 mod exit;
 mod rust_no_std;

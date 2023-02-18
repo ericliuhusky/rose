@@ -1,94 +1,80 @@
-//! Loading user applications into memory
-//!
-//! For chapter 3, user applications are simply part of the data included in the
-//! kernel binary, so we only need to copy them to the space allocated for each
-//! app to load them. We also allocate fixed spaces for each task's
-//! [`KernelStack`] and [`UserStack`].
+use crate::trap::陷入上下文;
 
-use crate::config::*;
-use crate::trap::TrapContext;
+const 应用程序内存区大小限制: usize = 0x20000;
+const 应用程序内存区起始地址: [usize; 3] = [
+    0x80400000,
+    0x80420000,
+    0x80440000
+];
+const 用户栈栈顶: [usize; 3] = [
+    0x80422000,
+    0x80444000,
+    0x80466000
+];
+const 内核栈栈顶: [usize; 3] = [
+    0x80468000,
+    0x8046a000,
+    0x8046c000
+];
 
-#[repr(align(4096))]
-#[derive(Copy, Clone)]
-struct KernelStack {
-    data: [u8; KERNEL_STACK_SIZE],
-}
-
-#[repr(align(4096))]
-#[derive(Copy, Clone)]
-struct UserStack {
-    data: [u8; USER_STACK_SIZE],
-}
-
-static KERNEL_STACK: [KernelStack; MAX_APP_NUM] = [KernelStack {
-    data: [0; KERNEL_STACK_SIZE],
-}; MAX_APP_NUM];
-
-static USER_STACK: [UserStack; MAX_APP_NUM] = [UserStack {
-    data: [0; USER_STACK_SIZE],
-}; MAX_APP_NUM];
-
-impl KernelStack {
-    fn get_sp(&self) -> usize {
-        self.data.as_ptr() as usize + KERNEL_STACK_SIZE
+fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文, 应用程序索引: usize) -> usize {
+    let mut 栈顶 = 内核栈栈顶[应用程序索引];
+    栈顶 -= core::mem::size_of::<陷入上下文>();
+    let 上下文指针 = 栈顶 as *mut 陷入上下文;
+    unsafe {
+        *上下文指针 = 上下文;
     }
-    pub fn push_context(&self, trap_cx: TrapContext) -> usize {
-        let trap_cx_ptr = (self.get_sp() - core::mem::size_of::<TrapContext>()) as *mut TrapContext;
-        unsafe {
-            *trap_cx_ptr = trap_cx;
-        }
-        trap_cx_ptr as usize
-    }
+    栈顶
 }
 
-impl UserStack {
-    fn get_sp(&self) -> usize {
-        self.data.as_ptr() as usize + USER_STACK_SIZE
-    }
-}
-
-/// Get base address of app i.
-fn get_base_i(app_id: usize) -> usize {
-    APP_BASE_ADDRESS + app_id * APP_SIZE_LIMIT
-}
-
-/// Get the total number of applications.
-pub fn get_num_app() -> usize {
+pub fn 读取应用程序数目() -> usize {
     extern "C" {
         fn _num_app();
     }
     unsafe { (_num_app as usize as *const usize).read_volatile() }
 }
 
-/// Load nth user app at
-/// [APP_BASE_ADDRESS + n * APP_SIZE_LIMIT, APP_BASE_ADDRESS + (n+1) * APP_SIZE_LIMIT).
-pub fn load_apps() {
+fn 读取应用程序数据(应用程序索引: usize) -> &'static [u8] {
     extern "C" {
         fn _num_app();
     }
-    let num_app_ptr = _num_app as usize as *const usize;
-    let num_app = get_num_app();
-    let app_start = unsafe { core::slice::from_raw_parts(num_app_ptr.add(1), num_app + 1) };
-    
-    // load apps
-    for i in 0..num_app {
-        let base_i = get_base_i(i);
-        // clear region
-        (base_i..base_i + APP_SIZE_LIMIT)
-            .for_each(|addr| unsafe { (addr as *mut u8).write_volatile(0) });
-        // load app from data section to memory
-        let src = unsafe {
-            core::slice::from_raw_parts(app_start[i] as *const u8, app_start[i + 1] - app_start[i])
-        };
-        let dst = unsafe { core::slice::from_raw_parts_mut(base_i as *mut u8, src.len()) };
-        dst.copy_from_slice(src);
+    let 应用程序数目 = 读取应用程序数目();
+    let 应用程序数目指针 = _num_app as usize as *const usize;
+    unsafe {
+        let 应用程序数据起始地址指针 = 应用程序数目指针.add(1);
+        let 应用程序数据起始地址列表 = core::slice::from_raw_parts(应用程序数据起始地址指针, 应用程序数目 + 1);
+        core::slice::from_raw_parts(
+            应用程序数据起始地址列表[应用程序索引] as *const u8,
+            应用程序数据起始地址列表[应用程序索引 + 1] - 应用程序数据起始地址列表[应用程序索引],
+        )
+    }
+}
+
+fn 加载应用程序到应用程序内存区(应用程序索引: usize) {
+    unsafe {
+        // 清空应用程序内存区
+        core::slice::from_raw_parts_mut(应用程序内存区起始地址[应用程序索引] as *mut u8, 应用程序内存区大小限制).fill(0);
+
+        let 应用程序数据 = 读取应用程序数据(应用程序索引);
+        let 应用程序占用的内存 = core::slice::from_raw_parts_mut(应用程序内存区起始地址[应用程序索引] as *mut u8, 应用程序数据.len());
+        应用程序占用的内存.copy_from_slice(应用程序数据);
+    }
+}
+
+pub fn 加载所有应用程序到应用程序内存区() {
+    let 应用程序数目 = 读取应用程序数目();
+    for 应用程序索引 in 0..应用程序数目 {
+        加载应用程序到应用程序内存区(应用程序索引);
     }
 }
 
 /// get app info with entry and sp and save `TrapContext` in kernel stack
 pub fn init_app_cx(app_id: usize) -> usize {
-    KERNEL_STACK[app_id].push_context(TrapContext::app_init_context(
-        get_base_i(app_id),
-        USER_STACK[app_id].get_sp(),
-    ))
+    将上下文压入内核栈后的栈顶(
+        陷入上下文::应用程序初始上下文(
+            应用程序内存区起始地址[app_id],
+            用户栈栈顶[app_id]
+        ),
+        app_id
+    )
 }

@@ -1,16 +1,15 @@
 //! Types related to task management
 
-use super::TaskContext;
+use super::任务上下文;
 
 #[derive(Copy, Clone)]
 pub struct TaskControlBlock {
     pub task_status: TaskStatus,
-    pub task_cx: TaskContext,
+    pub task_cx: 任务上下文,
 }
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum TaskStatus {
-    UnInit,
     Ready,
     Running,
     Exited,
