@@ -1,13 +1,12 @@
 #![no_std]
 #![no_main]
 
-use core::arch::global_asm;
-
 mod syscall;
 mod trap;
 mod loader;
 mod task;
 mod timer;
+use core::arch::global_asm;
 
 global_asm!(include_str!("entry.s"));
 global_asm!(include_str!("link_app.s"));
@@ -19,7 +18,8 @@ fn rust_main() {
     loader::加载所有应用程序到应用程序内存区();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
-    task::run_first_task();
+    task::任务管理器::初始化();
+    task::任务管理器::运行下一个任务();
 }
 
 mod 输出 {

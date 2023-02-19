@@ -30,12 +30,12 @@ mod 系统调用_输出 {
 }
 
 mod 系统调用_退出 {
-    use crate::task::exit_current_and_run_next;
+    use crate::task::任务管理器;
     use crate::格式化输出并换行;
 
     pub fn 系统调用_退出(代码: i32) -> isize {
         格式化输出并换行!("[kernel] Application exited with code {}", 代码);
-        exit_current_and_run_next();
+        任务管理器::终止并运行下一个任务();
         -1
     }
 }

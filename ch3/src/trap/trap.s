@@ -46,6 +46,7 @@ __trap_entry:
 
 
 __restore:
+    mv sp, a0
 
     # 恢复控制和状态寄存器
     ld t0, 32*8(sp)

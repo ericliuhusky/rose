@@ -1,6 +1,6 @@
 mod context;
 mod scause;
-use crate::task::{exit_current_and_run_next, suspend_current_and_run_next};
+use crate::task::{任务管理器};
 use crate::syscall::系统调用;
 use core::arch::global_asm;
 pub use context::陷入上下文;
@@ -23,7 +23,7 @@ pub fn 初始化() {
 
 #[no_mangle] 
 /// 处理中断、异常或系统调用
-pub fn trap_handler(上下文: &mut 陷入上下文) {
+pub fn trap_handler(上下文: &mut 陷入上下文) -> &mut 陷入上下文 {
     match 读取异常类型() {
         异常类型::用户系统调用 => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
@@ -39,18 +39,19 @@ pub fn trap_handler(上下文: &mut 陷入上下文) {
         }
         异常类型::存储错误 | 异常类型::存储页错误 => {
             格式化输出并换行!("[kernel] PageFault in application, kernel killed it.");
-            exit_current_and_run_next();
+            任务管理器::终止并运行下一个任务();
         }
         异常类型::非法指令 => {
             格式化输出并换行!("[kernel] IllegalInstruction in application, kernel killed it.");
-            exit_current_and_run_next();
+            任务管理器::终止并运行下一个任务();
         }
         异常类型::中断(中断类型::时钟中断) => {
             为下一次时钟中断定时();
-            suspend_current_and_run_next();
+            任务管理器::暂停并运行下一个任务();
         }
         _ => {
             
         }
     }
+    上下文
 }

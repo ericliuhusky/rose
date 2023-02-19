@@ -68,13 +68,12 @@ pub fn 加载所有应用程序到应用程序内存区() {
     }
 }
 
-/// get app info with entry and sp and save `TrapContext` in kernel stack
-pub fn init_app_cx(app_id: usize) -> usize {
+pub fn 将应用初始上下文压入内核栈后的栈顶(应用索引: usize) -> usize {
     将上下文压入内核栈后的栈顶(
         陷入上下文::应用程序初始上下文(
-            应用程序内存区起始地址[app_id],
-            用户栈栈顶[app_id]
+            应用程序内存区起始地址[应用索引],
+            用户栈栈顶[应用索引]
         ),
-        app_id
+        应用索引
     )
 }
