@@ -11,20 +11,8 @@ use crate::格式化输出并换行;
 
 global_asm!(include_str!("trap2.s"));
 
-/// 设置trap入口地址为__trap_entry
-pub fn init() {
-    set_kernel_trap_entry();
-}
-
-fn set_kernel_trap_entry() {
-    // stvec寄存器设置中断跳转地址
-    unsafe {
-        core::arch::asm!("csrw stvec, {}", in(reg) trap_from_kernel as usize);
-    }
-}
-
-fn set_user_trap_entry() {
-    // stvec寄存器设置中断跳转地址
+pub fn 初始化() {
+    // 设置异常处理入口地址为TRAMPOLINE
     unsafe {
         core::arch::asm!("csrw stvec, {}", in(reg) TRAMPOLINE as usize);
     }
@@ -34,7 +22,6 @@ fn set_user_trap_entry() {
 #[no_mangle] 
 /// 处理中断、异常或系统调用
 pub fn trap_handler() {
-    set_kernel_trap_entry();
     let 上下文 = 任务管理器::当前页表().translated_trap_context();
     match scause::read().cause() {
         Trap::Exception(Exception::UserEnvCall) => {
@@ -73,7 +60,6 @@ pub fn trap_handler() {
 /// set the reg a0 = trap_cx_ptr, reg a1 = phy addr of usr page table,
 /// finally, jump to new addr of __restore asm function
 pub fn trap_return() -> ! {
-    set_user_trap_entry();
     let trap_cx_ptr = TRAP_CONTEXT;
     let user_satp = 任务管理器::当前页表().token();
     extern "C" {
@@ -91,10 +77,4 @@ pub fn trap_return() -> ! {
             options(noreturn)
         );
     }
-}
-
-#[no_mangle]
-/// Unimplement: traps/interrupts/exceptions from kernel mode
-pub fn trap_from_kernel() -> ! {
-    panic!("a trap from kernel!");
 }

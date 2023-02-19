@@ -21,7 +21,7 @@ global_asm!(include_str!("link_app.s"));
 fn rust_main() {
     格式化输出并换行!("[kernel] Hello, world!");
     mm::init();
-    trap::init();
+    trap::初始化();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
     task::任务管理器::初始化();
