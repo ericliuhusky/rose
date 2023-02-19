@@ -38,11 +38,11 @@ pub fn trap_handler(上下文: &mut 陷入上下文) -> &mut 陷入上下文 {
         }
         异常类型::存储错误 | 异常类型::存储页错误 => {
             格式化输出并换行!("[kernel] PageFault in application, kernel killed it.");
-            批处理系统::运行下一个应用程序();
+            批处理系统::运行下一个应用();
         }
         异常类型::非法指令 => {
             格式化输出并换行!("[kernel] IllegalInstruction in application, kernel killed it.");
-            批处理系统::运行下一个应用程序();
+            批处理系统::运行下一个应用();
         }
         _ => {
             

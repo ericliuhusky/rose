@@ -14,7 +14,7 @@ fn rust_main() {
     格式化输出并换行!("[kernel] Hello, world!");
     trap::初始化();
     batch::批处理系统::初始化();
-    batch::批处理系统::运行下一个应用程序();
+    batch::批处理系统::运行下一个应用();
 }
 
 mod 输出 {
