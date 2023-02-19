@@ -57,10 +57,10 @@ mod 输出 {
     }
 }
 
-mod 退出 {
+mod 终止 {
     use core::arch::asm;
 
-    pub fn 退出() {
+    pub fn 终止() {
         unsafe {
             asm!(
                 "sw {0}, 0({1})",

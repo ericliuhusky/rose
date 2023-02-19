@@ -1,6 +1,6 @@
 #![no_std]
 
-use 退出::退出;
+use 终止::终止;
 
 #[no_mangle]
 #[link_section = ".text.entry"]
@@ -8,8 +8,8 @@ fn _start() {
     extern "C" {
         fn main() -> i32;
     }
-    let 退出代码 = unsafe { main() };
-    退出(退出代码);
+    let 终止代码 = unsafe { main() };
+    终止(终止代码);
 }
 
 pub mod 输出 {
@@ -46,10 +46,10 @@ pub mod 输出 {
     }
 }
 
-mod 退出 {
+mod 终止 {
     use core::arch::asm;
 
-    pub fn 退出(代码: i32) {
+    pub fn 终止(代码: i32) {
         unsafe {
             asm!(
                 "ecall",

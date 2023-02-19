@@ -2,12 +2,12 @@
 #![no_main]
 
 use 输出::输出;
-use 退出::退出;
+use 终止::终止;
 
 #[no_mangle]
 fn _start() {
     输出("Hello, world!\n");
-    退出();
+    终止();
 }
 
 mod 输出 {
@@ -26,10 +26,10 @@ mod 输出 {
     }
 }
 
-mod 退出 {
+mod 终止 {
     use core::arch::asm;
 
-    pub fn 退出() {
+    pub fn 终止() {
         unsafe {
             asm!(
                 "sw {0}, 0({1})",

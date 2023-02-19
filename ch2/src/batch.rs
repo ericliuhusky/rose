@@ -1,6 +1,6 @@
 use crate::trap::陷入上下文;
 use crate::格式化输出并换行;
-use crate::退出::退出;
+use crate::终止::终止;
 const 应用内存区起始地址: usize = 0x80400000;
 const 应用内存区大小限制: usize = 0x20000;
 const 用户栈栈顶: usize = 0x80422000;
@@ -25,7 +25,7 @@ impl 应用管理器 {
     fn 加载应用到应用内存区(&self, 应用索引: usize) {
         if 应用索引 >= self.应用数目 {
             格式化输出并换行!("[kernel] All applications completed!");
-            退出();
+            终止();
         }
         格式化输出并换行!("[kernel] Loading app_{}", 应用索引);
         unsafe {

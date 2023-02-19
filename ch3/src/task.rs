@@ -1,6 +1,6 @@
 use crate::loader::{读取应用数目, 将应用初始上下文压入内核栈后的栈顶};
 use crate::格式化输出并换行;
-use crate::退出::退出;
+use crate::终止::终止;
 
 struct 任务 {
     状态: 任务状态,
@@ -87,7 +87,7 @@ impl 任务管理器 {
                 __restore(下一个任务.内核栈栈顶);
             } else {
                 格式化输出并换行!("[Kernel] All applications completed!");
-                退出();
+                终止();
             }
         }
     }

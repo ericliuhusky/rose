@@ -2,7 +2,7 @@
 #![no_main]
 
 use core::arch::global_asm;
-use 退出::退出;
+use 终止::终止;
 
 global_asm!(include_str!("entry.s"));
 
@@ -30,7 +30,7 @@ fn rust_main() {
     );
     格式化输出并换行!(".bss [{:#x}, {:#x})", sbss as usize, ebss as usize);
     
-    退出();
+    终止();
 }
 
 mod 输出 {
@@ -68,10 +68,10 @@ mod 输出 {
     }
 }
 
-mod 退出 {
+mod 终止 {
     use core::arch::asm;
 
-    pub fn 退出() {
+    pub fn 终止() {
         unsafe {
             asm!(
                 "sw {0}, 0({1})",
