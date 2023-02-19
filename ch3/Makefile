@@ -1,7 +1,7 @@
-KERNEL_ELF := target/riscv64gc-unknown-none-elf/release/rcore
-KERNEL_BIN := $(KERNEL_ELF).bin
-BOOTLOADER := ../rustsbi-qemu.bin
-KERNEL_ENTRY_PA := 0x80200000
+内核ELF文件 := target/riscv64gc-unknown-none-elf/release/rcore
+内核二进制文件 := $(内核ELF文件).bin
+引导程序 := ../rustsbi-qemu.bin
+内核入口地址 := 0x80200000
 
 all: run
 
@@ -9,11 +9,11 @@ build:
 	@cd ./user && make build
 	@cargo clean
 	@cargo build --release
-	@rust-objcopy $(KERNEL_ELF) --strip-all -O binary $(KERNEL_BIN)
+	@rust-objcopy $(内核ELF文件) --strip-all -O binary $(内核二进制文件)
 
 run: build
 	@qemu-system-riscv64 \
 		-machine virt \
 		-nographic \
-		-bios $(BOOTLOADER) \
-		-device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY_PA)
+		-bios $(引导程序) \
+		-device loader,file=$(内核二进制文件),addr=$(内核入口地址)
