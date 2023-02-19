@@ -1,129 +1,87 @@
-//! Task management implementation
-//!
-//! Everything about task management, like starting and switching tasks is
-//! implemented here.
-//!
-//! A single global instance of [`TaskManager`] called `TASK_MANAGER` controls
-//! all the tasks in the operating system.
-//!
-//! Be careful when you see `__switch` ASM function in `switch.S`. Control flow around this function
-//! might not be what you expect.
-
-mod context;
-mod switch;
-
-#[allow(clippy::module_inception)]
 mod task;
 
-use crate::loader::{get_app_data, get_num_app};
+use crate::loader::{读取应用数目, 读取应用数据};
+use crate::mm::PageTable;
 use alloc::vec::Vec;
-use switch::__switch;
-use task::{TaskControlBlock, TaskStatus};
+use task::{任务, 任务状态};
+use crate::格式化输出并换行;
+use crate::终止::终止;
+use crate::trap::trap_return;
 
-pub use context::TaskContext;
-
-/// The task manager, where all the tasks are managed.
-///
-/// Functions implemented on `TaskManager` deals with all task state transitions
-/// and task context switching. For convenience, you can find wrappers around it
-/// in the module level.
-///
-/// Most of `TaskManager` are hidden behind the field `inner`, to defer
-/// borrowing checks to runtime. You can see examples on how to use `inner` in
-/// existing functions on `TaskManager`.
-pub struct TaskManager {
-    /// total number of tasks
-    num_app: usize,
-    /// task list
-    tasks: Vec<TaskControlBlock>,
-    /// id of current `Running` task
-    current_task: usize,
+pub struct 任务管理器 {
+    任务数目: usize,
+    任务列表: Vec<任务>,
+    当前任务索引: isize,
 }
 
-/// Global variable: TASK_MANAGER
-pub static mut TASK_MANAGER: TaskManager = TaskManager {
-    num_app: 0,
-    tasks: Vec::new(),
-    current_task: 0
-};
-
-impl TaskManager {
-    /// Run the first task in task list.
-    ///
-    /// Generally, the first task in task list is an idle task (we call it zero process later).
-    /// But in ch3, we load apps statically, so the first task is a real app.
-    fn run_first_task(&mut self) -> ! {
-        let task0 = &mut self.tasks[0];
-        task0.task_status = TaskStatus::Running;
-        let next_task_cx_ptr = &task0.task_cx as *const TaskContext;
-        let mut _unused = TaskContext::zero_init();
-        // before this, we should drop local variables that must be dropped manually
+impl 任务管理器 {
+    pub fn 初始化() {
+        let 任务数目 = 读取应用数目();
+        let mut 任务列表 = Vec::new();
+        for 应用索引 in 0..任务数目 {
+            任务列表.push(任务::new(读取应用数据(应用索引)))
+        }
         unsafe {
-            __switch(&mut _unused as *mut TaskContext, next_task_cx_ptr);
+            任务管理器 = 任务管理器 {
+                任务数目,
+                任务列表,
+                当前任务索引: -1
+            };
         }
-        panic!("unreachable in run_first_task!");
     }
 
-    /// Find next task to run and return app id.
-    ///
-    /// In this case, we only return the first `Ready` task in task list.
-    fn find_next_task(&self) -> Option<usize> {
-        let current = self.current_task;
-        (current + 1..current + self.num_app + 1)
-            .map(|id| id % self.num_app)
-            .find(|id| self.tasks[*id].task_status == TaskStatus::Ready)
+    pub fn 当前任务(&mut self) -> &mut 任务 {
+        &mut self.任务列表[self.当前任务索引 as usize]
     }
 
-    /// Get the current 'Running' task's ControlBlock.
-    pub fn current_task(&mut self) -> &mut TaskControlBlock {
-        &mut self.tasks[self.current_task]
+    pub fn 暂停并运行下一个任务() {
+        unsafe {
+            任务管理器.当前任务().状态 = 任务状态::就绪;
+            Self::运行下一个任务();
+        }
     }
 
-    /// Switch current `Running` task to the task we have found,
-    /// or there is no `Ready` task and we can exit with all applications completed
-    fn run_next_task(&mut self) {
-        if let Some(next) = self.find_next_task() {
-            let current = self.current_task;
-            self.tasks[next].task_status = TaskStatus::Running;
-            self.current_task = next;
-            let current_task_cx_ptr = &mut self.tasks[current].task_cx as *mut TaskContext;
-            let next_task_cx_ptr = &self.tasks[next].task_cx as *const TaskContext;
-            // before this, we should drop local variables that must be dropped manually
-            unsafe {
-                __switch(current_task_cx_ptr, next_task_cx_ptr);
-            }
-            // go back to user mode
+    pub fn 终止并运行下一个任务() {
+        unsafe {
+            任务管理器.当前任务().状态 = 任务状态::终止;
+            Self::运行下一个任务();
+        }
+    }
+
+    fn 查找下一个就绪任务(&mut self) -> Option<&mut 任务> {
+        let 下一个任务索引 = (self.当前任务索引 + 1) as usize;
+        let 下一个就绪任务索引 = (下一个任务索引..下一个任务索引 + self.任务数目)
+            .map(|任务索引| 任务索引 % self.任务数目)
+            .find(|任务索引| self.任务列表[*任务索引].状态 == 任务状态::就绪);
+        if let Some(下一个就绪任务索引) = 下一个就绪任务索引 {
+            self.当前任务索引 = 下一个就绪任务索引 as isize;
+            Some(&mut self.任务列表[下一个就绪任务索引])
         } else {
-            println!("[Kernel] All applications completed!");
-
-            crate::exit::exit();
+            None
         }
     }
 
-    pub fn suspend_and_run_next(&mut self) {
-        self.current_task().task_status = TaskStatus::Ready;
-        self.run_next_task();
+    pub fn 运行下一个任务() {
+        unsafe {
+            if let Some(下一个任务) = 任务管理器.查找下一个就绪任务() {
+                下一个任务.状态 = 任务状态::运行;
+                trap_return();
+            } else {
+                格式化输出并换行!("[Kernel] All applications completed!");
+                终止();
+            }
+        }
     }
 
-    pub fn exit_and_run_next(&mut self) {
-        self.current_task().task_status = TaskStatus::Exited;
-        self.run_next_task();
+    pub fn 当前页表() -> &'static PageTable {
+        unsafe {
+            &任务管理器.当前任务().页表
+        }
     }
 }
 
-/// run first task
-pub fn run_first_task() {
-    let num_app = get_num_app();
-    let mut tasks: Vec<TaskControlBlock> = Vec::new();
-    for i in 0..num_app {
-        tasks.push(TaskControlBlock::new(get_app_data(i), i));
-    }
-    unsafe {
-        TASK_MANAGER = TaskManager {
-            num_app,
-            tasks,
-            current_task: 0
-        };
-        TASK_MANAGER.run_first_task();
-    }
-}
+static mut 任务管理器: 任务管理器 = 任务管理器 {
+    任务数目: 0,
+    任务列表: Vec::new(),
+    当前任务索引: 0
+};

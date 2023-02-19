@@ -1,57 +1,32 @@
-//! Types related to task management
+use crate::mm::{MemorySet, KERNEL_SPACE, PageTable};
+use crate::trap::{trap_handler, 陷入上下文};
 
-use super::TaskContext;
-use crate::config::{kernel_stack_position, TRAP_CONTEXT};
-use crate::mm::{MemorySet, PhysPageNum, VirtPageNum, KERNEL_SPACE, PageTable};
-use crate::trap::{trap_handler, TrapContext};
-
-pub struct TaskControlBlock {
-    pub task_status: TaskStatus,
-    pub task_cx: TaskContext,
-    pub page_table: PageTable,
-    pub trap_cx_ppn: PhysPageNum,
+pub struct 任务 {
+    pub 状态: 任务状态,
+    pub 页表: PageTable,
 }
 
-impl TaskControlBlock {
-    pub fn get_trap_cx(&self) -> &'static mut TrapContext {
-        self.trap_cx_ppn.get_mut()
-    }
-    pub fn new(elf_data: &[u8], app_id: usize) -> Self {
-        // memory_set with elf program headers/trampoline/trap context/user stack
-        let (page_table, user_sp, entry_point) = MemorySet::from_elf(elf_data);
-        let trap_cx_ppn = page_table
-            .translate(VirtPageNum::from(TRAP_CONTEXT));
-        let task_status = TaskStatus::Ready;
-        // map a kernel-stack in kernel space
-        let (kernel_stack_bottom, kernel_stack_top) = kernel_stack_position(app_id);
-        unsafe {
-            KERNEL_SPACE.insert_framed_area(
-                kernel_stack_bottom..kernel_stack_top,
-                false,
-            );
-        }
-        let task_control_block = Self {
-            task_status,
-            task_cx: TaskContext::goto_trap_return(kernel_stack_top),
-            page_table,
-            trap_cx_ppn,
-        };
-        // prepare TrapContext in user space
-        let trap_cx = task_control_block.get_trap_cx();
-        *trap_cx = TrapContext::app_init_context(
-            entry_point,
-            user_sp,
+impl 任务 {
+    pub fn new(elf_data: &[u8]) -> Self {
+        let (页表, 用户栈栈顶, 应用入口地址) = MemorySet::from_elf(elf_data);
+        let 状态 = 任务状态::就绪;
+        let trap_cx = 页表.translated_trap_context();
+        *trap_cx = 陷入上下文::应用初始上下文(
+            应用入口地址,
+            用户栈栈顶,
             unsafe { KERNEL_SPACE.page_table.token() },
-            kernel_stack_top,
             trap_handler as usize,
         );
-        task_control_block
+        Self {
+            状态,
+            页表,
+        }
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
-pub enum TaskStatus {
-    Ready,
-    Running,
-    Exited,
+#[derive(PartialEq)]
+pub enum 任务状态 {
+    就绪,
+    运行,
+    终止,
 }

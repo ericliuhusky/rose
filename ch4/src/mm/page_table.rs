@@ -4,6 +4,8 @@ use core::ops::Range;
 use super::{frame_alloc, PhysPageNum, VirtPageNum};
 use crate::mm::address::{page_offset};
 use alloc::vec::Vec;
+use crate::config::TRAP_CONTEXT;
+use crate::trap::陷入上下文;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -93,6 +95,11 @@ impl PageTable {
             start = next_addr;
         }
         v
+    }
+    pub fn translated_trap_context(&self) -> &mut 陷入上下文 {
+        let trap_cx_ppn = self.translate(VirtPageNum::from(TRAP_CONTEXT));
+        let trap_cx = trap_cx_ppn.get_mut();
+        trap_cx
     }
     pub fn token(&self) -> usize {
         8usize << 60 | self.root_ppn.0

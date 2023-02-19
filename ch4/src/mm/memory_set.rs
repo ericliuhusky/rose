@@ -4,11 +4,12 @@ use super::{frame_alloc};
 use super::{PageTable};
 use super::{PhysPageNum, VirtPageNum};
 use crate::mm::address::{floor, ceil};
-use crate::config::{MEMORY_END, MMIO, PAGE_SIZE, TRAMPOLINE, TRAP_CONTEXT, USER_STACK_SIZE};
+use crate::config::{MEMORY_END, MMIO, PAGE_SIZE, TRAMPOLINE, TRAP_CONTEXT, USER_STACK_SIZE, 内核栈栈底, 内核栈栈顶};
 use alloc::vec::Vec;
 use core::arch::asm;
 use core::ops::Range;
 use crate::mm::elf_reader::ElfFile;
+use crate::格式化输出并换行;
 
 extern "C" {
     fn stext();
@@ -43,17 +44,6 @@ impl MemorySet {
             areas: Vec::new(),
         }
     }
-    /// Assume that no conflicts.
-    pub fn insert_framed_area(
-        &mut self,
-        va_range: Range<usize>,
-        is_user: bool,
-    ) {
-        self.push(
-            MapArea::new(va_range, MapType::Framed, is_user),
-            None,
-        );
-    }
     fn push(&mut self, map_area: MapArea, data: Option<&[u8]>) {
         map_area.map(&mut self.page_table);
         if let Some(data) = data {
@@ -75,14 +65,14 @@ impl MemorySet {
         // map trampoline
         memory_set.map_trampoline();
         // map kernel sections
-        println!(".text [{:#x}, {:#x})", stext as usize, etext as usize);
-        println!(".rodata [{:#x}, {:#x})", srodata as usize, erodata as usize);
-        println!(".data [{:#x}, {:#x})", sdata as usize, edata as usize);
-        println!(
+        格式化输出并换行!(".text [{:#x}, {:#x})", stext as usize, etext as usize);
+        格式化输出并换行!(".rodata [{:#x}, {:#x})", srodata as usize, erodata as usize);
+        格式化输出并换行!(".data [{:#x}, {:#x})", sdata as usize, edata as usize);
+        格式化输出并换行!(
             ".bss [{:#x}, {:#x})",
             sbss_with_stack as usize, ebss as usize
         );
-        println!("mapping .text section");
+        格式化输出并换行!("mapping .text section");
         memory_set.push(
             MapArea::new(
                 stext as usize..etext as usize,
@@ -91,7 +81,7 @@ impl MemorySet {
             ),
             None,
         );
-        println!("mapping .rodata section");
+        格式化输出并换行!("mapping .rodata section");
         memory_set.push(
             MapArea::new(
                 srodata as usize..erodata as usize,
@@ -100,7 +90,7 @@ impl MemorySet {
             ),
             None,
         );
-        println!("mapping .data section");
+        格式化输出并换行!("mapping .data section");
         memory_set.push(
             MapArea::new(
                 sdata as usize..edata as usize,
@@ -109,7 +99,7 @@ impl MemorySet {
             ),
             None,
         );
-        println!("mapping .bss section");
+        格式化输出并换行!("mapping .bss section");
         memory_set.push(
             MapArea::new(
                 sbss_with_stack as usize..ebss as usize,
@@ -118,7 +108,7 @@ impl MemorySet {
             ),
             None,
         );
-        println!("mapping physical memory");
+        格式化输出并换行!("mapping physical memory");
         memory_set.push(
             MapArea::new(
                 ekernel as usize..MEMORY_END,
@@ -127,7 +117,7 @@ impl MemorySet {
             ),
             None,
         );
-        println!("mapping memory-mapped registers");
+        格式化输出并换行!("mapping memory-mapped registers");
         for pair in MMIO {
             memory_set.push(
                 MapArea::new(
@@ -138,6 +128,16 @@ impl MemorySet {
                 None,
             );
         }
+        // 内核栈
+        memory_set.push(
+            MapArea::new(
+                内核栈栈底..内核栈栈顶,
+                MapType::Framed,
+                false
+            ), 
+            None
+        );
+
         memory_set
     }
     /// Include sections in elf and trampoline and TrapContext and user stack,
