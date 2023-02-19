@@ -5,7 +5,7 @@ use crate::syscall::系统调用;
 use core::arch::global_asm;
 pub use context::陷入上下文;
 use crate::格式化输出并换行;
-use scause::{读取异常类型, 异常类型, 中断类型};
+use scause::{读取异常, 异常, 中断};
 use crate::timer::为下一次时钟中断定时;
 
 global_asm!(include_str!("trap.s"));
@@ -24,8 +24,8 @@ pub fn 初始化() {
 #[no_mangle] 
 /// 处理中断、异常或系统调用
 pub fn trap_handler(上下文: &mut 陷入上下文) -> &mut 陷入上下文 {
-    match 读取异常类型() {
-        异常类型::用户系统调用 => {
+    match 读取异常() {
+        异常::用户系统调用 => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
             上下文.触发异常指令地址 += 4;
             上下文.通用寄存器[10] = 系统调用(
@@ -37,15 +37,15 @@ pub fn trap_handler(上下文: &mut 陷入上下文) -> &mut 陷入上下文 {
                 ]
             ) as usize;
         }
-        异常类型::存储错误 | 异常类型::存储页错误 => {
+        异常::存储错误 | 异常::存储页错误 => {
             格式化输出并换行!("[kernel] PageFault in application, kernel killed it.");
             任务管理器::终止并运行下一个任务();
         }
-        异常类型::非法指令 => {
+        异常::非法指令 => {
             格式化输出并换行!("[kernel] IllegalInstruction in application, kernel killed it.");
             任务管理器::终止并运行下一个任务();
         }
-        异常类型::中断(中断类型::时钟中断) => {
+        异常::中断(中断::时钟中断) => {
             为下一次时钟中断定时();
             任务管理器::暂停并运行下一个任务();
         }
