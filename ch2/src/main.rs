@@ -13,8 +13,8 @@ global_asm!(include_str!("link_app.s"));
 fn rust_main() {
     格式化输出并换行!("[kernel] Hello, world!");
     trap::初始化();
-    batch::批处理系统::初始化();
-    batch::批处理系统::运行下一个应用();
+    batch::应用管理器::初始化();
+    batch::应用管理器::运行下一个应用();
 }
 
 mod 输出 {

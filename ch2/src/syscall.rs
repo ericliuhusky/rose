@@ -30,12 +30,12 @@ mod 系统调用_输出 {
 }
 
 mod 系统调用_退出 {
-    use crate::batch::批处理系统;
+    use crate::batch::应用管理器;
     use crate::格式化输出并换行;
 
     pub fn 系统调用_退出(代码: i32) -> isize {
         格式化输出并换行!("[kernel] Application exited with code {}", 代码);
-        批处理系统::运行下一个应用();
+        应用管理器::运行下一个应用();
         -1
     }
 }
