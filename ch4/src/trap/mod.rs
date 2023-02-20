@@ -3,7 +3,7 @@ use core::arch::global_asm;
 mod context;
 mod scause;
 pub use context::陷入上下文;
-use scause::{Trap, Exception, Interrupt};
+use scause::{读取异常, 异常, 中断};
 use crate::timer::为下一次时钟中断定时;
 use crate::task::任务管理器;
 use crate::格式化输出并换行;
@@ -26,8 +26,8 @@ pub fn 初始化() {
 pub fn trap_handler() {
     let 当前页表 = 任务管理器::当前页表();
     let 上下文 = 当前页表.translated_trap_context();
-    match scause::read().cause() {
-        Trap::Exception(Exception::UserEnvCall) => {
+    match 读取异常() {
+        异常::用户系统调用 => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
             上下文.触发异常指令地址 += 4;
             上下文.通用寄存器[10] = 系统调用(
@@ -39,15 +39,15 @@ pub fn trap_handler() {
                 ]
             ) as usize;
         }
-        Trap::Exception(Exception::StoreFault) | Trap::Exception(Exception::StorePageFault) => {
+        异常::存储错误 | 异常::存储页错误 => {
             格式化输出并换行!("[kernel] PageFault in application, kernel killed it.");
             任务管理器::终止并运行下一个任务();
         }
-        Trap::Exception(Exception::IllegalInstruction) => {
+        异常::非法指令 => {
             格式化输出并换行!("[kernel] IllegalInstruction in application, kernel killed it.");
             任务管理器::终止并运行下一个任务();
         }
-        Trap::Interrupt(Interrupt::SupervisorTimer) => {
+        异常::中断(中断::时钟中断) => {
             为下一次时钟中断定时();
             任务管理器::暂停并运行下一个任务();
         }

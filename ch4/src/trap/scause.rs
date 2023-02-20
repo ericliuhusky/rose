@@ -1,69 +1,46 @@
-pub struct Scause {
-    pub bits: usize
-}
-
-impl Scause {
-    pub fn cause(&self) -> Trap {
-        if self.is_interrupt() {
-            Trap::Interrupt(Interrupt::from(self.code()))
-        } else {
-            Trap::Exception(Exception::from(self.code()))
-        }
-    }
-
-    fn is_interrupt(&self) -> bool {
-        (self.bits & (1 << (core::mem::size_of::<usize>() * 8 - 1))) != 0
-    }
-
-    fn code(&self) -> usize {
-        let bit = 1 << (core::mem::size_of::<usize>() * 8 - 1);
-        self.bits & !bit
-    }
-}
-
-pub fn read() -> Scause {
-    let bits: usize;
+pub fn 读取异常() -> 异常 {
+    let 触发异常原因代码: usize;
     unsafe {
-        core::arch::asm!("csrr {}, scause", out(reg) bits);
+        core::arch::asm!("csrr {}, scause", out(reg) 触发异常原因代码);
     }
-    Scause { bits }
+    if 触发异常原因代码 >> 63 == 1 {
+        异常::中断(中断::解析(触发异常原因代码 & 0xf))
+    } else {
+        异常::解析(触发异常原因代码)
+    }
 }
 
-pub enum Exception {
-    UserEnvCall,
-    StoreFault,
-    StorePageFault,
-    IllegalInstruction,
-    Unknown
+pub enum 异常 {
+    用户系统调用,
+    存储错误,
+    存储页错误,
+    非法指令,
+    中断(中断),
+    其它
 }
 
-pub enum Interrupt {
-    SupervisorTimer,
-    Unknown
-}
-
-pub enum Trap {
-    Interrupt(Interrupt),
-    Exception(Exception),
-}
-
-impl Exception {
-    fn from(n: usize) -> Self {
-        match n {
-            2 => Exception::IllegalInstruction,
-            7 => Exception::StoreFault,
-            15 => Exception::StorePageFault,
-            8 => Exception::UserEnvCall,
-            _ => Exception::Unknown
+impl 异常 {
+    fn 解析(触发异常原因代码: usize) -> Self {
+        match 触发异常原因代码 {
+            2 => 异常::非法指令,
+            7 => 异常::存储错误,
+            15 => 异常::存储页错误,
+            8 => 异常::用户系统调用,
+            _ => 异常::其它
         }
     }
 }
 
-impl Interrupt {
-    pub fn from(n: usize) -> Self {
-        match n {
-            5 => Interrupt::SupervisorTimer,
-            _ => Interrupt::Unknown
+pub enum 中断 {
+    时钟中断,
+    其它
+}
+
+impl 中断 {
+    pub fn 解析(触发异常原因代码: usize) -> Self {
+        match 触发异常原因代码 {
+            5 => 中断::时钟中断,
+            _ => 中断::其它
         }
     }
 }
