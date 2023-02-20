@@ -10,13 +10,13 @@ global_asm!(include_str!("entry.s"));
 fn rust_main() {
     extern "C" {
         fn stext(); // text段起始地址
-        fn etext(); // text段结束地址
+        fn etext(); // text段结尾地址
         fn srodata(); // 只读数据段起始地址
-        fn erodata(); // 只读数据段结束地址
+        fn erodata(); // 只读数据段结尾地址
         fn sdata(); // 数据段起始地址
-        fn edata(); // 数据段结束地址
+        fn edata(); // 数据段结尾地址
         fn sbss(); // bss段起始地址
-        fn ebss(); // bss段结束地址
+        fn ebss(); // bss段结尾地址
         fn boot_stack(); // 栈底
         fn boot_stack_top(); // 栈顶
     }
