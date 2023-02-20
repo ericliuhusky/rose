@@ -9,7 +9,7 @@ use crate::config::{TRAP_CONTEXT};
 use crate::task::任务管理器;
 use crate::格式化输出并换行;
 
-global_asm!(include_str!("trap2.s"));
+global_asm!(include_str!("trap.s"));
 
 pub fn 初始化() {
     extern "C" {
