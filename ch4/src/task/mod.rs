@@ -6,7 +6,6 @@ use alloc::vec::Vec;
 use task::{任务, 任务状态};
 use crate::格式化输出并换行;
 use crate::终止::终止;
-use crate::trap::trap_return;
 
 pub struct 任务管理器 {
     任务数目: usize,
@@ -65,7 +64,10 @@ impl 任务管理器 {
         unsafe {
             if let Some(下一个任务) = 任务管理器.查找下一个就绪任务() {
                 下一个任务.状态 = 任务状态::运行;
-                trap_return();
+                extern "C" {
+                    fn __restore(user_satp: usize);
+                }
+                __restore(下一个任务.页表.token());
             } else {
                 格式化输出并换行!("[Kernel] All applications completed!");
                 终止();
