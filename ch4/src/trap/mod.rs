@@ -5,7 +5,6 @@ mod scause;
 pub use context::陷入上下文;
 use scause::{Trap, Exception, Interrupt};
 use crate::timer::为下一次时钟中断定时;
-use crate::config::{TRAP_CONTEXT};
 use crate::task::任务管理器;
 use crate::格式化输出并换行;
 
@@ -60,12 +59,11 @@ pub fn trap_handler() {
 
 #[no_mangle]
 pub fn trap_return() {
-    let trap_cx_ptr = TRAP_CONTEXT;
     let user_satp = 任务管理器::当前页表().token();
     extern "C" {
-        fn __restore(trap_cx_ptr: usize, user_satp: usize);
+        fn __restore(user_satp: usize);
     }
     unsafe {
-        __restore(trap_cx_ptr, user_satp);
+        __restore(user_satp);
     }
 }
