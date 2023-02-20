@@ -4,7 +4,7 @@ use super::{frame_alloc};
 use super::{PageTable};
 use super::{PhysPageNum, VirtPageNum};
 use crate::mm::address::{floor, ceil};
-use crate::config::{MEMORY_END, MMIO, PAGE_SIZE, TRAMPOLINE, TRAP_CONTEXT, USER_STACK_SIZE, 内核栈栈底, 内核栈栈顶};
+use crate::config::{MEMORY_END, MMIO, PAGE_SIZE, TRAP_CONTEXT, TRAP_CONTEXT_END, USER_STACK_SIZE, 内核栈栈底, 内核栈栈顶};
 use alloc::vec::Vec;
 use core::arch::asm;
 use core::ops::Range;
@@ -21,7 +21,8 @@ extern "C" {
     fn sbss_with_stack();
     fn ebss();
     fn ekernel();
-    fn strampoline();
+    fn __trap_entry();
+    fn __trap_end();
 }
 
 pub static mut KERNEL_SPACE: MemorySet = MemorySet {
@@ -51,19 +52,9 @@ impl MemorySet {
         }
         self.areas.push(map_area);
     }
-    /// Mention that trampoline is not collected by areas.
-    fn map_trampoline(&self) {
-        self.page_table.map(
-            VirtPageNum::from(TRAMPOLINE),
-            PhysPageNum::from(strampoline as usize),
-            false,
-        );
-    }
     /// Without kernel stacks.
     pub fn new_kernel() -> Self {
         let mut memory_set = Self::new_bare();
-        // map trampoline
-        memory_set.map_trampoline();
         // map kernel sections
         格式化输出并换行!(".text [{:#x}, {:#x})", stext as usize, etext as usize);
         格式化输出并换行!(".rodata [{:#x}, {:#x})", srodata as usize, erodata as usize);
@@ -140,12 +131,18 @@ impl MemorySet {
 
         memory_set
     }
-    /// Include sections in elf and trampoline and TrapContext and user stack,
-    /// also returns user_sp and entry point.
+    
     pub fn from_elf(elf_data: &[u8]) -> (PageTable, usize, usize) {
         let mut memory_set = Self::new_bare();
-        // map trampoline
-        memory_set.map_trampoline();
+        memory_set.push(
+            MapArea::new(
+                __trap_entry as usize..__trap_end as usize, 
+                MapType::Identical, 
+                false
+            ),
+            None
+        );
+
         // map program headers of elf, with U flag
         let elf = ElfFile::from(elf_data);
         for p in elf.programs() {
@@ -171,7 +168,7 @@ impl MemorySet {
         // map TrapContext
         memory_set.push(
             MapArea::new(
-                TRAP_CONTEXT..TRAMPOLINE,
+                TRAP_CONTEXT..TRAP_CONTEXT_END,
                 MapType::Framed,
                 false,
             ),

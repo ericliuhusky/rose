@@ -5,9 +5,9 @@
 .macro LOAD_GP n
     ld x\n, \n*8(sp)
 .endm
-    .section .text.trampoline
     .globl __trap_entry
     .globl __restore
+    .globl __trap_end
     .align 2
 __trap_entry:
     csrrw sp, sscratch, sp
@@ -31,15 +31,13 @@ __trap_entry:
     sd t1, 2*8(sp)
     # load kernel_satp into t0
     ld t0, 33*8(sp)
-    # load trap_handler into t1
-    ld t1, 34*8(sp)
     # move to kernel_sp
     li sp, 0xfffffffffffff000
     # switch to kernel space
     csrw satp, t0
     sfence.vma
     # jump to trap_handler
-    jr t1
+    call trap_handler
 
 __restore:
     # a0: *TrapContext in user space(Constant); a1: user space token
@@ -63,3 +61,4 @@ __restore:
     # back to user stack
     ld sp, 2*8(sp)
     sret
+__trap_end:

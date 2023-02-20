@@ -1,5 +1,5 @@
 use crate::mm::{MemorySet, KERNEL_SPACE, PageTable};
-use crate::trap::{trap_handler, 陷入上下文};
+use crate::trap::{陷入上下文};
 
 pub struct 任务 {
     pub 状态: 任务状态,
@@ -15,7 +15,6 @@ impl 任务 {
             应用入口地址,
             用户栈栈顶,
             unsafe { KERNEL_SPACE.page_table.token() },
-            trap_handler as usize,
         );
         Self {
             状态,
