@@ -8,7 +8,7 @@ use crate::config::{MEMORY_END, MMIO, PAGE_SIZE, TRAP_CONTEXT, TRAP_CONTEXT_END,
 use alloc::vec::Vec;
 use core::arch::asm;
 use core::ops::Range;
-use crate::mm::elf_reader::ElfFile;
+use crate::mm::elf_reader::Elf文件;
 use crate::格式化输出并换行;
 
 extern "C" {
@@ -145,15 +145,15 @@ impl MemorySet {
         );
 
         // map program headers of elf, with U flag
-        let elf = ElfFile::from(elf_data);
-        for p in elf.programs() {
-            let map_area = MapArea::new(p.va_range(), MapType::Framed, true);
+        let elf = Elf文件::解析(elf_data);
+        for p in elf.程序段列表() {
+            let map_area = MapArea::new(p.虚拟地址范围(), MapType::Framed, true);
             memory_set.push(
                 map_area,
-                Some(p.data)
+                Some(p.数据)
             );
         }
-        let last_end_va = elf.last_end_va();
+        let last_end_va = elf.最后一个程序段的结尾虚拟地址();
         let mut user_stack_bottom = last_end_va;
         // guard page
         user_stack_bottom += PAGE_SIZE;
@@ -178,7 +178,7 @@ impl MemorySet {
         (
             memory_set.page_table,
             user_stack_top,
-            elf.entry_point(),
+            elf.入口地址(),
         )
     }
     pub fn activate(&self) {
