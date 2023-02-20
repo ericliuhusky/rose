@@ -134,6 +134,7 @@ impl MemorySet {
     
     pub fn from_elf(elf_data: &[u8]) -> (PageTable, usize, usize) {
         let mut memory_set = Self::new_bare();
+        // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
         memory_set.push(
             MapArea::new(
                 __trap_entry as usize..__trap_end as usize, 
