@@ -1,42 +1,38 @@
-//! Implementation of [`FrameAllocator`] which
-//! controls all the frames in the operating system.
-
 use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整, 物理页};
-use crate::config::MEMORY_END;
+use crate::config::可用物理内存结尾地址;
 
-/// an implementation for frame allocator
-pub struct FrameAllocator {
-    current: usize,
-    end: usize,
+pub struct 物理内存管理器 {
+    应当分配的物理页号: usize,
+    可用物理内存结尾页号: usize,
 }
 
-impl FrameAllocator {
-    /// initiate the frame allocator using `ekernel` and `MEMORY_END`
-    pub fn init_frame_allocator() {
+impl 物理内存管理器 {
+    pub fn 初始化() {
         extern "C" {
+            // 内核结尾地址
             fn ekernel();
         }
         unsafe {
-            FRAME_ALLOCATOR = Self {
-                current: 将地址转为页号并向上取整(ekernel as usize) - 1,
-                end: 将地址转为页号并向下取整(MEMORY_END)
+            物理内存管理器 = Self {
+                应当分配的物理页号: 将地址转为页号并向上取整(ekernel as usize),
+                可用物理内存结尾页号: 将地址转为页号并向下取整(可用物理内存结尾地址)
             };
         }
     }
 
-    /// allocate a frame
-    pub fn frame_alloc() -> 物理页 {
+    pub fn 分配物理页() -> 物理页 {
         unsafe {
-            if FRAME_ALLOCATOR.current == FRAME_ALLOCATOR.end {
+            if 物理内存管理器.应当分配的物理页号 == 物理内存管理器.可用物理内存结尾页号 {
                 panic!()
             }
-            FRAME_ALLOCATOR.current += 1;
-            物理页(FRAME_ALLOCATOR.current)
+            let 应当分配的物理页号 = 物理内存管理器.应当分配的物理页号;
+            物理内存管理器.应当分配的物理页号 += 1;
+            物理页(应当分配的物理页号)
         }
     }
 }
 
-static mut FRAME_ALLOCATOR: FrameAllocator = FrameAllocator {
-    current: 0,
-    end: 0,
+static mut 物理内存管理器: 物理内存管理器 = 物理内存管理器 {
+    应当分配的物理页号: 0,
+    可用物理内存结尾页号: 0,
 };

@@ -2,13 +2,13 @@
 
 use crate::mm::page_table::PageTable;
 use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整, 物理页, 虚拟页};
-use crate::config::{MEMORY_END, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
+use crate::config::{可用物理内存结尾地址, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use alloc::vec::Vec;
 use core::arch::asm;
 use core::ops::Range;
 use crate::mm::elf_reader::Elf文件;
 use crate::格式化输出并换行;
-use crate::mm::frame_allocator::FrameAllocator;
+use crate::mm::frame_allocator::物理内存管理器;
 
 extern "C" {
     fn stext();
@@ -101,7 +101,7 @@ impl MemorySet {
         格式化输出并换行!("mapping physical memory");
         memory_set.push(
             MapArea::new(
-                ekernel as usize..MEMORY_END,
+                ekernel as usize..可用物理内存结尾地址,
                 MapType::Identical,
                 false,
             ),
@@ -203,6 +203,8 @@ impl MapArea {
     ) -> Self {
         let start_vpn = 将地址转为页号并向下取整(va_range.start);
         let end_vpn = 将地址转为页号并向上取整(va_range.end);
+        crate::格式化输出并换行!("aaa {:x}..{:x}", va_range.start, va_range.end);
+        crate::格式化输出并换行!("bbb {:x}..{:x}", start_vpn, end_vpn);
         Self {
             va_range,
             vpn_range: start_vpn..end_vpn,
@@ -218,7 +220,7 @@ impl MapArea {
                     ppn = 物理页(vpn);
                 }
                 MapType::Framed => {
-                    ppn = FrameAllocator::frame_alloc();
+                    ppn = 物理内存管理器::分配物理页();
                 }
             }
             page_table.map(虚拟页(vpn), ppn, self.is_user);
