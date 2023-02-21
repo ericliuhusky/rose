@@ -14,14 +14,13 @@ mod page_table;
 mod elf_reader;
 
 pub use address::{物理页, 将地址转为页号并向下取整, 虚拟页};
-pub use frame_allocator::{frame_alloc};
 pub use memory_set::{MemorySet, KERNEL_SPACE};
 pub use page_table::{PageTable, PageTableEntry};
 
 /// initiate heap allocator, frame allocator and kernel space
 pub fn init() {
     heap_allocator::init_heap();
-    frame_allocator::init_frame_allocator();
+    frame_allocator::FrameAllocator::init_frame_allocator();
     unsafe {
         KERNEL_SPACE = MemorySet::new_kernel();
         KERNEL_SPACE.activate();

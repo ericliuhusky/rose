@@ -1,6 +1,5 @@
 //! Implementation of [`MapArea`] and [`MemorySet`].
 
-use super::{frame_alloc};
 use super::{PageTable};
 use super::{物理页, 虚拟页};
 use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
@@ -10,6 +9,7 @@ use core::arch::asm;
 use core::ops::Range;
 use crate::mm::elf_reader::Elf文件;
 use crate::格式化输出并换行;
+use crate::mm::frame_allocator::FrameAllocator;
 
 extern "C" {
     fn stext();
@@ -219,7 +219,7 @@ impl MapArea {
                     ppn = 物理页(vpn);
                 }
                 MapType::Framed => {
-                    ppn = frame_alloc();
+                    ppn = FrameAllocator::frame_alloc();
                 }
             }
             page_table.map(虚拟页(vpn), ppn, self.is_user);

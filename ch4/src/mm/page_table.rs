@@ -1,11 +1,12 @@
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
 use core::ops::Range;
-use super::{frame_alloc, 物理页, 虚拟页};
+use super::{物理页, 虚拟页};
 use crate::mm::address::{页内偏移};
 use alloc::vec::Vec;
 use crate::config::TRAP_CONTEXT;
 use crate::trap::陷入上下文;
+use crate::mm::frame_allocator::FrameAllocator;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -40,7 +41,7 @@ pub struct PageTable {
 /// Assume that it won't oom when creating/mapping.
 impl PageTable {
     pub fn new() -> Self {
-        let ppn = frame_alloc();
+        let ppn = FrameAllocator::frame_alloc();
         PageTable {
             root_ppn: ppn
         }
@@ -51,7 +52,7 @@ impl PageTable {
         for i in 0..2 {
             let pte = &mut ppn.读取页表项列表()[idxs[i]];
             if !pte.is_valid() {
-                let ppn = frame_alloc();
+                let ppn = FrameAllocator::frame_alloc();
                 *pte = PageTableEntry::new_pointer(ppn);
             }
             ppn = pte.ppn();
