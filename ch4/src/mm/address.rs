@@ -50,14 +50,20 @@ impl 物理页 {
 
     pub fn 读取页表项列表(&self) -> &'static mut [PageTableEntry] {
         let pa = self.起始地址();
-        unsafe { core::slice::from_raw_parts_mut(pa as *mut PageTableEntry, 512) }
+        unsafe {
+            &mut *(pa as *mut [PageTableEntry; 512])
+        }
     }
     pub fn 读取字节列表(&self) -> &'static mut [u8] {
         let pa = self.起始地址();
-        unsafe { core::slice::from_raw_parts_mut(pa as *mut u8, 4096) }
+        unsafe {
+            &mut *(pa as *mut [u8; 4096])
+        }
     }
     pub fn 以某种类型来读取<T>(&self) -> &'static mut T {
         let pa = self.起始地址();
-        unsafe { (pa as *mut T).as_mut().unwrap() }
+        unsafe {
+            &mut *(pa as *mut T)
+        }
     }
 }
