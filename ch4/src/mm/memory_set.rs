@@ -1,8 +1,7 @@
 //! Implementation of [`MapArea`] and [`MemorySet`].
 
-use super::{PageTable};
-use super::{物理页, 虚拟页};
-use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
+use crate::mm::page_table::PageTable;
+use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整, 物理页, 虚拟页};
 use crate::config::{MEMORY_END, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use alloc::vec::Vec;
 use core::arch::asm;

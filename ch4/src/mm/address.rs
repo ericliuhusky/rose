@@ -1,4 +1,4 @@
-use super::PageTableEntry;
+use crate::mm::page_table::PageTableEntry;
 
 
 #[derive(Copy, Clone)]

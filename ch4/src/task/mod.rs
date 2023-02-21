@@ -1,7 +1,7 @@
 mod task;
 
 use crate::loader::{读取应用数目, 读取应用数据};
-use crate::mm::PageTable;
+use crate::mm::page_table::PageTable;
 use alloc::vec::Vec;
 use task::{任务, 任务状态};
 use crate::格式化输出并换行;

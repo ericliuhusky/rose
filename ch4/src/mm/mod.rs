@@ -9,13 +9,11 @@
 mod address;
 mod frame_allocator;
 mod heap_allocator;
-mod memory_set;
-mod page_table;
+pub mod memory_set;
+pub mod page_table;
 mod elf_reader;
 
-pub use address::{物理页, 将地址转为页号并向下取整, 虚拟页};
-pub use memory_set::{MemorySet, KERNEL_SPACE};
-pub use page_table::{PageTable, PageTableEntry};
+use memory_set::{MemorySet, KERNEL_SPACE};
 
 /// initiate heap allocator, frame allocator and kernel space
 pub fn init() {

@@ -1,4 +1,5 @@
-use crate::mm::{MemorySet, KERNEL_SPACE, PageTable};
+use crate::mm::memory_set::{MemorySet, KERNEL_SPACE};
+use crate::mm::page_table::PageTable;
 use crate::trap::{陷入上下文};
 
 pub struct 任务 {

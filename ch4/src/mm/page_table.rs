@@ -1,8 +1,7 @@
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
 use core::ops::Range;
-use super::{物理页, 虚拟页};
-use crate::mm::address::{页内偏移};
+use crate::mm::address::{页内偏移, 物理页, 虚拟页};
 use alloc::vec::Vec;
 use crate::config::TRAP_CONTEXT;
 use crate::trap::陷入上下文;
