@@ -8,7 +8,6 @@
 
 mod address;
 mod frame_allocator;
-mod heap_allocator;
 pub mod memory_set;
 pub mod page_table;
 mod elf_reader;
@@ -17,10 +16,27 @@ use memory_set::{MemorySet, KERNEL_SPACE};
 
 /// initiate heap allocator, frame allocator and kernel space
 pub fn init() {
-    heap_allocator::初始化();
+    堆::初始化();
     frame_allocator::物理内存管理器::初始化();
     unsafe {
         KERNEL_SPACE = MemorySet::new_kernel();
         KERNEL_SPACE.activate();
+    }
+}
+
+mod 堆 {
+    use buddy_system_allocator::LockedHeap;
+
+    static mut 内核堆: [u8; 0x30_0000] = [0; 0x30_0000];
+
+    #[global_allocator]
+    static 堆管理器: LockedHeap = LockedHeap::empty();
+
+    pub fn 初始化() {
+        unsafe {
+            堆管理器
+                .lock()
+                .init(内核堆.as_ptr() as usize, 内核堆.len());
+        }
     }
 }
