@@ -4,7 +4,7 @@ use super::{frame_alloc};
 use super::{PageTable};
 use super::{物理页, 虚拟页};
 use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
-use crate::config::{MEMORY_END, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, USER_STACK_SIZE, 内核栈栈底, 内核栈栈顶};
+use crate::config::{MEMORY_END, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use alloc::vec::Vec;
 use core::arch::asm;
 use core::ops::Range;
@@ -154,7 +154,7 @@ impl MemorySet {
             );
         }
         let user_stack_bottom = elf.最后一个程序段的结尾虚拟地址();
-        let user_stack_top = user_stack_bottom + USER_STACK_SIZE;
+        let user_stack_top = user_stack_bottom + 0x2000;
         memory_set.push(
             MapArea::new(
                 user_stack_bottom..user_stack_top,
