@@ -1,5 +1,4 @@
 use super::PageTableEntry;
-use crate::config::PAGE_SIZE_BITS;
 
 
 #[derive(Copy, Clone)]
@@ -11,10 +10,10 @@ pub struct 虚拟页(pub usize);
 
 
 pub fn 将地址转为页号并向下取整(v: usize) -> usize {
-    v >> PAGE_SIZE_BITS
+    v >> 12
 }
 pub fn 将地址转为页号并向上取整(v: usize) -> usize {
-    (v + (1 << PAGE_SIZE_BITS) - 1) >> PAGE_SIZE_BITS
+    (v + (1 << 12) - 1) >> 12
 }
 pub fn 页内偏移(v: usize) -> usize {
     v & 0xfff
@@ -36,7 +35,7 @@ impl 虚拟页 {
     }
 
     pub fn 起始地址(&self) -> usize {
-        self.0 << PAGE_SIZE_BITS
+        self.0 << 12
     }
 
     pub fn 下一页(&self) -> Self {
@@ -46,7 +45,7 @@ impl 虚拟页 {
 
 impl 物理页 {
     fn 起始地址(&self) -> usize {
-        self.0 << PAGE_SIZE_BITS
+        self.0 << 12
     }
 
     pub fn 读取页表项列表(&self) -> &'static mut [PageTableEntry] {
