@@ -2,8 +2,8 @@
 
 use super::{frame_alloc};
 use super::{PageTable};
-use super::{PhysPageNum, VirtPageNum};
-use crate::mm::address::{floor, ceil};
+use super::{物理页, 虚拟页};
+use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
 use crate::config::{MEMORY_END, MMIO, PAGE_SIZE, TRAP_CONTEXT, TRAP_CONTEXT_END, USER_STACK_SIZE, 内核栈栈底, 内核栈栈顶};
 use alloc::vec::Vec;
 use core::arch::asm;
@@ -27,7 +27,7 @@ extern "C" {
 
 pub static mut KERNEL_SPACE: MemorySet = MemorySet {
     page_table: PageTable {
-        root_ppn: PhysPageNum(0),
+        root_ppn: 物理页(0),
     },
     areas: Vec::new(),
 };
@@ -205,8 +205,8 @@ impl MapArea {
         map_type: MapType,
         is_user: bool,
     ) -> Self {
-        let start_vpn = floor(va_range.start);
-        let end_vpn = ceil(va_range.end);
+        let start_vpn = 将地址转为页号并向下取整(va_range.start);
+        let end_vpn = 将地址转为页号并向上取整(va_range.end);
         Self {
             va_range,
             vpn_range: start_vpn..end_vpn,
@@ -216,16 +216,16 @@ impl MapArea {
     }
     pub fn map(&self, page_table: &mut PageTable) {
         for vpn in self.vpn_range.clone() {
-            let ppn: PhysPageNum;
+            let ppn: 物理页;
             match self.map_type {
                 MapType::Identical => {
-                    ppn = PhysPageNum(vpn);
+                    ppn = 物理页(vpn);
                 }
                 MapType::Framed => {
                     ppn = frame_alloc();
                 }
             }
-            page_table.map(VirtPageNum(vpn), ppn, self.is_user);
+            page_table.map(虚拟页(vpn), ppn, self.is_user);
         }
     }
     /// data: start-aligned but maybe with shorter length

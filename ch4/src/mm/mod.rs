@@ -13,7 +13,7 @@ mod memory_set;
 mod page_table;
 mod elf_reader;
 
-pub use address::{PhysPageNum, floor, VirtPageNum};
+pub use address::{物理页, 将地址转为页号并向下取整, 虚拟页};
 pub use frame_allocator::{frame_alloc};
 pub use memory_set::{MemorySet, KERNEL_SPACE};
 pub use page_table::{PageTable, PageTableEntry};

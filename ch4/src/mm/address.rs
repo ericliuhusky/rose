@@ -1,35 +1,31 @@
-//! Implementation of physical and virtual address and page number.
-
 use super::PageTableEntry;
 use crate::config::PAGE_SIZE_BITS;
 
 
-/// physical page number
 #[derive(Copy, Clone)]
-pub struct PhysPageNum(pub usize);
+pub struct 物理页(pub usize);
 
-/// virtual page number
 #[derive(Copy, Clone)]
-pub struct VirtPageNum(pub usize);
+pub struct 虚拟页(pub usize);
 
 
 
-pub fn floor(v: usize) -> usize {
+pub fn 将地址转为页号并向下取整(v: usize) -> usize {
     v >> PAGE_SIZE_BITS
 }
-pub fn ceil(v: usize) -> usize {
+pub fn 将地址转为页号并向上取整(v: usize) -> usize {
     (v + (1 << PAGE_SIZE_BITS) - 1) >> PAGE_SIZE_BITS
 }
-pub fn page_offset(v: usize) -> usize {
+pub fn 页内偏移(v: usize) -> usize {
     v & 0xfff
 }
 
-impl VirtPageNum {
-    pub fn from(address: usize) -> Self {
-        VirtPageNum(floor(address))
+impl 虚拟页 {
+    pub fn 地址所在的虚拟页(虚拟地址: usize) -> Self {
+        虚拟页(将地址转为页号并向下取整(虚拟地址))
     }
 
-    pub fn indexes(&self) -> [usize; 3] {
+    pub fn 页表项索引列表(&self) -> [usize; 3] {
         let mut vpn = self.0;
         let mut idx = [0usize; 3];
         for i in (0..3).rev() {
@@ -39,34 +35,30 @@ impl VirtPageNum {
         idx
     }
 
-    pub fn address(&self) -> usize {
+    pub fn 起始地址(&self) -> usize {
         self.0 << PAGE_SIZE_BITS
     }
 
-    pub fn next(&self) -> Self {
-        VirtPageNum(self.0 + 1)
+    pub fn 下一页(&self) -> Self {
+        虚拟页(self.0 + 1)
     }
 }
 
-impl PhysPageNum {
-    pub fn from(address: usize) -> Self {
-        PhysPageNum(floor(address))
-    }
-
-    pub fn address(&self) -> usize {
+impl 物理页 {
+    fn 起始地址(&self) -> usize {
         self.0 << PAGE_SIZE_BITS
     }
 
-    pub fn get_pte_array(&self) -> &'static mut [PageTableEntry] {
-        let pa = self.address();
+    pub fn 读取页表项列表(&self) -> &'static mut [PageTableEntry] {
+        let pa = self.起始地址();
         unsafe { core::slice::from_raw_parts_mut(pa as *mut PageTableEntry, 512) }
     }
-    pub fn get_bytes_array(&self) -> &'static mut [u8] {
-        let pa = self.address();
+    pub fn 读取字节列表(&self) -> &'static mut [u8] {
+        let pa = self.起始地址();
         unsafe { core::slice::from_raw_parts_mut(pa as *mut u8, 4096) }
     }
-    pub fn get_mut<T>(&self) -> &'static mut T {
-        let pa = self.address();
+    pub fn 以某种类型来读取<T>(&self) -> &'static mut T {
+        let pa = self.起始地址();
         unsafe { (pa as *mut T).as_mut().unwrap() }
     }
 }

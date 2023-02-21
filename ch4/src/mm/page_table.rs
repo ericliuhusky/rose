@@ -1,8 +1,8 @@
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
 use core::ops::Range;
-use super::{frame_alloc, PhysPageNum, VirtPageNum};
-use crate::mm::address::{page_offset};
+use super::{frame_alloc, 物理页, 虚拟页};
+use crate::mm::address::{页内偏移};
 use alloc::vec::Vec;
 use crate::config::TRAP_CONTEXT;
 use crate::trap::陷入上下文;
@@ -13,7 +13,7 @@ use crate::trap::陷入上下文;
 pub struct PageTableEntry(usize);
 
 impl PageTableEntry {
-    pub fn new_address(ppn: PhysPageNum, is_user: bool) -> Self {
+    pub fn new_address(ppn: 物理页, is_user: bool) -> Self {
         let mut flags = 0xf;
         if is_user {
             flags |= 0x10;
@@ -21,11 +21,11 @@ impl PageTableEntry {
         PageTableEntry(ppn.0 << 10 | flags)
     }
 
-    pub fn new_pointer(ppn: PhysPageNum) -> Self {
+    pub fn new_pointer(ppn: 物理页) -> Self {
         PageTableEntry(ppn.0 << 10 | 0x1)
     }
-    pub fn ppn(&self) -> PhysPageNum {
-        PhysPageNum(self.0 >> 10)
+    pub fn ppn(&self) -> 物理页 {
+        物理页(self.0 >> 10)
     }
     pub fn is_valid(&self) -> bool {
         self.0 & 0x1 == 1
@@ -34,7 +34,7 @@ impl PageTableEntry {
 
 /// page table structure
 pub struct PageTable {
-    pub root_ppn: PhysPageNum
+    pub root_ppn: 物理页
 }
 
 /// Assume that it won't oom when creating/mapping.
@@ -45,25 +45,25 @@ impl PageTable {
             root_ppn: ppn
         }
     }
-    fn find_pte_create(&self, vpn: VirtPageNum) -> &mut PageTableEntry {
-        let idxs = vpn.indexes();
+    fn find_pte_create(&self, vpn: 虚拟页) -> &mut PageTableEntry {
+        let idxs = vpn.页表项索引列表();
         let mut ppn = self.root_ppn;
         for i in 0..2 {
-            let pte = &mut ppn.get_pte_array()[idxs[i]];
+            let pte = &mut ppn.读取页表项列表()[idxs[i]];
             if !pte.is_valid() {
                 let ppn = frame_alloc();
                 *pte = PageTableEntry::new_pointer(ppn);
             }
             ppn = pte.ppn();
         }
-        let pte = &mut ppn.get_pte_array()[idxs[2]];
+        let pte = &mut ppn.读取页表项列表()[idxs[2]];
         pte
     }
-    fn find_pte(&self, vpn: VirtPageNum) -> PhysPageNum {
-        let idxs = vpn.indexes();
+    fn find_pte(&self, vpn: 虚拟页) -> 物理页 {
+        let idxs = vpn.页表项索引列表();
         let mut ppn = self.root_ppn;
         for i in 0..3 {
-            let pte = ppn.get_pte_array()[idxs[i]];
+            let pte = ppn.读取页表项列表()[idxs[i]];
             if !pte.is_valid() {
                 panic!()
             }
@@ -71,12 +71,12 @@ impl PageTable {
         }
         ppn
     }
-    pub fn map(&self, vpn: VirtPageNum, ppn: PhysPageNum, is_user: bool) {
+    pub fn map(&self, vpn: 虚拟页, ppn: 物理页, is_user: bool) {
         let pte = self.find_pte_create(vpn);
         assert!(!pte.is_valid());
         *pte = PageTableEntry::new_address(ppn, is_user);
     }
-    pub fn translate(&self, vpn: VirtPageNum) -> PhysPageNum {
+    pub fn translate(&self, vpn: 虚拟页) -> 物理页 {
         self.find_pte(vpn)
     }
     pub fn translated_byte_buffer(&self, va_range: Range<usize>) -> Vec<&'static mut [u8]> {
@@ -84,21 +84,21 @@ impl PageTable {
         let end = va_range.end;
         let mut v = Vec::new();
         while start < end {
-            let vpn = VirtPageNum::from(start);
+            let vpn = 虚拟页::地址所在的虚拟页(start);
             let ppn = self.translate(vpn);
-            let next_addr = vpn.next().address();
+            let next_addr = vpn.下一页().起始地址();
             if next_addr <= end {
-                v.push(&mut ppn.get_bytes_array()[page_offset(start)..]);
+                v.push(&mut ppn.读取字节列表()[页内偏移(start)..]);
             } else {
-                v.push(&mut ppn.get_bytes_array()[page_offset(start)..page_offset(end)]);
+                v.push(&mut ppn.读取字节列表()[页内偏移(start)..页内偏移(end)]);
             }
             start = next_addr;
         }
         v
     }
     pub fn translated_trap_context(&self) -> &mut 陷入上下文 {
-        let trap_cx_ppn = self.translate(VirtPageNum::from(TRAP_CONTEXT));
-        let trap_cx = trap_cx_ppn.get_mut();
+        let trap_cx_ppn = self.translate(虚拟页::地址所在的虚拟页(TRAP_CONTEXT));
+        let trap_cx = trap_cx_ppn.以某种类型来读取();
         trap_cx
     }
     pub fn token(&self) -> usize {

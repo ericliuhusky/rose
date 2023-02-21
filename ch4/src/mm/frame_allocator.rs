@@ -1,8 +1,8 @@
 //! Implementation of [`FrameAllocator`] which
 //! controls all the frames in the operating system.
 
-use super::{PhysPageNum};
-use crate::mm::address::{floor, ceil};
+use super::{物理页};
+use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
 use crate::config::MEMORY_END;
 
 /// an implementation for frame allocator
@@ -17,17 +17,17 @@ impl FrameAllocator {
             fn ekernel();
         }
         Self {
-            current: ceil(ekernel as usize),
-            end: floor(MEMORY_END)
+            current: 将地址转为页号并向上取整(ekernel as usize),
+            end: 将地址转为页号并向下取整(MEMORY_END)
         }
     }
 
-    fn alloc(&mut self) -> PhysPageNum {
+    fn alloc(&mut self) -> 物理页 {
         if self.current == self.end {
             panic!()
         }
         self.current += 1;
-        PhysPageNum(self.current - 1)
+        物理页(self.current - 1)
     }
 }
 
@@ -44,7 +44,7 @@ pub fn init_frame_allocator() {
 }
 
 /// allocate a frame
-pub fn frame_alloc() -> PhysPageNum {
+pub fn frame_alloc() -> 物理页 {
     unsafe {
         FRAME_ALLOCATOR.alloc()
     }
