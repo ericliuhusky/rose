@@ -13,7 +13,7 @@ pub fn 将地址转为页号并向下取整(v: usize) -> usize {
     v >> 12
 }
 pub fn 将地址转为页号并向上取整(v: usize) -> usize {
-    (v + (1 << 12) - 1) >> 12
+    (v + 0xfff) >> 12
 }
 pub fn 页内偏移(v: usize) -> usize {
     v & 0xfff
