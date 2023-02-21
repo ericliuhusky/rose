@@ -17,7 +17,7 @@ use memory_set::{MemorySet, KERNEL_SPACE};
 
 /// initiate heap allocator, frame allocator and kernel space
 pub fn init() {
-    heap_allocator::init_heap();
+    heap_allocator::初始化();
     frame_allocator::物理内存管理器::初始化();
     unsafe {
         KERNEL_SPACE = MemorySet::new_kernel();
