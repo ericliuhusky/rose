@@ -20,10 +20,6 @@ pub fn 页内偏移(v: usize) -> usize {
 }
 
 impl 虚拟页 {
-    pub fn 地址所在的虚拟页(虚拟地址: usize) -> Self {
-        虚拟页(将地址转为页号并向下取整(虚拟地址))
-    }
-
     pub fn 页表项索引列表(&self) -> [usize; 3] {
         let mut vpn = self.0;
         let mut idx = [0usize; 3];
