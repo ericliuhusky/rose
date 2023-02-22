@@ -4,7 +4,6 @@ use crate::mm::page_table::PageTableEntry;
 #[derive(Copy, Clone)]
 pub struct 物理页(pub usize);
 
-#[derive(Copy, Clone)]
 pub struct 虚拟页(pub usize);
 
 
