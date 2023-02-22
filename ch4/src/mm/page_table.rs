@@ -7,6 +7,7 @@ use crate::config::{TRAP_CONTEXT, TRAP_CONTEXT_END};
 use crate::trap::陷入上下文;
 use crate::mm::frame_allocator::物理内存管理器;
 use super::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
+use super::memory_set::MapArea;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -92,10 +93,9 @@ impl PageTable {
         v
     }
     fn translated_page(&self, va_range: Range<usize>) -> Vec<物理页> {
-        let start = 将地址转为页号并向下取整(va_range.start);
-        let end = 将地址转为页号并向上取整(va_range.end);
+        let vpn_range = MapArea::new(va_range).vpn_range;
         let mut ppns = Vec::new();
-        for vpn in start..end {
+        for vpn in vpn_range {
             let vpn = 虚拟页(vpn);
             let ppn = self.translate(vpn);
             ppns.push(ppn);

@@ -172,7 +172,7 @@ impl MemorySet {
 /// map area structure, controls a contiguous piece of virtual memory
 pub struct MapArea {
     va_range: Range<usize>,
-    vpn_range: Range<usize>,
+    pub vpn_range: Range<usize>,
     对齐到分页的地址范围: Range<usize>,
 }
 
@@ -182,8 +182,6 @@ impl MapArea {
         let 对齐到分页的结尾地址 = 对齐到分页向上取整(va_range.end);
         let start_vpn = 将地址转为页号(对齐到分页的起始地址);
         let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
-        crate::格式化输出并换行!("aaa {:x}..{:x}", va_range.start, va_range.end);
-        crate::格式化输出并换行!("bbb {:x}..{:x}", start_vpn, end_vpn);
         Self {
             va_range,
             vpn_range: start_vpn..end_vpn,
