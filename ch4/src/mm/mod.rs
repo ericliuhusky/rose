@@ -11,6 +11,7 @@ mod frame_allocator;
 pub mod memory_set;
 pub mod page_table;
 mod elf_reader;
+mod map_area;
 
 use memory_set::{MemorySet, KERNEL_SPACE};
 

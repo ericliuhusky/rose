@@ -1,6 +1,6 @@
 use crate::mm::address::物理页;
 use crate::config::可用物理内存结尾地址;
-use crate::mm::memory_set::MapArea;
+use crate::mm::map_area::MapArea;
 
 pub struct 物理内存管理器 {
     应当分配的物理页号: usize,
