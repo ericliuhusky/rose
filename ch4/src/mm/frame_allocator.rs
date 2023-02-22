@@ -1,5 +1,6 @@
-use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整, 物理页};
+use crate::mm::address::物理页;
 use crate::config::可用物理内存结尾地址;
+use crate::mm::memory_set::MapArea;
 
 pub struct 物理内存管理器 {
     应当分配的物理页号: usize,
@@ -13,9 +14,11 @@ impl 物理内存管理器 {
             fn ekernel();
         }
         unsafe {
+            let 可分配的页号范围 = MapArea::新建内嵌于地址范围的逻辑段(ekernel as usize..可用物理内存结尾地址).vpn_range;
+
             物理内存管理器 = Self {
-                应当分配的物理页号: 将地址转为页号并向上取整(ekernel as usize),
-                可用物理内存结尾页号: 将地址转为页号并向下取整(可用物理内存结尾地址)
+                应当分配的物理页号: 可分配的页号范围.start,
+                可用物理内存结尾页号: 可分配的页号范围.end
             };
         }
     }
