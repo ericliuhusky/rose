@@ -31,8 +31,12 @@ impl 虚拟页 {
 }
 
 impl 物理页 {
-    fn 起始地址(&self) -> usize {
+    pub fn 起始地址(&self) -> usize {
         self.0 << 12
+    }
+
+    pub fn 结尾地址(&self) -> usize {
+        (self.0 + 1) << 12
     }
 
     pub fn 读取页表项列表(&self) -> &'static mut [PageTableEntry] {

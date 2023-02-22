@@ -110,15 +110,15 @@ impl PageTable {
         for i in 0..ppns.len() {
             let pa_start;
             if i == 0 {
-                pa_start = (ppns[i].0 << 12) + 页内偏移(va_start);
+                pa_start = ppns[i].起始地址() + 页内偏移(va_start);
             } else {
-                pa_start = ppns[i].0 << 12;
+                pa_start = ppns[i].起始地址();
             }
             let pa_end;
             if i == ppns.len() - 1 {
-                pa_end = (ppns[i].0 << 12) + 页内偏移(va_end);
+                pa_end = ppns[i].起始地址() + 页内偏移(va_end);
             } else {
-                pa_end = (ppns[i].0 + 1) << 12;
+                pa_end = ppns[i].结尾地址();
             }
             pa_ranges.push(pa_start..pa_end);
         }
