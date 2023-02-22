@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 use crate::config::TRAP_CONTEXT;
 use crate::trap::陷入上下文;
 use crate::mm::frame_allocator::物理内存管理器;
+use super::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -79,22 +80,49 @@ impl PageTable {
     pub fn translate(&self, vpn: 虚拟页) -> 物理页 {
         self.find_pte(vpn)
     }
-    pub fn translated_byte_buffer(&self, va_range: Range<usize>) -> Vec<&'static mut [u8]> {
-        let mut start = va_range.start;
-        let end = va_range.end;
+    pub fn translated_byte_buffer(&self, va_range: Range<usize>) -> Vec<&'static mut [u8]> {        
         let mut v = Vec::new();
-        while start < end {
-            let vpn = 虚拟页::地址所在的虚拟页(start);
-            let ppn = self.translate(vpn);
-            let next_addr = vpn.下一页().起始地址();
-            if next_addr <= end {
-                v.push(&mut ppn.读取字节列表()[页内偏移(start)..]);
-            } else {
-                v.push(&mut ppn.读取字节列表()[页内偏移(start)..页内偏移(end)]);
-            }
-            start = next_addr;
+        let pa_ranges = self.translated_address(va_range);
+        for pa_range in pa_ranges {
+            let bytes = unsafe {
+                core::slice::from_raw_parts_mut(pa_range.start as *mut u8, pa_range.len())
+            };
+            v.push(bytes);
         }
         v
+    }
+    fn translated_page(&self, va_range: Range<usize>) -> Vec<物理页> {
+        let start = 将地址转为页号并向下取整(va_range.start);
+        let end = 将地址转为页号并向上取整(va_range.end);
+        let mut ppns = Vec::new();
+        for vpn in start..end {
+            let vpn = 虚拟页(vpn);
+            let ppn = self.translate(vpn);
+            ppns.push(ppn);
+        }
+        ppns
+    }
+    fn translated_address(&self, va_range: Range<usize>) -> Vec<Range<usize>> {
+        let va_start = va_range.start;
+        let va_end = va_range.end;
+        let ppns = self.translated_page(va_range);
+        let mut pa_ranges = Vec::new();
+        for i in 0..ppns.len() {
+            let pa_start;
+            if i == 0 {
+                pa_start = (ppns[i].0 << 12) + 页内偏移(va_start);
+            } else {
+                pa_start = ppns[i].0 << 12;
+            }
+            let pa_end;
+            if i == ppns.len() - 1 {
+                pa_end = (ppns[i].0 << 12) + 页内偏移(va_end);
+            } else {
+                pa_end = (ppns[i].0 + 1) << 12;
+            }
+            pa_ranges.push(pa_start..pa_end);
+        }
+        pa_ranges
     }
     pub fn translated_trap_context(&self) -> &mut 陷入上下文 {
         let trap_cx_ppn = self.translate(虚拟页::地址所在的虚拟页(TRAP_CONTEXT));
