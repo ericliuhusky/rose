@@ -33,14 +33,6 @@ impl 虚拟页 {
         }
         idx
     }
-
-    pub fn 起始地址(&self) -> usize {
-        self.0 << 12
-    }
-
-    pub fn 下一页(&self) -> Self {
-        虚拟页(self.0 + 1)
-    }
 }
 
 impl 物理页 {
@@ -52,12 +44,6 @@ impl 物理页 {
         let pa = self.起始地址();
         unsafe {
             &mut *(pa as *mut [PageTableEntry; 512])
-        }
-    }
-    pub fn 读取字节列表(&self) -> &'static mut [u8] {
-        let pa = self.起始地址();
-        unsafe {
-            &mut *(pa as *mut [u8; 4096])
         }
     }
     pub fn 以某种类型来读取<T>(&self) -> &'static mut T {
