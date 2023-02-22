@@ -1,7 +1,7 @@
 //! Implementation of [`MapArea`] and [`MemorySet`].
 
 use crate::mm::page_table::PageTable;
-use crate::mm::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整, 物理页, 虚拟页};
+use crate::mm::address::{将地址转为页号, 物理页, 虚拟页, 对齐到分页向下取整, 对齐到分页向上取整};
 use crate::config::{可用物理内存结尾地址, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use alloc::vec::Vec;
 use core::arch::asm;
@@ -192,6 +192,7 @@ impl MemorySet {
 pub struct MapArea {
     va_range: Range<usize>,
     vpn_range: Range<usize>,
+    对齐到分页的地址范围: Range<usize>,
     map_type: MapType,
     is_user: bool,
 }
@@ -202,13 +203,16 @@ impl MapArea {
         map_type: MapType,
         is_user: bool,
     ) -> Self {
-        let start_vpn = 将地址转为页号并向下取整(va_range.start);
-        let end_vpn = 将地址转为页号并向上取整(va_range.end);
+        let 对齐到分页的起始地址 = 对齐到分页向下取整(va_range.start);
+        let 对齐到分页的结尾地址 = 对齐到分页向上取整(va_range.end);
+        let start_vpn = 将地址转为页号(对齐到分页的起始地址);
+        let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
         crate::格式化输出并换行!("aaa {:x}..{:x}", va_range.start, va_range.end);
         crate::格式化输出并换行!("bbb {:x}..{:x}", start_vpn, end_vpn);
         Self {
             va_range,
             vpn_range: start_vpn..end_vpn,
+            对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址,
             map_type,
             is_user,
         }
