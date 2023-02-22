@@ -80,6 +80,20 @@ impl PageTable {
     pub fn translate(&self, vpn: 虚拟页) -> 物理页 {
         self.find_pte(vpn)
     }
+    pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
+        let dsts = self.translated_byte_buffer(va_range);
+        let mut i = 0;
+        for dst in dsts {
+            if i >= data.len() {
+                break;
+            }
+            let src = &data[i..i + dst.len()];
+            i += dst.len();
+            for i in 0..dst.len() {
+                dst[i] = src[i];
+            }
+        }
+    }
     pub fn translated_byte_buffer(&self, va_range: Range<usize>) -> Vec<&'static mut [u8]> {        
         let mut v = Vec::new();
         let pa_ranges = self.translated_address(va_range);

@@ -46,7 +46,7 @@ impl MemorySet {
     fn push(&mut self, map_area: MapArea, data: Option<&[u8]>, map_type: MapType, is_user: bool) {
         map_area.map(&mut self.page_table, map_type, is_user);
         if let Some(data) = data {
-            map_area.copy_data(&mut self.page_table, data);
+            self.page_table.write(map_area.va_range.clone(), data);
         }
         self.areas.push(map_area);
     }
