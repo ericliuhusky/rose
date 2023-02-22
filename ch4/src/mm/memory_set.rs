@@ -64,45 +64,35 @@ impl MemorySet {
         );
         格式化输出并换行!("mapping .text section");
         memory_set.push(
-            MapArea::new(
-                stext as usize..etext as usize,
-            ),
+            MapArea::new(stext as usize..etext as usize),
             None,
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .rodata section");
         memory_set.push(
-            MapArea::new(
-                srodata as usize..erodata as usize,
-            ),
+            MapArea::new(srodata as usize..erodata as usize),
             None,
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .data section");
         memory_set.push(
-            MapArea::new(
-                sdata as usize..edata as usize,
-            ),
+            MapArea::new(sdata as usize..edata as usize),
             None,
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .bss section");
         memory_set.push(
-            MapArea::new(
-                sbss_with_stack as usize..ebss as usize,
-            ),
+            MapArea::new(sbss_with_stack as usize..ebss as usize),
             None,
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping physical memory");
         memory_set.push(
-            MapArea::new(
-                ekernel as usize..可用物理内存结尾地址,
-            ),
+            MapArea::new(ekernel as usize..可用物理内存结尾地址),
             None,
             MapType::Identical,
             false,
@@ -110,9 +100,7 @@ impl MemorySet {
         格式化输出并换行!("mapping memory-mapped registers");
         for pair in MMIO {
             memory_set.push(
-                MapArea::new(
-                    (*pair).0..(*pair).0 + (*pair).1,
-                ),
+                MapArea::new((*pair).0..(*pair).0 + (*pair).1),
                 None,
                 MapType::Identical,
                 false,
@@ -120,9 +108,7 @@ impl MemorySet {
         }
         // 内核栈
         memory_set.push(
-            MapArea::new(
-                内核栈栈底..内核栈栈顶,
-            ), 
+            MapArea::new(内核栈栈底..内核栈栈顶), 
             None,
             MapType::Framed,
             false
@@ -135,9 +121,7 @@ impl MemorySet {
         let mut memory_set = Self::new_bare();
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
         memory_set.push(
-            MapArea::new(
-                __trap_entry as usize..__trap_end as usize, 
-            ),
+            MapArea::new(__trap_entry as usize..__trap_end as usize),
             None,
             MapType::Identical, 
             false
@@ -158,18 +142,14 @@ impl MemorySet {
         let user_stack_bottom = 对齐到分页向上取整(最后一个程序段的结尾虚拟地址);
         let user_stack_top = user_stack_bottom + 0x2000;
         memory_set.push(
-            MapArea::new(
-                user_stack_bottom..user_stack_top,
-            ),
+            MapArea::new(user_stack_bottom..user_stack_top),
             None,
             MapType::Framed,
             true,
         );
         // map TrapContext
         memory_set.push(
-            MapArea::new(
-                TRAP_CONTEXT..TRAP_CONTEXT_END,
-            ),
+            MapArea::new(TRAP_CONTEXT..TRAP_CONTEXT_END),
             None,
             MapType::Framed,
             false,
@@ -183,7 +163,6 @@ impl MemorySet {
     pub fn activate(&self) {
         let satp = self.page_table.token();
         unsafe {
-            // core::arch::asm!("csrrw x0, {1}, {0}", in(reg) bits, 0x180)
             core::arch::asm!("csrw satp, {}", in(reg) satp);
             asm!("sfence.vma");
         }
@@ -198,9 +177,7 @@ pub struct MapArea {
 }
 
 impl MapArea {
-    pub fn new(
-        va_range: Range<usize>,
-    ) -> Self {
+    pub fn new(va_range: Range<usize>) -> Self {
         let 对齐到分页的起始地址 = 对齐到分页向下取整(va_range.start);
         let 对齐到分页的结尾地址 = 对齐到分页向上取整(va_range.end);
         let start_vpn = 将地址转为页号(对齐到分页的起始地址);
