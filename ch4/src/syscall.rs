@@ -24,11 +24,10 @@ mod 系统调用_输出 {
 
     pub fn 系统调用_输出(字节串指针: *const u8, 字节串长度: usize) -> isize {
         let page_table = 任务管理器::当前页表();
-        let 字节串列表 = page_table.translated_byte_buffer(字节串指针 as usize..字节串指针 as usize + 字节串长度);
-        for 字节串 in 字节串列表 {
-            let 字符串 = core::str::from_utf8(字节串).unwrap();
-            输出(字符串);
-        }
+        let va_range = 字节串指针 as usize..字节串指针 as usize + 字节串长度;
+        let 字节串 = page_table.read(va_range);
+        let 字符串 = core::str::from_utf8(&字节串).unwrap();
+        输出(字符串);
         字节串长度 as isize
     }
 }

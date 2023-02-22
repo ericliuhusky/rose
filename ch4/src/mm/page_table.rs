@@ -94,7 +94,17 @@ impl PageTable {
             }
         }
     }
-    pub fn translated_byte_buffer(&self, va_range: Range<usize>) -> Vec<&'static mut [u8]> {        
+    pub fn read(&self, va_range: Range<usize>) -> Vec<u8> {
+        let bytes_array = self.translated_byte_buffer(va_range);
+        let mut v = Vec::new();
+        for bytes in bytes_array {
+            for byte in bytes {
+                v.push(byte.clone());
+            }
+        }
+        v
+    }
+    fn translated_byte_buffer(&self, va_range: Range<usize>) -> Vec<&'static mut [u8]> {        
         let mut v = Vec::new();
         let pa_ranges = self.translated_address(va_range);
         for pa_range in pa_ranges {
