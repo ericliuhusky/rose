@@ -3,7 +3,7 @@
 use core::ops::Range;
 use crate::mm::address::{页内偏移, 物理页, 虚拟页};
 use alloc::vec::Vec;
-use crate::config::TRAP_CONTEXT;
+use crate::config::{TRAP_CONTEXT, TRAP_CONTEXT_END};
 use crate::trap::陷入上下文;
 use crate::mm::frame_allocator::物理内存管理器;
 use super::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
@@ -125,9 +125,10 @@ impl PageTable {
         pa_ranges
     }
     pub fn translated_trap_context(&self) -> &mut 陷入上下文 {
-        let trap_cx_ppn = self.translate(虚拟页::地址所在的虚拟页(TRAP_CONTEXT));
-        let trap_cx = trap_cx_ppn.以某种类型来读取();
-        trap_cx
+        let pa_ranges = self.translated_address(TRAP_CONTEXT..TRAP_CONTEXT_END);
+        unsafe {
+            &mut *(pa_ranges[0].start as *mut 陷入上下文)
+        }
     }
     pub fn token(&self) -> usize {
         8usize << 60 | self.root_ppn.0

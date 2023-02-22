@@ -46,10 +46,4 @@ impl 物理页 {
             &mut *(pa as *mut [PageTableEntry; 512])
         }
     }
-    pub fn 以某种类型来读取<T>(&self) -> &'static mut T {
-        let pa = self.起始地址();
-        unsafe {
-            &mut *(pa as *mut T)
-        }
-    }
 }
