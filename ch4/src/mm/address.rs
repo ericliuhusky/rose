@@ -9,10 +9,19 @@ pub struct 虚拟页(pub usize);
 
 
 pub fn 将地址转为页号并向下取整(v: usize) -> usize {
-    v >> 12
+    对齐到分页向下取整(v) >> 12
 }
 pub fn 将地址转为页号并向上取整(v: usize) -> usize {
-    (v + 0xfff) >> 12
+    对齐到分页向上取整(v) >> 12
+}
+pub fn 将地址转为页号(地址: usize) -> usize {
+    地址 >> 12
+}
+pub fn 对齐到分页向下取整(地址: usize) -> usize {
+    地址 & !0xfff
+}
+pub fn 对齐到分页向上取整(地址: usize) -> usize {
+    (地址 + 0xfff) & !0xfff
 }
 pub fn 页内偏移(v: usize) -> usize {
     v & 0xfff
