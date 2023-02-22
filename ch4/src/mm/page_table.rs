@@ -6,7 +6,6 @@ use alloc::vec::Vec;
 use crate::config::{TRAP_CONTEXT, TRAP_CONTEXT_END};
 use crate::trap::陷入上下文;
 use crate::mm::frame_allocator::物理内存管理器;
-use super::address::{将地址转为页号并向下取整, 将地址转为页号并向上取整};
 use super::memory_set::MapArea;
 
 #[derive(Copy, Clone)]
