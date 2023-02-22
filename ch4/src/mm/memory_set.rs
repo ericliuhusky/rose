@@ -137,8 +137,8 @@ impl MemorySet {
                 true
             );
         }
-        let 最后一个程序段的结尾虚拟地址 = elf.最后一个程序段的结尾虚拟地址();
-        let user_stack_bottom = 对齐到分页向上取整(最后一个程序段的结尾虚拟地址);
+        let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
+        let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).对齐到分页的地址范围.end;
         let user_stack_top = user_stack_bottom + 0x2000;
         memory_set.push(
             MapArea::new(user_stack_bottom..user_stack_top),

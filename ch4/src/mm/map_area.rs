@@ -7,7 +7,7 @@ use crate::mm::page_table::PageTable;
 pub struct MapArea {
     va_range: Range<usize>,
     pub vpn_range: Range<usize>,
-    对齐到分页的地址范围: Range<usize>,
+    pub 对齐到分页的地址范围: Range<usize>,
 }
 
 impl MapArea {

@@ -51,10 +51,10 @@ impl<'a> Elf文件<'a> {
         ps
     }
 
-    pub fn 最后一个程序段的结尾虚拟地址(&self) -> usize {
+    pub fn 最后一个程序段的虚拟地址范围(&self) -> Range<usize> {
         let 程序段列表 = self.程序段列表();
         let 最后一个程序段 = 程序段列表.last().unwrap();
-        最后一个程序段.虚拟地址范围().end
+        最后一个程序段.虚拟地址范围()
     }
 }
 
