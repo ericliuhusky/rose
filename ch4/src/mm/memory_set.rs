@@ -239,7 +239,9 @@ impl MapArea {
             }
             let src = &data[i..i + dst.len()];
             i += dst.len();
-            dst.copy_from_slice(src);
+            for i in 0..dst.len() {
+                dst[i] = src[i];
+            }
         }
     }
 }
