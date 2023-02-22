@@ -1,7 +1,17 @@
 use core::ops::Range;
 use crate::mm::frame_allocator::物理内存管理器;
-use crate::mm::address::{将地址转为页号, 物理页, 虚拟页, 对齐到分页向下取整, 对齐到分页向上取整};
+use crate::mm::address::{物理页, 虚拟页};
 use crate::mm::page_table::PageTable;
+
+fn 将地址转为页号(地址: usize) -> usize {
+    地址 >> 12
+}
+fn 对齐到分页向下取整(地址: usize) -> usize {
+    地址 & !0xfff
+}
+fn 对齐到分页向上取整(地址: usize) -> usize {
+    (地址 + 0xfff) & !0xfff
+}
 
 /// map area structure, controls a contiguous piece of virtual memory
 pub struct MapArea {

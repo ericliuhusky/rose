@@ -7,15 +7,6 @@ pub struct 物理页(pub usize);
 pub struct 虚拟页(pub usize);
 
 
-pub fn 将地址转为页号(地址: usize) -> usize {
-    地址 >> 12
-}
-pub fn 对齐到分页向下取整(地址: usize) -> usize {
-    地址 & !0xfff
-}
-pub fn 对齐到分页向上取整(地址: usize) -> usize {
-    (地址 + 0xfff) & !0xfff
-}
 pub fn 页内偏移(v: usize) -> usize {
     v & 0xfff
 }
