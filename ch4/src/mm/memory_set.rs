@@ -44,8 +44,8 @@ impl MemorySet {
             areas: Vec::new(),
         }
     }
-    fn push(&mut self, map_area: MapArea, data: Option<&[u8]>) {
-        map_area.map(&mut self.page_table);
+    fn push(&mut self, map_area: MapArea, data: Option<&[u8]>, map_type: MapType, is_user: bool) {
+        map_area.map(&mut self.page_table, map_type, is_user);
         if let Some(data) = data {
             map_area.copy_data(&mut self.page_table, data);
         }
@@ -66,66 +66,66 @@ impl MemorySet {
         memory_set.push(
             MapArea::new(
                 stext as usize..etext as usize,
-                MapType::Identical,
-                false,
             ),
             None,
+            MapType::Identical,
+            false,
         );
         格式化输出并换行!("mapping .rodata section");
         memory_set.push(
             MapArea::new(
                 srodata as usize..erodata as usize,
-                MapType::Identical,
-                false,
             ),
             None,
+            MapType::Identical,
+            false,
         );
         格式化输出并换行!("mapping .data section");
         memory_set.push(
             MapArea::new(
                 sdata as usize..edata as usize,
-                MapType::Identical,
-                false,
             ),
             None,
+            MapType::Identical,
+            false,
         );
         格式化输出并换行!("mapping .bss section");
         memory_set.push(
             MapArea::new(
                 sbss_with_stack as usize..ebss as usize,
-                MapType::Identical,
-                false,
             ),
             None,
+            MapType::Identical,
+            false,
         );
         格式化输出并换行!("mapping physical memory");
         memory_set.push(
             MapArea::new(
                 ekernel as usize..可用物理内存结尾地址,
-                MapType::Identical,
-                false,
             ),
             None,
+            MapType::Identical,
+            false,
         );
         格式化输出并换行!("mapping memory-mapped registers");
         for pair in MMIO {
             memory_set.push(
                 MapArea::new(
                     (*pair).0..(*pair).0 + (*pair).1,
-                    MapType::Identical,
-                    false,
                 ),
                 None,
+                MapType::Identical,
+                false,
             );
         }
         // 内核栈
         memory_set.push(
             MapArea::new(
                 内核栈栈底..内核栈栈顶,
-                MapType::Framed,
-                false
             ), 
-            None
+            None,
+            MapType::Framed,
+            false
         );
 
         memory_set
@@ -137,19 +137,21 @@ impl MemorySet {
         memory_set.push(
             MapArea::new(
                 __trap_entry as usize..__trap_end as usize, 
-                MapType::Identical, 
-                false
             ),
-            None
+            None,
+            MapType::Identical, 
+            false
         );
 
         // map program headers of elf, with U flag
         let elf = Elf文件::解析(elf_data);
         for p in elf.程序段列表() {
-            let map_area = MapArea::new(p.虚拟地址范围(), MapType::Framed, true);
+            let map_area = MapArea::new(p.虚拟地址范围());
             memory_set.push(
                 map_area,
-                Some(p.数据)
+                Some(p.数据),
+                MapType::Framed, 
+                true
             );
         }
         let 最后一个程序段的结尾虚拟地址 = elf.最后一个程序段的结尾虚拟地址();
@@ -158,19 +160,19 @@ impl MemorySet {
         memory_set.push(
             MapArea::new(
                 user_stack_bottom..user_stack_top,
-                MapType::Framed,
-                true,
             ),
             None,
+            MapType::Framed,
+            true,
         );
         // map TrapContext
         memory_set.push(
             MapArea::new(
                 TRAP_CONTEXT..TRAP_CONTEXT_END,
-                MapType::Framed,
-                false,
             ),
             None,
+            MapType::Framed,
+            false,
         );
         (
             memory_set.page_table,
@@ -193,15 +195,11 @@ pub struct MapArea {
     va_range: Range<usize>,
     vpn_range: Range<usize>,
     对齐到分页的地址范围: Range<usize>,
-    map_type: MapType,
-    is_user: bool,
 }
 
 impl MapArea {
     pub fn new(
         va_range: Range<usize>,
-        map_type: MapType,
-        is_user: bool,
     ) -> Self {
         let 对齐到分页的起始地址 = 对齐到分页向下取整(va_range.start);
         let 对齐到分页的结尾地址 = 对齐到分页向上取整(va_range.end);
@@ -213,14 +211,12 @@ impl MapArea {
             va_range,
             vpn_range: start_vpn..end_vpn,
             对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址,
-            map_type,
-            is_user,
         }
     }
-    pub fn map(&self, page_table: &mut PageTable) {
+    pub fn map(&self, page_table: &mut PageTable, map_type: MapType, is_user: bool) {
         for vpn in self.vpn_range.clone() {
             let ppn: 物理页;
-            match self.map_type {
+            match map_type {
                 MapType::Identical => {
                     ppn = 物理页(vpn);
                 }
@@ -228,13 +224,12 @@ impl MapArea {
                     ppn = 物理内存管理器::分配物理页();
                 }
             }
-            page_table.map(虚拟页(vpn), ppn, self.is_user);
+            page_table.map(虚拟页(vpn), ppn, is_user);
         }
     }
     /// data: start-aligned but maybe with shorter length
     /// assume that all frames were cleared before
     pub fn copy_data(&self, page_table: &mut PageTable, data: &[u8]) {
-        assert_eq!(self.map_type, MapType::Framed);
         let dsts = page_table.translated_byte_buffer(self.va_range.clone());
         let mut i = 0;
         for dst in dsts {
