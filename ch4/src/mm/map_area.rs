@@ -45,7 +45,7 @@ impl MapArea {
     pub fn vp_list(&self) -> Vec<虚拟页> {
         let mut v = Vec::new();
         for vpn in self.vpn_range.clone() {
-            v.push(虚拟页(vpn))
+            v.push(虚拟页::新建(vpn))
         }
         v
     }
@@ -54,7 +54,7 @@ impl MapArea {
             let ppn: 物理页;
             match map_type {
                 MapType::Identical => {
-                    ppn = 物理页::新建(vp.0);
+                    ppn = 物理页::新建(vp.页号);
                 }
                 MapType::Framed => {
                     ppn = 物理内存管理器::分配物理页();
