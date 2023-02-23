@@ -67,21 +67,21 @@ impl PageTable {
         let idxs = 页表项索引列表(vpn.页号);
         let mut ppn = self.root_ppn.clone();
         for i in 0..2 {
-            let pte = &mut 读取页表项列表(ppn.对齐到分页的地址范围.start)[idxs[i]];
+            let pte = &mut 读取页表项列表(ppn.起始地址)[idxs[i]];
             if !pte.is_valid() {
                 let ppn = 物理内存管理器::分配物理页();
                 *pte = PageTableEntry::new_pointer(ppn);
             }
             ppn = pte.ppn();
         }
-        let pte = &mut 读取页表项列表(ppn.对齐到分页的地址范围.start)[idxs[2]];
+        let pte = &mut 读取页表项列表(ppn.起始地址)[idxs[2]];
         pte
     }
     fn find_pte(&self, vpn: &内存分页) -> 内存分页 {
         let idxs = 页表项索引列表(vpn.页号);
         let mut ppn = self.root_ppn.clone();
         for i in 0..3 {
-            let pte = 读取页表项列表(ppn.对齐到分页的地址范围.start)[idxs[i]];
+            let pte = 读取页表项列表(ppn.起始地址)[idxs[i]];
             if !pte.is_valid() {
                 panic!()
             }
@@ -147,15 +147,15 @@ impl PageTable {
             .map(|(i, pn)| {
                 let pa_start;
                 if i == 0 {
-                    pa_start = pn.对齐到分页的地址范围.start + 内存地址(va_start).页内偏移();
+                    pa_start = pn.起始地址 + 内存地址(va_start).页内偏移();
                 } else {
-                    pa_start = pn.对齐到分页的地址范围.start;
+                    pa_start = pn.起始地址;
                 }
                 let pa_end;
                 if i == vp_list.len() - 1 {
-                    pa_end = pn.对齐到分页的地址范围.start + 内存地址(va_end).页内偏移();
+                    pa_end = pn.起始地址 + 内存地址(va_end).页内偏移();
                 } else {
-                    pa_end = pn.对齐到分页的地址范围.end;
+                    pa_end = pn.结尾地址;
                 }
                 pa_start..pa_end
             })

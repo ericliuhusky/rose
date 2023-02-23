@@ -27,7 +27,8 @@ pub static mut KERNEL_SPACE: MemorySet = MemorySet {
     page_table: PageTable {
         root_ppn: 内存分页 {
             页号: 0,
-            对齐到分页的地址范围: 0..0
+            起始地址: 0,
+            结尾地址: 0
         },
     },
 };

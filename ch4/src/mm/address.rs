@@ -1,5 +1,3 @@
-use core::ops::Range;
-
 pub struct 内存地址(pub usize);
 
 impl 内存地址 {
@@ -11,16 +9,16 @@ impl 内存地址 {
 #[derive(Clone)]
 pub struct 内存分页 {
     pub 页号: usize,
-    pub 对齐到分页的地址范围: Range<usize>
+    pub 起始地址: usize,
+    pub 结尾地址: usize
 }
 
 impl 内存分页 {
     pub fn 新建(页号: usize) -> Self {
-        let 对齐到分页的起始地址 = 页号 << 12;
-        let 对齐到分页的结尾地址 = (页号 + 1) << 12;
         Self { 
             页号,
-            对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址
+            起始地址: 页号 << 12,
+            结尾地址: (页号 + 1) << 12
         }
     }
 }
