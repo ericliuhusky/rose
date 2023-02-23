@@ -1,4 +1,4 @@
-use super::page_table::PageTableEntry;
+use super::page_table::页表项;
 
 pub struct 内存地址(pub usize);
 
@@ -35,9 +35,9 @@ impl 内存分页 {
         }
     }
 
-    pub fn 读取页表项列表(&self) -> &'static mut [PageTableEntry] {
+    pub fn 读取页表项列表(&self) -> &'static mut [页表项] {
         unsafe {
-            &mut *(self.起始地址 as *mut [PageTableEntry; 512])
+            &mut *(self.起始地址 as *mut [页表项; 512])
         }
     }
 

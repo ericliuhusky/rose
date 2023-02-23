@@ -1,10 +1,10 @@
 use crate::mm::memory_set::地址空间;
-use crate::mm::page_table::PageTable;
+use crate::mm::page_table::页表;
 use crate::trap::{陷入上下文};
 
 pub struct 任务 {
     pub 状态: 任务状态,
-    pub 页表: PageTable,
+    pub 页表: 页表,
 }
 
 impl 任务 {

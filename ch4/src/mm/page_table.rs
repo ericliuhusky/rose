@@ -1,5 +1,3 @@
-//! Implementation of [`PageTableEntry`] and [`PageTable`].
-
 use core::ops::Range;
 use crate::mm::address::内存分页;
 use alloc::vec::Vec;
@@ -10,78 +8,75 @@ use super::address::内存地址;
 use super::map_area::逻辑段;
 
 #[repr(C)]
-/// page table entry structure
-pub struct PageTableEntry(usize);
+pub struct 页表项(usize);
 
-impl PageTableEntry {
-    pub fn new_address(ppn: 内存分页, is_user: bool) -> Self {
+impl 页表项 {
+    fn 新建存放物理页号的页表项(物理页: 内存分页, 用户是否可见: bool) -> Self {
         let mut flags = 0xf;
-        if is_user {
+        if 用户是否可见 {
             flags |= 0x10;
         }
-        PageTableEntry(ppn.页号 << 10 | flags)
+        页表项(物理页.页号 << 10 | flags)
     }
 
-    pub fn new_pointer(ppn: 内存分页) -> Self {
-        PageTableEntry(ppn.页号 << 10 | 0x1)
+    fn 新建指向下一级页表的页表项(物理页: 内存分页) -> Self {
+        页表项(物理页.页号 << 10 | 0x1)
     }
-    pub fn ppn(&self) -> 内存分页 {
+    fn 物理页(&self) -> 内存分页 {
         内存分页::新建(self.0 >> 10)
     }
-    pub fn is_valid(&self) -> bool {
+    fn 是有效的(&self) -> bool {
         self.0 & 0x1 == 1
     }
 }
 
-/// page table structure
-pub struct PageTable {
-    pub root_ppn: 内存分页
+pub struct 页表 {
+    pub 根物理页: 内存分页
 }
 
-/// Assume that it won't oom when creating/mapping.
-impl PageTable {
-    pub fn new() -> Self {
-        let ppn = 物理内存管理器::分配物理页();
-        PageTable {
-            root_ppn: ppn
+impl 页表 {
+    pub fn 新建() -> Self {
+        let 物理页 = 物理内存管理器::分配物理页();
+        页表 {
+            根物理页: 物理页
         }
     }
-    fn find_pte_create(&self, vpn: 内存分页) -> &mut PageTableEntry {
+    fn find_pte_create(&self, vpn: 内存分页) -> &mut 页表项 {
         let idxs = vpn.页表项索引列表();
-        let mut ppn = self.root_ppn.clone();
+        let mut ppn = self.根物理页.clone();
         for i in 0..2 {
             let pte = &mut ppn.读取页表项列表()[idxs[i]];
-            if !pte.is_valid() {
+            if !pte.是有效的() {
                 let ppn = 物理内存管理器::分配物理页();
-                *pte = PageTableEntry::new_pointer(ppn);
+                *pte = 页表项::新建指向下一级页表的页表项(ppn);
             }
-            ppn = pte.ppn();
+            ppn = pte.物理页();
         }
         let pte = &mut ppn.读取页表项列表()[idxs[2]];
         pte
     }
     fn find_pte(&self, vpn: &内存分页) -> 内存分页 {
         let idxs = vpn.页表项索引列表();
-        let mut ppn = self.root_ppn.clone();
+        let mut ppn = self.根物理页.clone();
         for i in 0..3 {
             let pte = &ppn.读取页表项列表()[idxs[i]];
-            if !pte.is_valid() {
+            if !pte.是有效的() {
                 panic!()
             }
-            ppn = pte.ppn();
+            ppn = pte.物理页();
         }
         ppn
     }
-    pub fn map(&self, vpn: 内存分页, ppn: 内存分页, is_user: bool) {
-        let pte = self.find_pte_create(vpn);
-        assert!(!pte.is_valid());
-        *pte = PageTableEntry::new_address(ppn, is_user);
+    pub fn 映射(&self, 虚拟页: 内存分页, 物理页: 内存分页, 用户是否可见: bool) {
+        let pte = self.find_pte_create(虚拟页);
+        assert!(!pte.是有效的());
+        *pte = 页表项::新建存放物理页号的页表项(物理页, 用户是否可见);
     }
-    pub fn translate(&self, vpn: &内存分页) -> 内存分页 {
-        self.find_pte(vpn)
+    fn 虚拟页转换物理页(&self, 虚拟页: &内存分页) -> 内存分页 {
+        self.find_pte(虚拟页)
     }
     pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
-        let dsts = self.translated_byte_buffer(va_range);
+        let dsts = self.虚拟地址范围转换字节串列表(va_range);
         let mut i = 0;
         for dst in dsts {
             if i >= data.len() {
@@ -95,7 +90,7 @@ impl PageTable {
         }
     }
     pub fn read(&self, va_range: Range<usize>) -> Vec<u8> {
-        let bytes_array = self.translated_byte_buffer(va_range);
+        let bytes_array = self.虚拟地址范围转换字节串列表(va_range);
         let mut v = Vec::new();
         for bytes in bytes_array {
             for byte in bytes {
@@ -104,26 +99,26 @@ impl PageTable {
         }
         v
     }
-    fn translated_byte_buffer(&self, va_range: Range<usize>) -> Vec<&'static mut [u8]> {        
-        let pa_ranges = self.translated_address(va_range);
-        pa_ranges
+    fn 虚拟地址范围转换字节串列表(&self, 虚拟地址范围: Range<usize>) -> Vec<&'static mut [u8]> {        
+        let 物理地址范围列表 = self.虚拟地址范围转换物理地址范围列表(虚拟地址范围);
+        物理地址范围列表
             .iter()
-            .map(|pa_range| {
+            .map(|物理地址范围| {
                 unsafe {
-                    core::slice::from_raw_parts_mut(pa_range.start as *mut u8, pa_range.len())
+                    core::slice::from_raw_parts_mut(物理地址范围.start as *mut u8, 物理地址范围.len())
                 }
             })
             .collect()
     }
-    fn translated_address(&self, va_range: Range<usize>) -> Vec<Range<usize>> {
-        let va_start = va_range.start;
-        let va_end = va_range.end;
-        let vp_list = 逻辑段::新建(va_range).虚拟页列表();
+    fn 虚拟地址范围转换物理地址范围列表(&self, 虚拟地址范围: Range<usize>) -> Vec<Range<usize>> {
+        let va_start = 虚拟地址范围.start;
+        let va_end = 虚拟地址范围.end;
+        let vp_list = 逻辑段::新建(虚拟地址范围).虚拟页列表();
         vp_list
             .iter()
             // 虚拟页列表转物理页列表
             .map(|vp| {
-                self.translate(vp)
+                self.虚拟页转换物理页(vp)
             })
             // 物理页列表转物理地址列表
             .enumerate()
@@ -145,12 +140,12 @@ impl PageTable {
             .collect()
     }
     pub fn translated_trap_context(&self) -> &mut 陷入上下文 {
-        let pa_ranges = self.translated_address(TRAP_CONTEXT..TRAP_CONTEXT_END);
+        let pa_ranges = self.虚拟地址范围转换物理地址范围列表(TRAP_CONTEXT..TRAP_CONTEXT_END);
         unsafe {
             &mut *(pa_ranges[0].start as *mut 陷入上下文)
         }
     }
     pub fn token(&self) -> usize {
-        8usize << 60 | self.root_ppn.页号
+        8usize << 60 | self.根物理页.页号
     }
 }

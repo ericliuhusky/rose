@@ -1,7 +1,7 @@
 mod task;
 
 use crate::loader::{读取应用数目, 读取应用数据};
-use crate::mm::page_table::PageTable;
+use crate::mm::page_table::页表;
 use alloc::vec::Vec;
 use task::{任务, 任务状态};
 use crate::格式化输出并换行;
@@ -75,7 +75,7 @@ impl 任务管理器 {
         }
     }
 
-    pub fn 当前页表() -> &'static PageTable {
+    pub fn 当前页表() -> &'static 页表 {
         unsafe {
             &任务管理器.当前任务().页表
         }
