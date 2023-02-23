@@ -9,7 +9,6 @@ use crate::mm::frame_allocator::物理内存管理器;
 use super::address::内存地址;
 use super::map_area::逻辑段;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 /// page table entry structure
 pub struct PageTableEntry(usize);
@@ -65,7 +64,7 @@ impl PageTable {
         let idxs = vpn.页表项索引列表();
         let mut ppn = self.root_ppn.clone();
         for i in 0..3 {
-            let pte = ppn.读取页表项列表()[idxs[i]];
+            let pte = &ppn.读取页表项列表()[idxs[i]];
             if !pte.is_valid() {
                 panic!()
             }
