@@ -9,11 +9,11 @@ impl 内存地址 {
         self.0 >> 12
     }
 
-    pub fn 对齐到分页向下取整(&self) -> usize {
-        self.0 & !0xfff
+    pub fn 对齐到分页向下取整(&self) -> 内存地址 {
+        内存地址(self.0 & !0xfff)
     }
-    pub fn 对齐到分页向上取整(&self) -> usize {
-        (self.0 + 0xfff) & !0xfff
+    pub fn 对齐到分页向上取整(&self) -> 内存地址 {
+        内存地址((self.0 + 0xfff) & !0xfff)
     }
 }
 
