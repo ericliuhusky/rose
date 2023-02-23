@@ -20,9 +20,8 @@ pub struct MapArea {
 
 impl MapArea {
     pub fn new(va_range: Range<usize>) -> Self {
-        let 对齐到分页的起始地址 = 对齐到分页向下取整(va_range.start);
         let 对齐到分页的结尾地址 = 对齐到分页向上取整(va_range.end);
-        let start_vpn = 将地址转为页号(对齐到分页的起始地址);
+        let start_vpn = 将地址转为页号(对齐到分页向下取整(va_range.start));
         let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
         Self {
             vpn_range: start_vpn..end_vpn,
@@ -30,9 +29,8 @@ impl MapArea {
         }
     }
     pub fn 新建内嵌于地址范围的逻辑段(va_range: Range<usize>) -> Self {
-        let 对齐到分页的起始地址 = 对齐到分页向上取整(va_range.start);
         let 对齐到分页的结尾地址 = 对齐到分页向下取整(va_range.end);
-        let start_vpn = 将地址转为页号(对齐到分页的起始地址);
+        let start_vpn = 将地址转为页号(对齐到分页向上取整(va_range.start));
         let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
         Self {
             vpn_range: start_vpn..end_vpn,
