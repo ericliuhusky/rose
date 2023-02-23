@@ -48,10 +48,10 @@ impl MemorySet {
             self.page_table.map(vp, pp, is_user);
         }
     }
-    fn map_identical(&mut self, map_area: MapArea, is_user: bool) {
+    fn map_identical(&mut self, map_area: MapArea) {
         for vp in map_area.虚拟页列表() {
             let pp = vp.clone();
-            self.page_table.map(vp, pp, is_user);
+            self.page_table.map(vp, pp, false);
         }
     }
     /// Without kernel stacks.
@@ -59,28 +59,22 @@ impl MemorySet {
         let mut memory_set = Self::new_bare();
         memory_set.map_identical(
             MapArea::new(stext as usize..etext as usize),
-            false,
         );
         memory_set.map_identical(
             MapArea::new(srodata as usize..erodata as usize),
-            false,
         );
         memory_set.map_identical(
             MapArea::new(sdata as usize..edata as usize),
-            false,
         );
         memory_set.map_identical(
             MapArea::new(sbss_with_stack as usize..ebss as usize),
-            false,
         );
         memory_set.map_identical(
             MapArea::new(ekernel as usize..可用物理内存结尾地址),
-            false,
         );
         for pair in MMIO {
             memory_set.map_identical(
                 MapArea::new((*pair).0..(*pair).0 + (*pair).1),
-                false,
             );
         }
         // 内核栈
@@ -96,7 +90,6 @@ impl MemorySet {
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
         memory_set.map_identical(
             MapArea::new(__trap_entry as usize..__trap_end as usize),
-            false
         );
 
         // map program headers of elf, with U flag
