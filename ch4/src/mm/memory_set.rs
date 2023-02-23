@@ -62,12 +62,21 @@ impl MemorySet {
     }
     /// Without kernel stacks.
     pub fn new_kernel() -> Self {
+        let segment_ranges = [
+            stext as usize..etext as usize,
+            srodata as usize..erodata as usize,
+            sdata as usize..edata as usize,
+            sbss_with_stack as usize..ebss as usize,
+            ekernel as usize..可用物理内存结尾地址,
+        ];
+        let segment_areas = segment_ranges
+            .map(|segment_range| {
+                MapArea::new(segment_range)
+            });
         let mut memory_set = Self::new_bare();
-        memory_set.map_identical(MapArea::new(stext as usize..etext as usize));
-        memory_set.map_identical(MapArea::new(srodata as usize..erodata as usize));
-        memory_set.map_identical(MapArea::new(sdata as usize..edata as usize));
-        memory_set.map_identical(MapArea::new(sbss_with_stack as usize..ebss as usize));
-        memory_set.map_identical(MapArea::new(ekernel as usize..可用物理内存结尾地址));
+        for segment_area in segment_areas {
+            memory_set.map_identical(segment_area);
+        }
         for pair in MMIO {
             memory_set.map_identical(MapArea::new((*pair).0..(*pair).0 + (*pair).1));
         }
