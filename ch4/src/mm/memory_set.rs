@@ -46,11 +46,8 @@ impl MemorySet {
             areas: Vec::new(),
         }
     }
-    fn push(&mut self, map_area: MapArea, data: Option<&[u8]>, map_type: MapType, is_user: bool) {
+    fn push(&mut self, map_area: MapArea, map_type: MapType, is_user: bool) {
         map_area.map(&mut self.page_table, map_type, is_user);
-        if let Some(data) = data {
-            self.page_table.write(map_area.va_range.clone(), data);
-        }
         self.areas.push(map_area);
     }
     /// Without kernel stacks.
@@ -67,35 +64,30 @@ impl MemorySet {
         格式化输出并换行!("mapping .text section");
         memory_set.push(
             MapArea::new(stext as usize..etext as usize),
-            None,
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .rodata section");
         memory_set.push(
             MapArea::new(srodata as usize..erodata as usize),
-            None,
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .data section");
         memory_set.push(
             MapArea::new(sdata as usize..edata as usize),
-            None,
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .bss section");
         memory_set.push(
             MapArea::new(sbss_with_stack as usize..ebss as usize),
-            None,
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping physical memory");
         memory_set.push(
             MapArea::new(ekernel as usize..可用物理内存结尾地址),
-            None,
             MapType::Identical,
             false,
         );
@@ -103,7 +95,6 @@ impl MemorySet {
         for pair in MMIO {
             memory_set.push(
                 MapArea::new((*pair).0..(*pair).0 + (*pair).1),
-                None,
                 MapType::Identical,
                 false,
             );
@@ -111,7 +102,6 @@ impl MemorySet {
         // 内核栈
         memory_set.push(
             MapArea::new(内核栈栈底..内核栈栈顶), 
-            None,
             MapType::Framed,
             false
         );
@@ -124,7 +114,6 @@ impl MemorySet {
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
         memory_set.push(
             MapArea::new(__trap_entry as usize..__trap_end as usize),
-            None,
             MapType::Identical, 
             false
         );
@@ -135,24 +124,22 @@ impl MemorySet {
             let map_area = MapArea::new(p.虚拟地址范围());
             memory_set.push(
                 map_area,
-                Some(p.数据),
                 MapType::Framed, 
                 true
             );
+            memory_set.page_table.write(p.虚拟地址范围(), p.数据);
         }
         let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
         let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).对齐到分页的地址范围.end;
         let user_stack_top = user_stack_bottom + 0x2000;
         memory_set.push(
             MapArea::new(user_stack_bottom..user_stack_top),
-            None,
             MapType::Framed,
             true,
         );
         // map TrapContext
         memory_set.push(
             MapArea::new(TRAP_CONTEXT..TRAP_CONTEXT_END),
-            None,
             MapType::Framed,
             false,
         );
