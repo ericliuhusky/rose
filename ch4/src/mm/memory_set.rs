@@ -42,10 +42,16 @@ impl MemorySet {
             page_table: PageTable::new(),
         }
     }
-    fn map(&mut self, map_area: MapArea, is_user: bool) {
+    fn map(&mut self, map_area: MapArea) {
         for vp in map_area.虚拟页列表() {
             let pp = 物理内存管理器::分配物理页();
-            self.page_table.map(vp, pp, is_user);
+            self.page_table.map(vp, pp, false);
+        }
+    }
+    fn map_user(&mut self, map_area: MapArea) {
+        for vp in map_area.虚拟页列表() {
+            let pp = 物理内存管理器::分配物理页();
+            self.page_table.map(vp, pp, true);
         }
     }
     fn map_identical(&mut self, map_area: MapArea) {
@@ -80,7 +86,6 @@ impl MemorySet {
         // 内核栈
         memory_set.map(
             MapArea::new(内核栈栈底..内核栈栈顶), 
-            false
         );
         memory_set
     }
@@ -96,9 +101,8 @@ impl MemorySet {
         let elf = Elf文件::解析(elf_data);
         for p in elf.程序段列表() {
             let map_area = MapArea::new(p.虚拟地址范围());
-            memory_set.map(
+            memory_set.map_user(
                 map_area,
-                true
             );
             memory_set.page_table.write(p.虚拟地址范围(), p.数据);
         }
@@ -106,14 +110,12 @@ impl MemorySet {
         let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
         let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).对齐到分页的地址范围.end;
         let user_stack_top = user_stack_bottom + 0x2000;
-        memory_set.map(
+        memory_set.map_user(
             MapArea::new(user_stack_bottom..user_stack_top),
-            true,
         );
         // map TrapContext
         memory_set.map(
             MapArea::new(TRAP_CONTEXT..TRAP_CONTEXT_END),
-            false,
         );
         (
             memory_set.page_table,
