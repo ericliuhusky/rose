@@ -7,6 +7,7 @@ use core::arch::asm;
 use crate::mm::elf_reader::Elf文件;
 use crate::格式化输出并换行;
 use super::map_area::{MapArea, MapType};
+use crate::mm::frame_allocator::物理内存管理器;
 
 extern "C" {
     fn stext();
@@ -42,8 +43,19 @@ impl MemorySet {
             page_table: PageTable::new(),
         }
     }
-    fn push(&mut self, map_area: MapArea, map_type: MapType, is_user: bool) {
-        map_area.map(&mut self.page_table, map_type, is_user);
+    fn map(&mut self, map_area: MapArea, map_type: MapType, is_user: bool) {
+        for vp in map_area.vp_list() {
+            let ppn: 内存分页;
+            match map_type {
+                MapType::Identical => {
+                    ppn = 内存分页::新建(vp.页号);
+                }
+                MapType::Framed => {
+                    ppn = 物理内存管理器::分配物理页();
+                }
+            }
+            self.page_table.map(vp, ppn, is_user);
+        }
     }
     /// Without kernel stacks.
     pub fn new_kernel() -> Self {
@@ -57,45 +69,45 @@ impl MemorySet {
             sbss_with_stack as usize, ebss as usize
         );
         格式化输出并换行!("mapping .text section");
-        memory_set.push(
+        memory_set.map(
             MapArea::new(stext as usize..etext as usize),
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .rodata section");
-        memory_set.push(
+        memory_set.map(
             MapArea::new(srodata as usize..erodata as usize),
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .data section");
-        memory_set.push(
+        memory_set.map(
             MapArea::new(sdata as usize..edata as usize),
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping .bss section");
-        memory_set.push(
+        memory_set.map(
             MapArea::new(sbss_with_stack as usize..ebss as usize),
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping physical memory");
-        memory_set.push(
+        memory_set.map(
             MapArea::new(ekernel as usize..可用物理内存结尾地址),
             MapType::Identical,
             false,
         );
         格式化输出并换行!("mapping memory-mapped registers");
         for pair in MMIO {
-            memory_set.push(
+            memory_set.map(
                 MapArea::new((*pair).0..(*pair).0 + (*pair).1),
                 MapType::Identical,
                 false,
             );
         }
         // 内核栈
-        memory_set.push(
+        memory_set.map(
             MapArea::new(内核栈栈底..内核栈栈顶), 
             MapType::Framed,
             false
@@ -107,7 +119,7 @@ impl MemorySet {
     pub fn from_elf(elf_data: &[u8]) -> (PageTable, usize, usize) {
         let mut memory_set = Self::new_bare();
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
-        memory_set.push(
+        memory_set.map(
             MapArea::new(__trap_entry as usize..__trap_end as usize),
             MapType::Identical, 
             false
@@ -117,7 +129,7 @@ impl MemorySet {
         let elf = Elf文件::解析(elf_data);
         for p in elf.程序段列表() {
             let map_area = MapArea::new(p.虚拟地址范围());
-            memory_set.push(
+            memory_set.map(
                 map_area,
                 MapType::Framed, 
                 true
@@ -127,13 +139,13 @@ impl MemorySet {
         let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
         let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).对齐到分页的地址范围.end;
         let user_stack_top = user_stack_bottom + 0x2000;
-        memory_set.push(
+        memory_set.map(
             MapArea::new(user_stack_bottom..user_stack_top),
             MapType::Framed,
             true,
         );
         // map TrapContext
-        memory_set.push(
+        memory_set.map(
             MapArea::new(TRAP_CONTEXT..TRAP_CONTEXT_END),
             MapType::Framed,
             false,
