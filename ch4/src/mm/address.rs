@@ -4,6 +4,10 @@ impl 内存地址 {
     pub fn 页内偏移(&self) -> usize {
         self.0 & 0xfff
     }
+
+    pub fn 页号(&self) -> usize {
+        self.0 >> 12
+    }
 }
 
 #[derive(Clone)]

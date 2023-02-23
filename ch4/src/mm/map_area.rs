@@ -1,10 +1,9 @@
 use core::ops::Range;
 use alloc::vec::Vec;
 use crate::mm::address::内存分页;
+use super::address::内存地址;
 
-fn 将地址转为页号(地址: usize) -> usize {
-    地址 >> 12
-}
+
 fn 对齐到分页向下取整(地址: usize) -> usize {
     地址 & !0xfff
 }
@@ -22,8 +21,8 @@ pub struct 逻辑段 {
 impl 逻辑段 {
     pub fn 新建(虚拟地址范围: Range<usize>) -> Self {
         let 结尾地址 = 对齐到分页向上取整(虚拟地址范围.end);
-        let 起始页号 = 将地址转为页号(对齐到分页向下取整(虚拟地址范围.start));
-        let 结尾页号 = 将地址转为页号(结尾地址);
+        let 起始页号 = 内存地址(对齐到分页向下取整(虚拟地址范围.start)).页号();
+        let 结尾页号 = 内存地址(结尾地址).页号();
         Self {
             起始页号,
             结尾页号,
@@ -32,8 +31,8 @@ impl 逻辑段 {
     }
     pub fn 新建内嵌于地址范围的逻辑段(虚拟地址范围: Range<usize>) -> Self {
         let 结尾地址 = 对齐到分页向下取整(虚拟地址范围.end);
-        let 起始页号 = 将地址转为页号(对齐到分页向上取整(虚拟地址范围.start));
-        let 结尾页号 = 将地址转为页号(结尾地址);
+        let 起始页号 = 内存地址(对齐到分页向上取整(虚拟地址范围.start)).页号();
+        let 结尾页号 = 内存地址(结尾地址).页号();
         Self {
             起始页号,
             结尾页号,
