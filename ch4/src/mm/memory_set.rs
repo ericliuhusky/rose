@@ -63,60 +63,38 @@ impl MemorySet {
     /// Without kernel stacks.
     pub fn new_kernel() -> Self {
         let mut memory_set = Self::new_bare();
-        memory_set.map_identical(
-            MapArea::new(stext as usize..etext as usize),
-        );
-        memory_set.map_identical(
-            MapArea::new(srodata as usize..erodata as usize),
-        );
-        memory_set.map_identical(
-            MapArea::new(sdata as usize..edata as usize),
-        );
-        memory_set.map_identical(
-            MapArea::new(sbss_with_stack as usize..ebss as usize),
-        );
-        memory_set.map_identical(
-            MapArea::new(ekernel as usize..可用物理内存结尾地址),
-        );
+        memory_set.map_identical(MapArea::new(stext as usize..etext as usize));
+        memory_set.map_identical(MapArea::new(srodata as usize..erodata as usize));
+        memory_set.map_identical(MapArea::new(sdata as usize..edata as usize));
+        memory_set.map_identical(MapArea::new(sbss_with_stack as usize..ebss as usize));
+        memory_set.map_identical(MapArea::new(ekernel as usize..可用物理内存结尾地址));
         for pair in MMIO {
-            memory_set.map_identical(
-                MapArea::new((*pair).0..(*pair).0 + (*pair).1),
-            );
+            memory_set.map_identical(MapArea::new((*pair).0..(*pair).0 + (*pair).1));
         }
         // 内核栈
-        memory_set.map(
-            MapArea::new(内核栈栈底..内核栈栈顶), 
-        );
+        memory_set.map(MapArea::new(内核栈栈底..内核栈栈顶));
         memory_set
     }
     
     pub fn from_elf(elf_data: &[u8]) -> (PageTable, usize, usize) {
         let mut memory_set = Self::new_bare();
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
-        memory_set.map_identical(
-            MapArea::new(__trap_entry as usize..__trap_end as usize),
-        );
+        memory_set.map_identical(MapArea::new(__trap_entry as usize..__trap_end as usize));
 
         // map program headers of elf, with U flag
         let elf = Elf文件::解析(elf_data);
         for p in elf.程序段列表() {
             let map_area = MapArea::new(p.虚拟地址范围());
-            memory_set.map_user(
-                map_area,
-            );
+            memory_set.map_user(map_area);
             memory_set.page_table.write(p.虚拟地址范围(), p.数据);
         }
 
         let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
         let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).对齐到分页的地址范围.end;
         let user_stack_top = user_stack_bottom + 0x2000;
-        memory_set.map_user(
-            MapArea::new(user_stack_bottom..user_stack_top),
-        );
+        memory_set.map_user(MapArea::new(user_stack_bottom..user_stack_top));
         // map TrapContext
-        memory_set.map(
-            MapArea::new(TRAP_CONTEXT..TRAP_CONTEXT_END),
-        );
+        memory_set.map(MapArea::new(TRAP_CONTEXT..TRAP_CONTEXT_END));
         (
             memory_set.page_table,
             user_stack_top,
