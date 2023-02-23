@@ -60,45 +60,31 @@ impl MemorySet {
     /// Without kernel stacks.
     pub fn new_kernel() -> Self {
         let mut memory_set = Self::new_bare();
-        // map kernel sections
-        格式化输出并换行!(".text [{:#x}, {:#x})", stext as usize, etext as usize);
-        格式化输出并换行!(".rodata [{:#x}, {:#x})", srodata as usize, erodata as usize);
-        格式化输出并换行!(".data [{:#x}, {:#x})", sdata as usize, edata as usize);
-        格式化输出并换行!(
-            ".bss [{:#x}, {:#x})",
-            sbss_with_stack as usize, ebss as usize
-        );
-        格式化输出并换行!("mapping .text section");
         memory_set.map(
             MapArea::new(stext as usize..etext as usize),
             MapType::Identical,
             false,
         );
-        格式化输出并换行!("mapping .rodata section");
         memory_set.map(
             MapArea::new(srodata as usize..erodata as usize),
             MapType::Identical,
             false,
         );
-        格式化输出并换行!("mapping .data section");
         memory_set.map(
             MapArea::new(sdata as usize..edata as usize),
             MapType::Identical,
             false,
         );
-        格式化输出并换行!("mapping .bss section");
         memory_set.map(
             MapArea::new(sbss_with_stack as usize..ebss as usize),
             MapType::Identical,
             false,
         );
-        格式化输出并换行!("mapping physical memory");
         memory_set.map(
             MapArea::new(ekernel as usize..可用物理内存结尾地址),
             MapType::Identical,
             false,
         );
-        格式化输出并换行!("mapping memory-mapped registers");
         for pair in MMIO {
             memory_set.map(
                 MapArea::new((*pair).0..(*pair).0 + (*pair).1),
@@ -112,7 +98,6 @@ impl MemorySet {
             MapType::Framed,
             false
         );
-
         memory_set
     }
     
@@ -136,6 +121,7 @@ impl MemorySet {
             );
             memory_set.page_table.write(p.虚拟地址范围(), p.数据);
         }
+        
         let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
         let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).对齐到分页的地址范围.end;
         let user_stack_top = user_stack_bottom + 0x2000;
