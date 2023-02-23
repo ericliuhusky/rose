@@ -44,7 +44,7 @@ impl MemorySet {
         }
     }
     fn map(&mut self, map_area: MapArea, map_type: MapType, is_user: bool) {
-        for vp in map_area.vp_list() {
+        for vp in map_area.虚拟页列表() {
             let ppn: 内存分页;
             match map_type {
                 MapType::Identical => {

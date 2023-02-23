@@ -135,7 +135,7 @@ impl PageTable {
     fn translated_address(&self, va_range: Range<usize>) -> Vec<Range<usize>> {
         let va_start = va_range.start;
         let va_end = va_range.end;
-        let vp_list = MapArea::new(va_range).vp_list();
+        let vp_list = MapArea::new(va_range).虚拟页列表();
         vp_list
             .iter()
             // 虚拟页列表转物理页列表

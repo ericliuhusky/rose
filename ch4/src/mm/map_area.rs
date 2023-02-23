@@ -39,7 +39,7 @@ impl MapArea {
             对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址,
         }
     }
-    pub fn vp_list(&self) -> Vec<内存分页> {
+    pub fn 虚拟页列表(&self) -> Vec<内存分页> {
         let mut v = Vec::new();
         for vpn in self.vpn_range.clone() {
             v.push(内存分页::新建(vpn))
