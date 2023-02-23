@@ -27,16 +27,6 @@ impl 虚拟页 {
             对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址
         }
     }
-
-    pub fn 页表项索引列表(&self) -> [usize; 3] {
-        let mut vpn = self.页号;
-        let mut idx = [0usize; 3];
-        for i in (0..3).rev() {
-            idx[i] = vpn & 511;
-            vpn >>= 9;
-        }
-        idx
-    }
 }
 
 impl 物理页 {
