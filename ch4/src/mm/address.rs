@@ -1,3 +1,5 @@
+use super::page_table::PageTableEntry;
+
 pub struct 内存地址(pub usize);
 
 impl 内存地址 {
@@ -30,6 +32,12 @@ impl 内存分页 {
             页号,
             起始地址: 页号 << 12,
             结尾地址: (页号 + 1) << 12
+        }
+    }
+
+    pub fn 读取页表项列表(&self) -> &'static mut [PageTableEntry] {
+        unsafe {
+            &mut *(self.起始地址 as *mut [PageTableEntry; 512])
         }
     }
 }
