@@ -3,7 +3,6 @@
 use crate::mm::page_table::PageTable;
 use crate::mm::address::内存分页;
 use crate::config::{可用物理内存结尾地址, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
-use alloc::vec::Vec;
 use core::arch::asm;
 use crate::mm::elf_reader::Elf文件;
 use crate::格式化输出并换行;
@@ -30,25 +29,21 @@ pub static mut KERNEL_SPACE: MemorySet = MemorySet {
             对齐到分页的地址范围: 0..0
         },
     },
-    areas: Vec::new(),
 };
 
 /// memory set structure, controls virtual-memory space
 pub struct MemorySet {
     pub page_table: PageTable,
-    areas: Vec<MapArea>,
 }
 
 impl MemorySet {
     pub fn new_bare() -> Self {
         Self {
             page_table: PageTable::new(),
-            areas: Vec::new(),
         }
     }
     fn push(&mut self, map_area: MapArea, map_type: MapType, is_user: bool) {
         map_area.map(&mut self.page_table, map_type, is_user);
-        self.areas.push(map_area);
     }
     /// Without kernel stacks.
     pub fn new_kernel() -> Self {
