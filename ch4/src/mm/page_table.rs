@@ -19,14 +19,14 @@ impl PageTableEntry {
         if is_user {
             flags |= 0x10;
         }
-        PageTableEntry(ppn.0 << 10 | flags)
+        PageTableEntry(ppn.页号 << 10 | flags)
     }
 
     pub fn new_pointer(ppn: 物理页) -> Self {
-        PageTableEntry(ppn.0 << 10 | 0x1)
+        PageTableEntry(ppn.页号 << 10 | 0x1)
     }
     pub fn ppn(&self) -> 物理页 {
-        物理页(self.0 >> 10)
+        物理页::新建(self.0 >> 10)
     }
     pub fn is_valid(&self) -> bool {
         self.0 & 0x1 == 1
@@ -133,15 +133,15 @@ impl PageTable {
         for i in 0..ppns.len() {
             let pa_start;
             if i == 0 {
-                pa_start = ppns[i].起始地址() + 页内偏移(va_start);
+                pa_start = ppns[i].对齐到分页的地址范围.start + 页内偏移(va_start);
             } else {
-                pa_start = ppns[i].起始地址();
+                pa_start = ppns[i].对齐到分页的地址范围.start;
             }
             let pa_end;
             if i == ppns.len() - 1 {
-                pa_end = ppns[i].起始地址() + 页内偏移(va_end);
+                pa_end = ppns[i].对齐到分页的地址范围.start + 页内偏移(va_end);
             } else {
-                pa_end = ppns[i].结尾地址();
+                pa_end = ppns[i].对齐到分页的地址范围.end;
             }
             pa_ranges.push(pa_start..pa_end);
         }
@@ -154,6 +154,6 @@ impl PageTable {
         }
     }
     pub fn token(&self) -> usize {
-        8usize << 60 | self.root_ppn.0
+        8usize << 60 | self.root_ppn.页号
     }
 }

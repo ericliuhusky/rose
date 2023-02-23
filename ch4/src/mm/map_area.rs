@@ -48,7 +48,7 @@ impl MapArea {
             let ppn: 物理页;
             match map_type {
                 MapType::Identical => {
-                    ppn = 物理页(vpn);
+                    ppn = 物理页::新建(vpn);
                 }
                 MapType::Framed => {
                     ppn = 物理内存管理器::分配物理页();

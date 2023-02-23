@@ -25,7 +25,10 @@ extern "C" {
 
 pub static mut KERNEL_SPACE: MemorySet = MemorySet {
     page_table: PageTable {
-        root_ppn: 物理页(0),
+        root_ppn: 物理页 {
+            页号: 0,
+            对齐到分页的地址范围: 0..0
+        },
     },
     areas: Vec::new(),
 };
