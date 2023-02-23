@@ -15,7 +15,6 @@ fn 对齐到分页向上取整(地址: usize) -> usize {
 
 /// map area structure, controls a contiguous piece of virtual memory
 pub struct MapArea {
-    pub va_range: Range<usize>,
     pub vpn_range: Range<usize>,
     pub 对齐到分页的地址范围: Range<usize>,
 }
@@ -27,7 +26,6 @@ impl MapArea {
         let start_vpn = 将地址转为页号(对齐到分页的起始地址);
         let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
         Self {
-            va_range,
             vpn_range: start_vpn..end_vpn,
             对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址,
         }
@@ -38,7 +36,6 @@ impl MapArea {
         let start_vpn = 将地址转为页号(对齐到分页的起始地址);
         let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
         Self {
-            va_range,
             vpn_range: start_vpn..end_vpn,
             对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址,
         }
