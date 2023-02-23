@@ -39,16 +39,6 @@ pub struct PageTable {
     pub root_ppn: 内存分页
 }
 
-fn 页表项索引列表(页号: usize) -> [usize; 3] {
-    let mut vpn = 页号;
-    let mut idx = [0usize; 3];
-    for i in (0..3).rev() {
-        idx[i] = vpn & 511;
-        vpn >>= 9;
-    }
-    idx
-}
-
 /// Assume that it won't oom when creating/mapping.
 impl PageTable {
     pub fn new() -> Self {
@@ -58,7 +48,7 @@ impl PageTable {
         }
     }
     fn find_pte_create(&self, vpn: 内存分页) -> &mut PageTableEntry {
-        let idxs = 页表项索引列表(vpn.页号);
+        let idxs = vpn.页表项索引列表();
         let mut ppn = self.root_ppn.clone();
         for i in 0..2 {
             let pte = &mut ppn.读取页表项列表()[idxs[i]];
@@ -72,7 +62,7 @@ impl PageTable {
         pte
     }
     fn find_pte(&self, vpn: &内存分页) -> 内存分页 {
-        let idxs = 页表项索引列表(vpn.页号);
+        let idxs = vpn.页表项索引列表();
         let mut ppn = self.root_ppn.clone();
         for i in 0..3 {
             let pte = ppn.读取页表项列表()[idxs[i]];
