@@ -48,6 +48,12 @@ fn 页表项索引列表(页号: usize) -> [usize; 3] {
     idx
 }
 
+fn 读取页表项列表(地址: usize) -> &'static mut [PageTableEntry] {
+    unsafe {
+        &mut *(地址 as *mut [PageTableEntry; 512])
+    }
+}
+
 /// Assume that it won't oom when creating/mapping.
 impl PageTable {
     pub fn new() -> Self {
@@ -60,21 +66,21 @@ impl PageTable {
         let idxs = 页表项索引列表(vpn.页号);
         let mut ppn = self.root_ppn.clone();
         for i in 0..2 {
-            let pte = &mut ppn.读取页表项列表()[idxs[i]];
+            let pte = &mut 读取页表项列表(ppn.对齐到分页的地址范围.start)[idxs[i]];
             if !pte.is_valid() {
                 let ppn = 物理内存管理器::分配物理页();
                 *pte = PageTableEntry::new_pointer(ppn);
             }
             ppn = pte.ppn();
         }
-        let pte = &mut ppn.读取页表项列表()[idxs[2]];
+        let pte = &mut 读取页表项列表(ppn.对齐到分页的地址范围.start)[idxs[2]];
         pte
     }
     fn find_pte(&self, vpn: 虚拟页) -> 物理页 {
         let idxs = 页表项索引列表(vpn.页号);
         let mut ppn = self.root_ppn.clone();
         for i in 0..3 {
-            let pte = ppn.读取页表项列表()[idxs[i]];
+            let pte = 读取页表项列表(ppn.对齐到分页的地址范围.start)[idxs[i]];
             if !pte.is_valid() {
                 panic!()
             }
