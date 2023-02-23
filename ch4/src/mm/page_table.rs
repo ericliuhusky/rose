@@ -132,21 +132,17 @@ impl PageTable {
         }
         v
     }
-    fn translated_page(&self, va_range: Range<usize>) -> Vec<内存分页> {
-        let vp_list = MapArea::new(va_range).vp_list();
-        vp_list
-            .iter()
-            .map(|vp| {
-                self.translate(vp)
-            })
-            .collect()
-    }
     fn translated_address(&self, va_range: Range<usize>) -> Vec<Range<usize>> {
         let va_start = va_range.start;
         let va_end = va_range.end;
-        let ppns = self.translated_page(va_range);
-        ppns
+        let vp_list = MapArea::new(va_range).vp_list();
+        vp_list
             .iter()
+            // 虚拟页列表转物理页列表
+            .map(|vp| {
+                self.translate(vp)
+            })
+            // 物理页列表转物理地址列表
             .enumerate()
             .map(|(i, pn)| {
                 let pa_start;
@@ -156,7 +152,7 @@ impl PageTable {
                     pa_start = pn.对齐到分页的地址范围.start;
                 }
                 let pa_end;
-                if i == ppns.len() - 1 {
+                if i == vp_list.len() - 1 {
                     pa_end = pn.对齐到分页的地址范围.start + 内存地址(va_end).页内偏移();
                 } else {
                     pa_end = pn.对齐到分页的地址范围.end;
