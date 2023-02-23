@@ -12,40 +12,40 @@ fn 对齐到分页向上取整(地址: usize) -> usize {
     (地址 + 0xfff) & !0xfff
 }
 
-/// map area structure, controls a contiguous piece of virtual memory
-pub struct MapArea {
+/// 一段连续地址的虚拟内存
+pub struct 逻辑段 {
     pub 起始页号: usize,
     pub 结尾页号: usize,
     pub 结尾地址: usize
 }
 
-impl MapArea {
-    pub fn new(va_range: Range<usize>) -> Self {
-        let 对齐到分页的结尾地址 = 对齐到分页向上取整(va_range.end);
-        let start_vpn = 将地址转为页号(对齐到分页向下取整(va_range.start));
-        let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
+impl 逻辑段 {
+    pub fn 新建(虚拟地址范围: Range<usize>) -> Self {
+        let 结尾地址 = 对齐到分页向上取整(虚拟地址范围.end);
+        let 起始页号 = 将地址转为页号(对齐到分页向下取整(虚拟地址范围.start));
+        let 结尾页号 = 将地址转为页号(结尾地址);
         Self {
-            起始页号: start_vpn,
-            结尾页号: end_vpn,
-            结尾地址: 对齐到分页的结尾地址,
+            起始页号,
+            结尾页号,
+            结尾地址,
         }
     }
-    pub fn 新建内嵌于地址范围的逻辑段(va_range: Range<usize>) -> Self {
-        let 对齐到分页的结尾地址 = 对齐到分页向下取整(va_range.end);
-        let start_vpn = 将地址转为页号(对齐到分页向上取整(va_range.start));
-        let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
+    pub fn 新建内嵌于地址范围的逻辑段(虚拟地址范围: Range<usize>) -> Self {
+        let 结尾地址 = 对齐到分页向下取整(虚拟地址范围.end);
+        let 起始页号 = 将地址转为页号(对齐到分页向上取整(虚拟地址范围.start));
+        let 结尾页号 = 将地址转为页号(结尾地址);
         Self {
-            起始页号: start_vpn,
-            结尾页号: end_vpn,
-            结尾地址: 对齐到分页的结尾地址,
+            起始页号,
+            结尾页号,
+            结尾地址,
         }
     }
     pub fn 虚拟页列表(&self) -> Vec<内存分页> {
-        let mut v = Vec::new();
-        for vpn in self.起始页号..self.结尾页号 {
-            v.push(内存分页::新建(vpn))
+        let mut 虚拟页列表 = Vec::new();
+        for 虚拟页号 in self.起始页号..self.结尾页号 {
+            虚拟页列表.push(内存分页::新建(虚拟页号))
         }
-        v
+        虚拟页列表
     }
 }
 

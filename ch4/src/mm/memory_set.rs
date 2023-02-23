@@ -6,7 +6,7 @@ use crate::config::{可用物理内存结尾地址, TRAP_CONTEXT, TRAP_CONTEXT_E
 use core::arch::asm;
 use core::ops::Range;
 use crate::mm::elf_reader::Elf文件;
-use super::map_area::MapArea;
+use super::map_area::逻辑段;
 use crate::mm::frame_allocator::物理内存管理器;
 
 extern "C" {
@@ -45,19 +45,19 @@ impl MemorySet {
         }
     }
     fn 映射(&mut self, va_range: Range<usize>) {
-        for vp in MapArea::new(va_range).虚拟页列表() {
+        for vp in 逻辑段::新建(va_range).虚拟页列表() {
             let pp = 物理内存管理器::分配物理页();
             self.page_table.map(vp, pp, false);
         }
     }
     fn 用户可见映射(&mut self, va_range: Range<usize>) {
-        for vp in MapArea::new(va_range).虚拟页列表() {
+        for vp in 逻辑段::新建(va_range).虚拟页列表() {
             let pp = 物理内存管理器::分配物理页();
             self.page_table.map(vp, pp, true);
         }
     }
     fn 恒等映射(&mut self, va_range: Range<usize>) {
-        for vp in MapArea::new(va_range).虚拟页列表() {
+        for vp in 逻辑段::新建(va_range).虚拟页列表() {
             let pp = vp.clone();
             self.page_table.map(vp, pp, false);
         }
@@ -94,7 +94,7 @@ impl MemorySet {
         }
 
         let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
-        let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).结尾地址;
+        let user_stack_bottom = 逻辑段::新建(最后一个程序段的虚拟地址范围).结尾地址;
         let user_stack_top = user_stack_bottom + 0x2000;
         memory_set.用户可见映射(user_stack_bottom..user_stack_top);
         // map TrapContext

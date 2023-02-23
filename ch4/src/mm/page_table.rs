@@ -7,7 +7,7 @@ use crate::config::{TRAP_CONTEXT, TRAP_CONTEXT_END};
 use crate::trap::陷入上下文;
 use crate::mm::frame_allocator::物理内存管理器;
 use super::address::内存地址;
-use super::map_area::MapArea;
+use super::map_area::逻辑段;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -135,7 +135,7 @@ impl PageTable {
     fn translated_address(&self, va_range: Range<usize>) -> Vec<Range<usize>> {
         let va_start = va_range.start;
         let va_end = va_range.end;
-        let vp_list = MapArea::new(va_range).虚拟页列表();
+        let vp_list = 逻辑段::新建(va_range).虚拟页列表();
         vp_list
             .iter()
             // 虚拟页列表转物理页列表

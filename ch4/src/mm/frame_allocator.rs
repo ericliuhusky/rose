@@ -1,6 +1,6 @@
 use crate::mm::address::内存分页;
 use crate::config::可用物理内存结尾地址;
-use crate::mm::map_area::MapArea;
+use crate::mm::map_area::逻辑段;
 
 pub struct 物理内存管理器 {
     应当分配的物理页号: usize,
@@ -14,7 +14,7 @@ impl 物理内存管理器 {
             fn ekernel();
         }
         unsafe {
-            let 可分配段 = MapArea::新建内嵌于地址范围的逻辑段(ekernel as usize..可用物理内存结尾地址);
+            let 可分配段 = 逻辑段::新建内嵌于地址范围的逻辑段(ekernel as usize..可用物理内存结尾地址);
 
             物理内存管理器 = Self {
                 应当分配的物理页号: 可分配段.起始页号,
