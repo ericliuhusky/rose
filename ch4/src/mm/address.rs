@@ -8,6 +8,13 @@ impl 内存地址 {
     pub fn 页号(&self) -> usize {
         self.0 >> 12
     }
+
+    pub fn 对齐到分页向下取整(&self) -> usize {
+        self.0 & !0xfff
+    }
+    pub fn 对齐到分页向上取整(&self) -> usize {
+        (self.0 + 0xfff) & !0xfff
+    }
 }
 
 #[derive(Clone)]
