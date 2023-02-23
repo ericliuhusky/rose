@@ -2,7 +2,7 @@
 
 use crate::mm::page_table::PageTable;
 use crate::mm::address::内存分页;
-use crate::config::{可用物理内存结尾地址, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
+use crate::config::{可用物理内存结尾地址, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use core::arch::asm;
 use crate::mm::elf_reader::Elf文件;
 use super::map_area::MapArea;
@@ -68,6 +68,7 @@ impl MemorySet {
             sdata as usize..edata as usize,
             sbss_with_stack as usize..ebss as usize,
             ekernel as usize..可用物理内存结尾地址,
+            0x100000..0x102000, // MMIO VIRT_TEST/RTC  in virt machine
         ];
         let segment_areas = segment_ranges
             .map(|segment_range| {
@@ -76,9 +77,6 @@ impl MemorySet {
         let mut memory_set = Self::new_bare();
         for segment_area in segment_areas {
             memory_set.恒等映射(segment_area);
-        }
-        for pair in MMIO {
-            memory_set.恒等映射(MapArea::new((*pair).0..(*pair).0 + (*pair).1));
         }
         // 内核栈
         memory_set.映射(MapArea::new(内核栈栈底..内核栈栈顶));
