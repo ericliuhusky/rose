@@ -48,7 +48,7 @@ impl MemorySet {
             let ppn: 内存分页;
             match map_type {
                 MapType::Identical => {
-                    ppn = 内存分页::新建(vp.页号);
+                    ppn = vp.clone();
                 }
                 MapType::Framed => {
                     ppn = 物理内存管理器::分配物理页();
