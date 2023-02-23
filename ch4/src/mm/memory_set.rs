@@ -1,7 +1,7 @@
 //! Implementation of [`MapArea`] and [`MemorySet`].
 
 use crate::mm::page_table::PageTable;
-use crate::mm::address::页;
+use crate::mm::address::内存分页;
 use crate::config::{可用物理内存结尾地址, MMIO, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use alloc::vec::Vec;
 use core::arch::asm;
@@ -25,7 +25,7 @@ extern "C" {
 
 pub static mut KERNEL_SPACE: MemorySet = MemorySet {
     page_table: PageTable {
-        root_ppn: 页 {
+        root_ppn: 内存分页 {
             页号: 0,
             对齐到分页的地址范围: 0..0
         },

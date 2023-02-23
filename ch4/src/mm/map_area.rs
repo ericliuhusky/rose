@@ -2,7 +2,7 @@ use core::ops::Range;
 use alloc::vec::Vec;
 
 use crate::mm::frame_allocator::物理内存管理器;
-use crate::mm::address::页;
+use crate::mm::address::内存分页;
 use crate::mm::page_table::PageTable;
 
 fn 将地址转为页号(地址: usize) -> usize {
@@ -42,19 +42,19 @@ impl MapArea {
             对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址,
         }
     }
-    pub fn vp_list(&self) -> Vec<页> {
+    pub fn vp_list(&self) -> Vec<内存分页> {
         let mut v = Vec::new();
         for vpn in self.vpn_range.clone() {
-            v.push(页::新建(vpn))
+            v.push(内存分页::新建(vpn))
         }
         v
     }
     pub fn map(&self, page_table: &mut PageTable, map_type: MapType, is_user: bool) {
         for vp in self.vp_list() {
-            let ppn: 页;
+            let ppn: 内存分页;
             match map_type {
                 MapType::Identical => {
-                    ppn = 页::新建(vp.页号);
+                    ppn = 内存分页::新建(vp.页号);
                 }
                 MapType::Framed => {
                     ppn = 物理内存管理器::分配物理页();

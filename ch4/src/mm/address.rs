@@ -9,12 +9,12 @@ impl 内存地址 {
 }
 
 #[derive(Clone)]
-pub struct 页 {
+pub struct 内存分页 {
     pub 页号: usize,
     pub 对齐到分页的地址范围: Range<usize>
 }
 
-impl 页 {
+impl 内存分页 {
     pub fn 新建(页号: usize) -> Self {
         let 对齐到分页的起始地址 = 页号 << 12;
         let 对齐到分页的结尾地址 = (页号 + 1) << 12;

@@ -1,7 +1,7 @@
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
 use core::ops::Range;
-use crate::mm::address::页;
+use crate::mm::address::内存分页;
 use alloc::vec::Vec;
 use crate::config::{TRAP_CONTEXT, TRAP_CONTEXT_END};
 use crate::trap::陷入上下文;
@@ -15,7 +15,7 @@ use super::map_area::MapArea;
 pub struct PageTableEntry(usize);
 
 impl PageTableEntry {
-    pub fn new_address(ppn: 页, is_user: bool) -> Self {
+    pub fn new_address(ppn: 内存分页, is_user: bool) -> Self {
         let mut flags = 0xf;
         if is_user {
             flags |= 0x10;
@@ -23,11 +23,11 @@ impl PageTableEntry {
         PageTableEntry(ppn.页号 << 10 | flags)
     }
 
-    pub fn new_pointer(ppn: 页) -> Self {
+    pub fn new_pointer(ppn: 内存分页) -> Self {
         PageTableEntry(ppn.页号 << 10 | 0x1)
     }
-    pub fn ppn(&self) -> 页 {
-        页::新建(self.0 >> 10)
+    pub fn ppn(&self) -> 内存分页 {
+        内存分页::新建(self.0 >> 10)
     }
     pub fn is_valid(&self) -> bool {
         self.0 & 0x1 == 1
@@ -36,7 +36,7 @@ impl PageTableEntry {
 
 /// page table structure
 pub struct PageTable {
-    pub root_ppn: 页
+    pub root_ppn: 内存分页
 }
 
 fn 页表项索引列表(页号: usize) -> [usize; 3] {
@@ -63,7 +63,7 @@ impl PageTable {
             root_ppn: ppn
         }
     }
-    fn find_pte_create(&self, vpn: 页) -> &mut PageTableEntry {
+    fn find_pte_create(&self, vpn: 内存分页) -> &mut PageTableEntry {
         let idxs = 页表项索引列表(vpn.页号);
         let mut ppn = self.root_ppn.clone();
         for i in 0..2 {
@@ -77,7 +77,7 @@ impl PageTable {
         let pte = &mut 读取页表项列表(ppn.对齐到分页的地址范围.start)[idxs[2]];
         pte
     }
-    fn find_pte(&self, vpn: 页) -> 页 {
+    fn find_pte(&self, vpn: 内存分页) -> 内存分页 {
         let idxs = 页表项索引列表(vpn.页号);
         let mut ppn = self.root_ppn.clone();
         for i in 0..3 {
@@ -89,12 +89,12 @@ impl PageTable {
         }
         ppn
     }
-    pub fn map(&self, vpn: 页, ppn: 页, is_user: bool) {
+    pub fn map(&self, vpn: 内存分页, ppn: 内存分页, is_user: bool) {
         let pte = self.find_pte_create(vpn);
         assert!(!pte.is_valid());
         *pte = PageTableEntry::new_address(ppn, is_user);
     }
-    pub fn translate(&self, vpn: 页) -> 页 {
+    pub fn translate(&self, vpn: 内存分页) -> 内存分页 {
         self.find_pte(vpn)
     }
     pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
@@ -132,7 +132,7 @@ impl PageTable {
         }
         v
     }
-    fn translated_page(&self, va_range: Range<usize>) -> Vec<页> {
+    fn translated_page(&self, va_range: Range<usize>) -> Vec<内存分页> {
         let vp_list = MapArea::new(va_range).vp_list();
         let mut ppns = Vec::new();
         for vp in vp_list {
