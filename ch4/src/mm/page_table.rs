@@ -122,15 +122,15 @@ impl PageTable {
         v
     }
     fn translated_byte_buffer(&self, va_range: Range<usize>) -> Vec<&'static mut [u8]> {        
-        let mut v = Vec::new();
         let pa_ranges = self.translated_address(va_range);
-        for pa_range in pa_ranges {
-            let bytes = unsafe {
-                core::slice::from_raw_parts_mut(pa_range.start as *mut u8, pa_range.len())
-            };
-            v.push(bytes);
-        }
-        v
+        pa_ranges
+            .iter()
+            .map(|pa_range| {
+                unsafe {
+                    core::slice::from_raw_parts_mut(pa_range.start as *mut u8, pa_range.len())
+                }
+            })
+            .collect()
     }
     fn translated_address(&self, va_range: Range<usize>) -> Vec<Range<usize>> {
         let va_start = va_range.start;
