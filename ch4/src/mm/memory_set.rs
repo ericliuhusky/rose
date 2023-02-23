@@ -94,7 +94,7 @@ impl MemorySet {
         }
 
         let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
-        let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).对齐到分页的地址范围.end;
+        let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).结尾地址;
         let user_stack_top = user_stack_bottom + 0x2000;
         memory_set.用户可见映射(user_stack_bottom..user_stack_top);
         // map TrapContext
