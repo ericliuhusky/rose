@@ -77,7 +77,7 @@ impl PageTable {
         let pte = &mut 读取页表项列表(ppn.对齐到分页的地址范围.start)[idxs[2]];
         pte
     }
-    fn find_pte(&self, vpn: 内存分页) -> 内存分页 {
+    fn find_pte(&self, vpn: &内存分页) -> 内存分页 {
         let idxs = 页表项索引列表(vpn.页号);
         let mut ppn = self.root_ppn.clone();
         for i in 0..3 {
@@ -94,7 +94,7 @@ impl PageTable {
         assert!(!pte.is_valid());
         *pte = PageTableEntry::new_address(ppn, is_user);
     }
-    pub fn translate(&self, vpn: 内存分页) -> 内存分页 {
+    pub fn translate(&self, vpn: &内存分页) -> 内存分页 {
         self.find_pte(vpn)
     }
     pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
@@ -134,12 +134,12 @@ impl PageTable {
     }
     fn translated_page(&self, va_range: Range<usize>) -> Vec<内存分页> {
         let vp_list = MapArea::new(va_range).vp_list();
-        let mut ppns = Vec::new();
-        for vp in vp_list {
-            let ppn = self.translate(vp);
-            ppns.push(ppn);
-        }
-        ppns
+        vp_list
+            .iter()
+            .map(|vp| {
+                self.translate(vp)
+            })
+            .collect()
     }
     fn translated_address(&self, va_range: Range<usize>) -> Vec<Range<usize>> {
         let va_start = va_range.start;
