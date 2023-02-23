@@ -23,18 +23,8 @@ extern "C" {
     fn __trap_end();
 }
 
-pub static mut 内核地址空间: 地址空间 = 地址空间 {
-    页表: PageTable {
-        root_ppn: 内存分页 {
-            页号: 0,
-            起始地址: 0,
-            结尾地址: 0
-        },
-    },
-};
-
 pub struct 地址空间 {
-    pub 页表: PageTable,
+    页表: PageTable,
 }
 
 impl 地址空间 {
@@ -57,7 +47,7 @@ impl 地址空间 {
         }
     }
 
-    pub fn 新建内核地址空间() -> Self {
+    fn 新建内核地址空间() -> Self {
         let 逻辑段范围列表 = [
             stext as usize..etext as usize,
             srodata as usize..erodata as usize,
@@ -99,11 +89,33 @@ impl 地址空间 {
             elf文件.入口地址(),
         )
     }
-    pub fn 激活(&self) {
+    fn 激活(&self) {
         let satp = self.页表.token();
         unsafe {
             core::arch::asm!("csrw satp, {}", in(reg) satp);
             asm!("sfence.vma");
         }
     }
+
+    pub fn 初始化内核地址空间() {
+        unsafe {
+            内核地址空间 = Self::新建内核地址空间();
+            内核地址空间.激活();
+        }
+    }
+    pub fn 内核地址空间token() -> usize {
+        unsafe {
+            内核地址空间.页表.token()
+        }
+    }
 }
+
+static mut 内核地址空间: 地址空间 = 地址空间 {
+    页表: PageTable {
+        root_ppn: 内存分页 {
+            页号: 0,
+            起始地址: 0,
+            结尾地址: 0
+        },
+    },
+};

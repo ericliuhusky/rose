@@ -1,4 +1,4 @@
-use crate::mm::memory_set::{地址空间, 内核地址空间};
+use crate::mm::memory_set::地址空间;
 use crate::mm::page_table::PageTable;
 use crate::trap::{陷入上下文};
 
@@ -15,7 +15,7 @@ impl 任务 {
         *trap_cx = 陷入上下文::应用初始上下文(
             应用入口地址,
             用户栈栈顶,
-            unsafe { 内核地址空间.页表.token() },
+            地址空间::内核地址空间token(),
         );
         Self {
             状态,
