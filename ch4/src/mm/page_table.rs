@@ -116,11 +116,10 @@ impl PageTable {
         v
     }
     fn translated_page(&self, va_range: Range<usize>) -> Vec<物理页> {
-        let vpn_range = MapArea::new(va_range).vpn_range;
+        let vp_list = MapArea::new(va_range).vp_list();
         let mut ppns = Vec::new();
-        for vpn in vpn_range {
-            let vpn = 虚拟页(vpn);
-            let ppn = self.translate(vpn);
+        for vp in vp_list {
+            let ppn = self.translate(vp);
             ppns.push(ppn);
         }
         ppns

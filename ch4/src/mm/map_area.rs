@@ -1,4 +1,6 @@
 use core::ops::Range;
+use alloc::vec::Vec;
+
 use crate::mm::frame_allocator::物理内存管理器;
 use crate::mm::address::{物理页, 虚拟页};
 use crate::mm::page_table::PageTable;
@@ -40,18 +42,25 @@ impl MapArea {
             对齐到分页的地址范围: 对齐到分页的起始地址..对齐到分页的结尾地址,
         }
     }
-    pub fn map(&self, page_table: &mut PageTable, map_type: MapType, is_user: bool) {
+    pub fn vp_list(&self) -> Vec<虚拟页> {
+        let mut v = Vec::new();
         for vpn in self.vpn_range.clone() {
+            v.push(虚拟页(vpn))
+        }
+        v
+    }
+    pub fn map(&self, page_table: &mut PageTable, map_type: MapType, is_user: bool) {
+        for vp in self.vp_list() {
             let ppn: 物理页;
             match map_type {
                 MapType::Identical => {
-                    ppn = 物理页::新建(vpn);
+                    ppn = 物理页::新建(vp.0);
                 }
                 MapType::Framed => {
                     ppn = 物理内存管理器::分配物理页();
                 }
             }
-            page_table.map(虚拟页(vpn), ppn, is_user);
+            page_table.map(vp, ppn, is_user);
         }
     }
 }
