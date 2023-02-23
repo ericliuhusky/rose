@@ -14,7 +14,8 @@ fn 对齐到分页向上取整(地址: usize) -> usize {
 
 /// map area structure, controls a contiguous piece of virtual memory
 pub struct MapArea {
-    pub vpn_range: Range<usize>,
+    pub 起始页号: usize,
+    pub 结尾页号: usize,
     pub 结尾地址: usize
 }
 
@@ -24,7 +25,8 @@ impl MapArea {
         let start_vpn = 将地址转为页号(对齐到分页向下取整(va_range.start));
         let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
         Self {
-            vpn_range: start_vpn..end_vpn,
+            起始页号: start_vpn,
+            结尾页号: end_vpn,
             结尾地址: 对齐到分页的结尾地址,
         }
     }
@@ -33,13 +35,14 @@ impl MapArea {
         let start_vpn = 将地址转为页号(对齐到分页向上取整(va_range.start));
         let end_vpn = 将地址转为页号(对齐到分页的结尾地址);
         Self {
-            vpn_range: start_vpn..end_vpn,
+            起始页号: start_vpn,
+            结尾页号: end_vpn,
             结尾地址: 对齐到分页的结尾地址,
         }
     }
     pub fn 虚拟页列表(&self) -> Vec<内存分页> {
         let mut v = Vec::new();
-        for vpn in self.vpn_range.clone() {
+        for vpn in self.起始页号..self.结尾页号 {
             v.push(内存分页::新建(vpn))
         }
         v
