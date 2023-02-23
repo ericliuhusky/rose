@@ -48,7 +48,7 @@ impl PageTable {
     }
     fn find_pte_create(&self, vpn: 虚拟页) -> &mut PageTableEntry {
         let idxs = vpn.页表项索引列表();
-        let mut ppn = self.root_ppn;
+        let mut ppn = self.root_ppn.clone();
         for i in 0..2 {
             let pte = &mut ppn.读取页表项列表()[idxs[i]];
             if !pte.is_valid() {
@@ -62,7 +62,7 @@ impl PageTable {
     }
     fn find_pte(&self, vpn: 虚拟页) -> 物理页 {
         let idxs = vpn.页表项索引列表();
-        let mut ppn = self.root_ppn;
+        let mut ppn = self.root_ppn.clone();
         for i in 0..3 {
             let pte = ppn.读取页表项列表()[idxs[i]];
             if !pte.is_valid() {

@@ -1,7 +1,7 @@
 use crate::mm::page_table::PageTableEntry;
 
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct 物理页(pub usize);
 
 pub struct 虚拟页(pub usize);
