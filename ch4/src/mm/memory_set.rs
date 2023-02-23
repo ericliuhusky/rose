@@ -42,19 +42,19 @@ impl MemorySet {
             page_table: PageTable::new(),
         }
     }
-    fn map(&mut self, map_area: MapArea) {
+    fn 映射(&mut self, map_area: MapArea) {
         for vp in map_area.虚拟页列表() {
             let pp = 物理内存管理器::分配物理页();
             self.page_table.map(vp, pp, false);
         }
     }
-    fn map_user(&mut self, map_area: MapArea) {
+    fn 用户可见映射(&mut self, map_area: MapArea) {
         for vp in map_area.虚拟页列表() {
             let pp = 物理内存管理器::分配物理页();
             self.page_table.map(vp, pp, true);
         }
     }
-    fn map_identical(&mut self, map_area: MapArea) {
+    fn 恒等映射(&mut self, map_area: MapArea) {
         for vp in map_area.虚拟页列表() {
             let pp = vp.clone();
             self.page_table.map(vp, pp, false);
@@ -75,35 +75,35 @@ impl MemorySet {
             });
         let mut memory_set = Self::new_bare();
         for segment_area in segment_areas {
-            memory_set.map_identical(segment_area);
+            memory_set.恒等映射(segment_area);
         }
         for pair in MMIO {
-            memory_set.map_identical(MapArea::new((*pair).0..(*pair).0 + (*pair).1));
+            memory_set.恒等映射(MapArea::new((*pair).0..(*pair).0 + (*pair).1));
         }
         // 内核栈
-        memory_set.map(MapArea::new(内核栈栈底..内核栈栈顶));
+        memory_set.映射(MapArea::new(内核栈栈底..内核栈栈顶));
         memory_set
     }
     
     pub fn from_elf(elf_data: &[u8]) -> (PageTable, usize, usize) {
         let mut memory_set = Self::new_bare();
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
-        memory_set.map_identical(MapArea::new(__trap_entry as usize..__trap_end as usize));
+        memory_set.恒等映射(MapArea::new(__trap_entry as usize..__trap_end as usize));
 
         // map program headers of elf, with U flag
         let elf = Elf文件::解析(elf_data);
         for p in elf.程序段列表() {
             let map_area = MapArea::new(p.虚拟地址范围());
-            memory_set.map_user(map_area);
+            memory_set.用户可见映射(map_area);
             memory_set.page_table.write(p.虚拟地址范围(), p.数据);
         }
 
         let 最后一个程序段的虚拟地址范围 = elf.最后一个程序段的虚拟地址范围();
         let user_stack_bottom = MapArea::new(最后一个程序段的虚拟地址范围).对齐到分页的地址范围.end;
         let user_stack_top = user_stack_bottom + 0x2000;
-        memory_set.map_user(MapArea::new(user_stack_bottom..user_stack_top));
+        memory_set.用户可见映射(MapArea::new(user_stack_bottom..user_stack_top));
         // map TrapContext
-        memory_set.map(MapArea::new(TRAP_CONTEXT..TRAP_CONTEXT_END));
+        memory_set.映射(MapArea::new(TRAP_CONTEXT..TRAP_CONTEXT_END));
         (
             memory_set.page_table,
             user_stack_top,
