@@ -145,23 +145,25 @@ impl PageTable {
         let va_start = va_range.start;
         let va_end = va_range.end;
         let ppns = self.translated_page(va_range);
-        let mut pa_ranges = Vec::new();
-        for i in 0..ppns.len() {
-            let pa_start;
-            if i == 0 {
-                pa_start = ppns[i].对齐到分页的地址范围.start + 内存地址(va_start).页内偏移();
-            } else {
-                pa_start = ppns[i].对齐到分页的地址范围.start;
-            }
-            let pa_end;
-            if i == ppns.len() - 1 {
-                pa_end = ppns[i].对齐到分页的地址范围.start + 内存地址(va_end).页内偏移();
-            } else {
-                pa_end = ppns[i].对齐到分页的地址范围.end;
-            }
-            pa_ranges.push(pa_start..pa_end);
-        }
-        pa_ranges
+        ppns
+            .iter()
+            .enumerate()
+            .map(|(i, pn)| {
+                let pa_start;
+                if i == 0 {
+                    pa_start = pn.对齐到分页的地址范围.start + 内存地址(va_start).页内偏移();
+                } else {
+                    pa_start = pn.对齐到分页的地址范围.start;
+                }
+                let pa_end;
+                if i == ppns.len() - 1 {
+                    pa_end = pn.对齐到分页的地址范围.start + 内存地址(va_end).页内偏移();
+                } else {
+                    pa_end = pn.对齐到分页的地址范围.end;
+                }
+                pa_start..pa_end
+            })
+            .collect()
     }
     pub fn translated_trap_context(&self) -> &mut 陷入上下文 {
         let pa_ranges = self.translated_address(TRAP_CONTEXT..TRAP_CONTEXT_END);
