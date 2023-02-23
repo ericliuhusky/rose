@@ -1,14 +1,17 @@
 use core::ops::Range;
 
+pub struct 内存地址(pub usize);
+
+impl 内存地址 {
+    pub fn 页内偏移(&self) -> usize {
+        self.0 & 0xfff
+    }
+}
+
 #[derive(Clone)]
 pub struct 页 {
     pub 页号: usize,
     pub 对齐到分页的地址范围: Range<usize>
-}
-
-
-pub fn 页内偏移(v: usize) -> usize {
-    v & 0xfff
 }
 
 impl 页 {

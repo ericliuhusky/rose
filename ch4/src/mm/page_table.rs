@@ -1,11 +1,12 @@
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
 use core::ops::Range;
-use crate::mm::address::{页内偏移, 页};
+use crate::mm::address::页;
 use alloc::vec::Vec;
 use crate::config::{TRAP_CONTEXT, TRAP_CONTEXT_END};
 use crate::trap::陷入上下文;
 use crate::mm::frame_allocator::物理内存管理器;
+use super::address::内存地址;
 use super::map_area::MapArea;
 
 #[derive(Copy, Clone)]
@@ -148,13 +149,13 @@ impl PageTable {
         for i in 0..ppns.len() {
             let pa_start;
             if i == 0 {
-                pa_start = ppns[i].对齐到分页的地址范围.start + 页内偏移(va_start);
+                pa_start = ppns[i].对齐到分页的地址范围.start + 内存地址(va_start).页内偏移();
             } else {
                 pa_start = ppns[i].对齐到分页的地址范围.start;
             }
             let pa_end;
             if i == ppns.len() - 1 {
-                pa_end = ppns[i].对齐到分页的地址范围.start + 页内偏移(va_end);
+                pa_end = ppns[i].对齐到分页的地址范围.start + 内存地址(va_end).页内偏移();
             } else {
                 pa_end = ppns[i].对齐到分页的地址范围.end;
             }
