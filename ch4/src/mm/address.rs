@@ -35,12 +35,6 @@ impl 内存分页 {
         }
     }
 
-    pub fn 读取页表项列表(&self) -> &'static mut [页表项] {
-        unsafe {
-            &mut *(self.起始地址 as *mut [页表项; 512])
-        }
-    }
-
     pub fn 页表项索引列表(&self) -> [usize; 3] {
         let mut vpn = self.页号;
         let mut idx = [0usize; 3];

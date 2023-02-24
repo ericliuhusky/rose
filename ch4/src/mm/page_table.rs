@@ -41,25 +41,32 @@ impl 页表 {
             根物理页: 物理页
         }
     }
+
+    fn 读取页表项列表(&self) -> &'static mut [页表项] {
+        unsafe {
+            &mut *(self.根物理页.起始地址 as *mut [页表项; 512])
+        }
+    }
+
     fn find_pte_create(&self, vpn: 内存分页) -> &mut 页表项 {
         let idxs = vpn.页表项索引列表();
         let mut ppn = self.根物理页.clone();
         for i in 0..2 {
-            let pte = &mut ppn.读取页表项列表()[idxs[i]];
+            let pte = &mut 页表{根物理页: ppn}.读取页表项列表()[idxs[i]];
             if !pte.是有效的() {
                 let ppn = 物理内存管理器::分配物理页();
                 *pte = 页表项::新建指向下一级页表的页表项(ppn);
             }
             ppn = pte.物理页();
         }
-        let pte = &mut ppn.读取页表项列表()[idxs[2]];
+        let pte = &mut 页表{根物理页: ppn}.读取页表项列表()[idxs[2]];
         pte
     }
     fn find_pte(&self, vpn: &内存分页) -> 内存分页 {
         let idxs = vpn.页表项索引列表();
         let mut ppn = self.根物理页.clone();
         for i in 0..3 {
-            let pte = &ppn.读取页表项列表()[idxs[i]];
+            let pte = &页表{根物理页: ppn}.读取页表项列表()[idxs[i]];
             if !pte.是有效的() {
                 panic!()
             }
