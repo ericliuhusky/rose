@@ -17,17 +17,14 @@ impl 内存地址 {
     }
 }
 
-#[derive(Clone)]
-pub struct 内存分页 {
-    pub 页号: usize,
-}
+pub struct 内存分页(pub usize);
 
 impl 内存分页 {
     pub fn 起始地址(&self) -> usize {
-        self.页号 << 12
+        self.0 << 12
     }
 
     pub fn 结尾地址(&self) -> usize {
-        (self.页号 + 1) << 12
+        (self.0 + 1) << 12
     }
 }
