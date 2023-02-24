@@ -1,5 +1,3 @@
-use super::page_table::页表项;
-
 pub struct 内存地址(pub usize);
 
 impl 内存地址 {
