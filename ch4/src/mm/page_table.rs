@@ -125,12 +125,12 @@ impl 多级页表 {
     fn 虚拟地址范围转换物理地址范围列表(&self, 虚拟地址范围: Range<usize>) -> Vec<Range<usize>> {
         let va_start = 虚拟地址范围.start;
         let va_end = 虚拟地址范围.end;
-        let vp_list = 逻辑段::新建(虚拟地址范围).虚拟页号列表();
-        vp_list
-            .iter()
+        let vpn_range = 逻辑段::新建(虚拟地址范围).虚拟页号范围;
+        let vpn_len = vpn_range.len();
+        vpn_range
             // 虚拟页列表转物理页列表
             .map(|vp| {
-                self.虚拟页号转换物理页号(*vp)
+                self.虚拟页号转换物理页号(vp)
             })
             // 物理页列表转物理地址列表
             .enumerate()
@@ -142,7 +142,7 @@ impl 多级页表 {
                     pa_start = 内存分页(pn).起始地址();
                 }
                 let pa_end;
-                if i == vp_list.len() - 1 {
+                if i == vpn_len - 1 {
                     pa_end = 内存分页(pn).起始地址() + 内存地址(va_end).页内偏移();
                 } else {
                     pa_end = 内存分页(pn).结尾地址();
