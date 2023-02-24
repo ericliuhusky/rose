@@ -46,19 +46,19 @@ impl 页表{
         }
     }
 
-    fn 子页表(&self, 索引: usize) -> Option<页表> {
+    fn 子页表(&self, 索引: usize, 没有子页表时创建: bool) -> 页表 {
         let pte = &self.读取页表项列表()[索引];
         if pte.是有效的() {
-            Some(Self::新建(pte.物理页()))
+            Self::新建(pte.物理页())
         } else {
-            None
+            if 没有子页表时创建 {
+                let ppn = 物理内存管理器::分配物理页();
+                self.读取页表项列表()[索引] = 页表项::新建指向下一级页表的页表项(&ppn);
+                Self::新建(ppn)
+            } else {
+                panic!()
+            }
         }
-    }
-
-    fn 添加子页表(&self, 索引: usize) -> 页表 {
-        let ppn = 物理内存管理器::分配物理页();
-        self.读取页表项列表()[索引] = 页表项::新建指向下一级页表的页表项(&ppn);
-        Self::新建(ppn)
     }
 }
 
@@ -78,12 +78,7 @@ impl 多级页表 {
         let idxs = vpn.页表项索引列表();
         let mut pt = self.根页表.clone();
         for i in 0..2 {
-            if let Some(npt) = pt.子页表(idxs[i]) {
-                pt = npt;
-            } else {
-                pt = pt.添加子页表(idxs[i]);
-
-            }
+            pt = pt.子页表(idxs[i], true);
         }
         let pte = &mut pt.读取页表项列表()[idxs[2]];
         pte
@@ -92,11 +87,7 @@ impl 多级页表 {
         let idxs = vpn.页表项索引列表();
         let mut pt = self.根页表.clone();
         for i in 0..2 {
-            if let Some(npt) = pt.子页表(idxs[i]) {
-                pt = npt;
-            } else {
-                panic!()
-            }
+            pt = pt.子页表(idxs[i], false);
         }
         let ppn = pt.读取页表项列表()[idxs[2]].物理页();
         ppn
