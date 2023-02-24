@@ -7,6 +7,7 @@ use core::arch::asm;
 use core::ops::Range;
 use crate::mm::elf_reader::Elf文件;
 use super::map_area::逻辑段;
+use super::page_table::页表;
 use crate::mm::frame_allocator::物理内存管理器;
 
 extern "C" {
@@ -112,10 +113,12 @@ impl 地址空间 {
 
 static mut 内核地址空间: 地址空间 = 地址空间 {
     多级页表: 多级页表 {
-        根物理页: 内存分页 {
-            页号: 0,
-            起始地址: 0,
-            结尾地址: 0
-        },
+        根页表: 页表 {
+            物理页: 内存分页 {
+                页号: 0,
+                起始地址: 0,
+                结尾地址: 0
+            }
+        }
     },
 };

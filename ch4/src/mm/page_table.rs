@@ -30,48 +30,75 @@ impl 页表项 {
     }
 }
 
+#[derive(Clone)]
+pub struct 页表 {
+    pub 物理页: 内存分页
+}
+
+impl 页表{
+    fn 新建(物理页: 内存分页) -> Self {
+        Self { 物理页 }
+    }
+
+    fn 读取页表项列表(&self) -> &'static mut [页表项] {
+        unsafe {
+            &mut *(self.物理页.起始地址 as *mut [页表项; 512])
+        }
+    }
+
+    fn 子页表(&self, 索引: usize) -> Option<页表> {
+        let pte = &self.读取页表项列表()[索引];
+        if pte.是有效的() {
+            Some(Self::新建(pte.物理页()))
+        } else {
+            None
+        }
+    }
+
+    fn 添加子页表(&self, 索引: usize) -> 页表 {
+        let ppn = 物理内存管理器::分配物理页();
+        self.读取页表项列表()[索引] = 页表项::新建指向下一级页表的页表项(ppn.clone());
+        Self::新建(ppn)
+    }
+}
+
 pub struct 多级页表 {
-    pub 根物理页: 内存分页
+    pub 根页表: 页表
 }
 
 impl 多级页表 {
     pub fn 新建() -> Self {
         let 物理页 = 物理内存管理器::分配物理页();
         多级页表 {
-            根物理页: 物理页
-        }
-    }
-
-    fn 读取页表项列表(&self) -> &'static mut [页表项] {
-        unsafe {
-            &mut *(self.根物理页.起始地址 as *mut [页表项; 512])
+            根页表: 页表::新建(物理页)
         }
     }
 
     fn find_pte_create(&self, vpn: 内存分页) -> &mut 页表项 {
         let idxs = vpn.页表项索引列表();
-        let mut ppn = self.根物理页.clone();
+        let mut pt = self.根页表.clone();
         for i in 0..2 {
-            let pte = &mut 多级页表{根物理页: ppn}.读取页表项列表()[idxs[i]];
-            if !pte.是有效的() {
-                let ppn = 物理内存管理器::分配物理页();
-                *pte = 页表项::新建指向下一级页表的页表项(ppn);
+            if let Some(npt) = pt.子页表(idxs[i]) {
+                pt = npt;
+            } else {
+                pt = pt.添加子页表(idxs[i]);
+
             }
-            ppn = pte.物理页();
         }
-        let pte = &mut 多级页表{根物理页: ppn}.读取页表项列表()[idxs[2]];
+        let pte = &mut pt.读取页表项列表()[idxs[2]];
         pte
     }
     fn find_pte(&self, vpn: &内存分页) -> 内存分页 {
         let idxs = vpn.页表项索引列表();
-        let mut ppn = self.根物理页.clone();
-        for i in 0..3 {
-            let pte = &多级页表{根物理页: ppn}.读取页表项列表()[idxs[i]];
-            if !pte.是有效的() {
+        let mut pt = self.根页表.clone();
+        for i in 0..2 {
+            if let Some(npt) = pt.子页表(idxs[i]) {
+                pt = npt;
+            } else {
                 panic!()
             }
-            ppn = pte.物理页();
         }
+        let ppn = pt.读取页表项列表()[idxs[2]].物理页();
         ppn
     }
     pub fn 映射(&self, 虚拟页: 内存分页, 物理页: 内存分页, 用户是否可见: bool) {
@@ -153,6 +180,6 @@ impl 多级页表 {
         }
     }
     pub fn token(&self) -> usize {
-        8usize << 60 | self.根物理页.页号
+        8usize << 60 | self.根页表.物理页.页号
     }
 }
