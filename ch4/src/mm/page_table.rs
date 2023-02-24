@@ -42,7 +42,7 @@ impl 页表{
 
     fn 读取页表项列表(&self) -> &'static mut [页表项] {
         unsafe {
-            &mut *(self.物理页.起始地址 as *mut [页表项; 512])
+            &mut *(self.物理页.起始地址() as *mut [页表项; 512])
         }
     }
 
@@ -143,15 +143,15 @@ impl 多级页表 {
             .map(|(i, pn)| {
                 let pa_start;
                 if i == 0 {
-                    pa_start = pn.起始地址 + 内存地址(va_start).页内偏移();
+                    pa_start = pn.起始地址() + 内存地址(va_start).页内偏移();
                 } else {
-                    pa_start = pn.起始地址;
+                    pa_start = pn.起始地址();
                 }
                 let pa_end;
                 if i == vp_list.len() - 1 {
-                    pa_end = pn.起始地址 + 内存地址(va_end).页内偏移();
+                    pa_end = pn.起始地址() + 内存地址(va_end).页内偏移();
                 } else {
-                    pa_end = pn.结尾地址;
+                    pa_end = pn.结尾地址();
                 }
                 pa_start..pa_end
             })
