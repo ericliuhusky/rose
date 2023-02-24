@@ -1,7 +1,6 @@
 //! Implementation of [`MapArea`] and [`MemorySet`].
 
 use crate::mm::page_table::多级页表;
-use crate::mm::address::内存分页;
 use crate::config::{可用物理内存结尾地址, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use core::arch::asm;
 use core::ops::Range;
@@ -30,21 +29,21 @@ pub struct 地址空间 {
 
 impl 地址空间 {
     fn 映射(&mut self, 虚拟地址范围: Range<usize>) {
-        for 虚拟页 in 逻辑段::新建(虚拟地址范围).虚拟页列表() {
+        for 虚拟页号 in 逻辑段::新建(虚拟地址范围).虚拟页号列表() {
             let 物理页 = 物理内存管理器::分配物理页();
-            self.多级页表.映射(&虚拟页, &物理页, false);
+            self.多级页表.映射(虚拟页号, 物理页.页号, false);
         }
     }
     fn 用户可见映射(&mut self, 虚拟地址范围: Range<usize>) {
-        for 虚拟页 in 逻辑段::新建(虚拟地址范围).虚拟页列表() {
+        for 虚拟页号 in 逻辑段::新建(虚拟地址范围).虚拟页号列表() {
             let 物理页 = 物理内存管理器::分配物理页();
-            self.多级页表.映射(&虚拟页, &物理页, true);
+            self.多级页表.映射(虚拟页号, 物理页.页号, true);
         }
     }
     fn 恒等映射(&mut self, 虚拟地址范围: Range<usize>) {
-        for 虚拟页 in 逻辑段::新建(虚拟地址范围).虚拟页列表() {
-            let 物理页 = &虚拟页;
-            self.多级页表.映射(&虚拟页, 物理页, false);
+        for 虚拟页号 in 逻辑段::新建(虚拟地址范围).虚拟页号列表() {
+            let 物理页号 = 虚拟页号;
+            self.多级页表.映射(虚拟页号, 物理页号, false);
         }
     }
 

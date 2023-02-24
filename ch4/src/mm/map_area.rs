@@ -1,6 +1,5 @@
 use core::ops::Range;
 use alloc::vec::Vec;
-use crate::mm::address::内存分页;
 use super::address::内存地址;
 
 /// 一段连续地址的虚拟内存
@@ -31,10 +30,10 @@ impl 逻辑段 {
             结尾地址: 结尾地址.0,
         }
     }
-    pub fn 虚拟页列表(&self) -> Vec<内存分页> {
+    pub fn 虚拟页号列表(&self) -> Vec<usize> {
         let mut 虚拟页列表 = Vec::new();
         for 虚拟页号 in self.起始页号..self.结尾页号 {
-            虚拟页列表.push(内存分页 { 页号: 虚拟页号 })
+            虚拟页列表.push(虚拟页号)
         }
         虚拟页列表
     }

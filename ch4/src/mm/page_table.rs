@@ -70,24 +70,23 @@ impl 多级页表 {
         }
     }
 
-    fn 查找存放物理页号的页表项(&self, 虚拟页: &内存分页, 没有子页表时创建: bool) -> &mut 页表项 {
-        let 页号 = 虚拟页.页号;
-        let 一级索引 = (页号 >> 18) & 0x1ff;
-        let 二级索引 = (页号 >> 9) & 0x1ff;
-        let 三级索引 = 页号 & 0x1ff;
+    fn 查找存放物理页号的页表项(&self, 虚拟页号: usize, 没有子页表时创建: bool) -> &mut 页表项 {
+        let 一级索引 = (虚拟页号 >> 18) & 0x1ff;
+        let 二级索引 = (虚拟页号 >> 9) & 0x1ff;
+        let 三级索引 = 虚拟页号 & 0x1ff;
         let 一级页表 = &self.根页表;
         let 二级页表 = 一级页表.子页表(一级索引, 没有子页表时创建);
         let 三级页表 = 二级页表.子页表(二级索引, 没有子页表时创建);
         let 存放物理页号的页表项 = &mut 三级页表.读取页表项列表()[三级索引];
         存放物理页号的页表项
     }
-    pub fn 映射(&self, 虚拟页: &内存分页, 物理页: &内存分页, 用户是否可见: bool) {
-        let pte = self.查找存放物理页号的页表项(虚拟页, true);
+    pub fn 映射(&self, 虚拟页号: usize, 物理页号: usize, 用户是否可见: bool) {
+        let pte = self.查找存放物理页号的页表项(虚拟页号, true);
         assert!(!pte.是有效的());
-        *pte = 页表项::新建存放物理页号的页表项(物理页.页号, 用户是否可见);
+        *pte = 页表项::新建存放物理页号的页表项(物理页号, 用户是否可见);
     }
-    fn 虚拟页转换物理页(&self, 虚拟页: &内存分页) -> 内存分页 {
-        内存分页 { 页号: self.查找存放物理页号的页表项(虚拟页, false).物理页号() }
+    fn 虚拟页号转换物理页号(&self, 虚拟页号: usize) -> usize {
+        self.查找存放物理页号的页表项(虚拟页号, false).物理页号()
     }
     pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
         let dsts = self.虚拟地址范围转换字节串列表(va_range);
@@ -127,27 +126,27 @@ impl 多级页表 {
     fn 虚拟地址范围转换物理地址范围列表(&self, 虚拟地址范围: Range<usize>) -> Vec<Range<usize>> {
         let va_start = 虚拟地址范围.start;
         let va_end = 虚拟地址范围.end;
-        let vp_list = 逻辑段::新建(虚拟地址范围).虚拟页列表();
+        let vp_list = 逻辑段::新建(虚拟地址范围).虚拟页号列表();
         vp_list
             .iter()
             // 虚拟页列表转物理页列表
             .map(|vp| {
-                self.虚拟页转换物理页(vp)
+                self.虚拟页号转换物理页号(*vp)
             })
             // 物理页列表转物理地址列表
             .enumerate()
             .map(|(i, pn)| {
                 let pa_start;
                 if i == 0 {
-                    pa_start = pn.起始地址() + 内存地址(va_start).页内偏移();
+                    pa_start = 内存分页 { 页号: pn }.起始地址() + 内存地址(va_start).页内偏移();
                 } else {
-                    pa_start = pn.起始地址();
+                    pa_start = 内存分页 { 页号: pn }.起始地址();
                 }
                 let pa_end;
                 if i == vp_list.len() - 1 {
-                    pa_end = pn.起始地址() + 内存地址(va_end).页内偏移();
+                    pa_end = 内存分页 { 页号: pn }.起始地址() + 内存地址(va_end).页内偏移();
                 } else {
-                    pa_end = pn.结尾地址();
+                    pa_end = 内存分页 { 页号: pn }.结尾地址();
                 }
                 pa_start..pa_end
             })
