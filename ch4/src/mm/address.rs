@@ -32,14 +32,4 @@ impl 内存分页 {
             结尾地址: (页号 + 1) << 12
         }
     }
-
-    pub fn 页表项索引列表(&self) -> [usize; 3] {
-        let mut vpn = self.页号;
-        let mut idx = [0usize; 3];
-        for i in (0..3).rev() {
-            idx[i] = vpn & 511;
-            vpn >>= 9;
-        }
-        idx
-    }
 }

@@ -75,12 +75,14 @@ impl 多级页表 {
     }
 
     fn find_pte(&self, vpn: &内存分页, 没有子页表时创建: bool) -> &mut 页表项 {
-        let idxs = vpn.页表项索引列表();
-        let mut pt = self.根页表.clone();
-        for i in 0..2 {
-            pt = pt.子页表(idxs[i], 没有子页表时创建);
-        }
-        let pte = &mut pt.读取页表项列表()[idxs[2]];
+        let vpnn = vpn.页号;
+        let i1 = (vpnn >> 18) & 0x1ff;
+        let i2 = (vpnn >> 9) & 0x1ff;
+        let i3 = vpnn & 0x1ff;
+        let pt1 = &self.根页表;
+        let pt2 = pt1.子页表(i1, 没有子页表时创建);
+        let pt3 = pt2.子页表(i2, 没有子页表时创建);
+        let pte = &mut pt3.读取页表项列表()[i3];
         pte
     }
     pub fn 映射(&self, 虚拟页: &内存分页, 物理页: &内存分页, 用户是否可见: bool) {
