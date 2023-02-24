@@ -125,7 +125,7 @@ impl 多级页表 {
     fn 虚拟地址范围转换物理地址范围列表(&self, 虚拟地址范围: Range<usize>) -> Vec<Range<usize>> {
         let va_start = 虚拟地址范围.start;
         let va_end = 虚拟地址范围.end;
-        let vpn_range = 逻辑段::新建(虚拟地址范围).虚拟页号范围;
+        let vpn_range = 逻辑段 { 虚拟地址范围 }.虚拟页号范围();
         let vpn_len = vpn_range.len();
         vpn_range
             // 虚拟页列表转物理页列表
