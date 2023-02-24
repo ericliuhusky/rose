@@ -30,7 +30,6 @@ impl 页表项 {
     }
 }
 
-#[derive(Clone)]
 pub struct 页表 {
     pub 物理页号: usize
 }
