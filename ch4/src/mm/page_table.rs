@@ -32,25 +32,25 @@ impl 页表项 {
 
 #[derive(Clone)]
 pub struct 页表 {
-    pub 物理页: 内存分页
+    pub 物理页号: usize
 }
 
 impl 页表{
     fn 读取页表项列表(&self) -> &'static mut [页表项] {
         unsafe {
-            &mut *(self.物理页.起始地址() as *mut [页表项; 512])
+            &mut *(内存分页{ 页号: self.物理页号 }.起始地址() as *mut [页表项; 512])
         }
     }
 
     fn 子页表(&self, 索引: usize, 没有子页表时创建: bool) -> 页表 {
         let pte = &self.读取页表项列表()[索引];
         if pte.是有效的() {
-            Self { 物理页: pte.物理页() }
+            Self { 物理页号: pte.物理页().页号 }
         } else {
             if 没有子页表时创建 {
                 let ppn = 物理内存管理器::分配物理页();
                 self.读取页表项列表()[索引] = 页表项::新建指向下一级页表的页表项(&ppn);
-                Self { 物理页: ppn }
+                Self { 物理页号: ppn.页号 }
             } else {
                 panic!()
             }
@@ -66,7 +66,7 @@ impl 多级页表 {
     pub fn 新建() -> Self {
         let 物理页 = 物理内存管理器::分配物理页();
         多级页表 {
-            根页表: 页表 { 物理页 }
+            根页表: 页表 { 物理页号: 物理页.页号 }
         }
     }
 
@@ -160,6 +160,6 @@ impl 多级页表 {
         }
     }
     pub fn token(&self) -> usize {
-        8usize << 60 | self.根页表.物理页.页号
+        8usize << 60 | self.根页表.物理页号
     }
 }
