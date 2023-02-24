@@ -11,7 +11,7 @@ use super::map_area::逻辑段;
 pub struct 页表项(usize);
 
 impl 页表项 {
-    fn 新建存放物理页号的页表项(物理页: 内存分页, 用户是否可见: bool) -> Self {
+    fn 新建存放物理页号的页表项(物理页: &内存分页, 用户是否可见: bool) -> Self {
         let mut flags = 0xf;
         if 用户是否可见 {
             flags |= 0x10;
@@ -74,7 +74,7 @@ impl 多级页表 {
         }
     }
 
-    fn find_pte_create(&self, vpn: 内存分页) -> &mut 页表项 {
+    fn find_pte_create(&self, vpn: &内存分页) -> &mut 页表项 {
         let idxs = vpn.页表项索引列表();
         let mut pt = self.根页表.clone();
         for i in 0..2 {
@@ -101,7 +101,7 @@ impl 多级页表 {
         let ppn = pt.读取页表项列表()[idxs[2]].物理页();
         ppn
     }
-    pub fn 映射(&self, 虚拟页: 内存分页, 物理页: 内存分页, 用户是否可见: bool) {
+    pub fn 映射(&self, 虚拟页: &内存分页, 物理页: &内存分页, 用户是否可见: bool) {
         let pte = self.find_pte_create(虚拟页);
         assert!(!pte.是有效的());
         *pte = 页表项::新建存放物理页号的页表项(物理页, 用户是否可见);
