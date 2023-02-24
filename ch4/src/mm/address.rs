@@ -30,10 +30,4 @@ impl 内存分页 {
     pub fn 结尾地址(&self) -> usize {
         (self.页号 + 1) << 12
     }
-
-    pub fn 新建(页号: usize) -> Self {
-        Self { 
-            页号
-        }
-    }
 }
