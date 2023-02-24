@@ -4,8 +4,7 @@ use alloc::vec::Vec;
 use crate::config::{TRAP_CONTEXT, TRAP_CONTEXT_END};
 use crate::trap::陷入上下文;
 use crate::mm::frame_allocator::物理内存管理器;
-use super::address::内存地址;
-use super::map_area::逻辑段;
+use super::address::{内存地址, 逻辑段};
 
 #[repr(C)]
 pub struct 页表项(usize);

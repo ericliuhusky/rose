@@ -4,7 +4,7 @@ use crate::mm::page_table::多级页表;
 use crate::config::{可用物理内存结尾地址, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use core::arch::asm;
 use crate::mm::elf_reader::Elf文件;
-use super::map_area::逻辑段;
+use super::address::逻辑段;
 use super::page_table::页表;
 use crate::mm::frame_allocator::物理内存管理器;
 
