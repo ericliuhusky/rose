@@ -24,8 +24,8 @@ pub fn 初始化() {
 #[no_mangle] 
 /// 处理中断、异常或系统调用
 pub fn trap_handler() {
-    let 当前页表 = 任务管理器::当前页表();
-    let 上下文 = 当前页表.translated_trap_context();
+    let 当前多级页表 = 任务管理器::当前多级页表();
+    let 上下文 = 当前多级页表.translated_trap_context();
     match 读取异常() {
         异常::用户系统调用 => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
@@ -55,7 +55,7 @@ pub fn trap_handler() {
             
         }
     }
-    let user_satp = 当前页表.token();
+    let user_satp = 当前多级页表.token();
     extern "C" {
         fn __restore(user_satp: usize);
     }

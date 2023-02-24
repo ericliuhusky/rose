@@ -1,7 +1,7 @@
 mod task;
 
 use crate::loader::{读取应用数目, 读取应用数据};
-use crate::mm::page_table::页表;
+use crate::mm::page_table::多级页表;
 use alloc::vec::Vec;
 use task::{任务, 任务状态};
 use crate::格式化输出并换行;
@@ -67,7 +67,7 @@ impl 任务管理器 {
                 extern "C" {
                     fn __restore(user_satp: usize);
                 }
-                __restore(下一个任务.页表.token());
+                __restore(下一个任务.多级页表.token());
             } else {
                 格式化输出并换行!("[Kernel] All applications completed!");
                 终止();
@@ -75,9 +75,9 @@ impl 任务管理器 {
         }
     }
 
-    pub fn 当前页表() -> &'static 页表 {
+    pub fn 当前多级页表() -> &'static 多级页表 {
         unsafe {
-            &任务管理器.当前任务().页表
+            &任务管理器.当前任务().多级页表
         }
     }
 }
