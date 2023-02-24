@@ -74,31 +74,22 @@ impl 多级页表 {
         }
     }
 
-    fn find_pte_create(&self, vpn: &内存分页) -> &mut 页表项 {
+    fn find_pte(&self, vpn: &内存分页, 没有子页表时创建: bool) -> &mut 页表项 {
         let idxs = vpn.页表项索引列表();
         let mut pt = self.根页表.clone();
         for i in 0..2 {
-            pt = pt.子页表(idxs[i], true);
+            pt = pt.子页表(idxs[i], 没有子页表时创建);
         }
         let pte = &mut pt.读取页表项列表()[idxs[2]];
         pte
     }
-    fn find_pte(&self, vpn: &内存分页) -> 内存分页 {
-        let idxs = vpn.页表项索引列表();
-        let mut pt = self.根页表.clone();
-        for i in 0..2 {
-            pt = pt.子页表(idxs[i], false);
-        }
-        let ppn = pt.读取页表项列表()[idxs[2]].物理页();
-        ppn
-    }
     pub fn 映射(&self, 虚拟页: &内存分页, 物理页: &内存分页, 用户是否可见: bool) {
-        let pte = self.find_pte_create(虚拟页);
+        let pte = self.find_pte(虚拟页, true);
         assert!(!pte.是有效的());
         *pte = 页表项::新建存放物理页号的页表项(物理页, 用户是否可见);
     }
     fn 虚拟页转换物理页(&self, 虚拟页: &内存分页) -> 内存分页 {
-        self.find_pte(虚拟页)
+        self.find_pte(虚拟页, false).物理页()
     }
     pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
         let dsts = self.虚拟地址范围转换字节串列表(va_range);
