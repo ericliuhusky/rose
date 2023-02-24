@@ -74,24 +74,24 @@ impl 多级页表 {
         }
     }
 
-    fn find_pte(&self, vpn: &内存分页, 没有子页表时创建: bool) -> &mut 页表项 {
-        let vpnn = vpn.页号;
-        let i1 = (vpnn >> 18) & 0x1ff;
-        let i2 = (vpnn >> 9) & 0x1ff;
-        let i3 = vpnn & 0x1ff;
-        let pt1 = &self.根页表;
-        let pt2 = pt1.子页表(i1, 没有子页表时创建);
-        let pt3 = pt2.子页表(i2, 没有子页表时创建);
-        let pte = &mut pt3.读取页表项列表()[i3];
-        pte
+    fn 查找存放物理页号的页表项(&self, 虚拟页: &内存分页, 没有子页表时创建: bool) -> &mut 页表项 {
+        let 页号 = 虚拟页.页号;
+        let 一级索引 = (页号 >> 18) & 0x1ff;
+        let 二级索引 = (页号 >> 9) & 0x1ff;
+        let 三级索引 = 页号 & 0x1ff;
+        let 一级页表 = &self.根页表;
+        let 二级页表 = 一级页表.子页表(一级索引, 没有子页表时创建);
+        let 三级页表 = 二级页表.子页表(二级索引, 没有子页表时创建);
+        let 存放物理页号的页表项 = &mut 三级页表.读取页表项列表()[三级索引];
+        存放物理页号的页表项
     }
     pub fn 映射(&self, 虚拟页: &内存分页, 物理页: &内存分页, 用户是否可见: bool) {
-        let pte = self.find_pte(虚拟页, true);
+        let pte = self.查找存放物理页号的页表项(虚拟页, true);
         assert!(!pte.是有效的());
         *pte = 页表项::新建存放物理页号的页表项(物理页, 用户是否可见);
     }
     fn 虚拟页转换物理页(&self, 虚拟页: &内存分页) -> 内存分页 {
-        self.find_pte(虚拟页, false).物理页()
+        self.查找存放物理页号的页表项(虚拟页, false).物理页()
     }
     pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
         let dsts = self.虚拟地址范围转换字节串列表(va_range);
