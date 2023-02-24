@@ -46,8 +46,17 @@ impl 地址空间 {
         }
     }
 
+    fn 新建空地址空间() -> Self {
+        let 物理页号 = 物理内存管理器::分配物理页并返回页号();
+        Self { 
+            多级页表: 多级页表 { 
+                根页表: 页表 { 物理页号 } 
+            }
+        }
+    }
+
     fn 新建内核地址空间() -> Self {
-        let mut 地址空间 = Self { 多级页表: 多级页表::新建() };
+        let mut 地址空间 = Self::新建空地址空间();
 
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: stext as usize..etext as usize });
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: srodata as usize..erodata as usize });
@@ -61,7 +70,7 @@ impl 地址空间 {
     }
     
     pub fn 新建应用地址空间(elf文件数据: &[u8]) -> (多级页表, usize, usize) {
-        let mut 地址空间 = Self { 多级页表: 多级页表::新建() };
+        let mut 地址空间 = Self::新建空地址空间();
 
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: __trap_entry as usize..__trap_end as usize });
