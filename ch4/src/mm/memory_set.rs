@@ -95,18 +95,13 @@ impl 地址空间 {
             elf文件.入口地址(),
         )
     }
-    fn 激活(&self) {
-        let satp = self.多级页表.token();
-        unsafe {
-            core::arch::asm!("csrw satp, {}", in(reg) satp);
-            asm!("sfence.vma");
-        }
-    }
 
     pub fn 初始化内核地址空间() {
         unsafe {
             内核地址空间 = Self::新建内核地址空间();
-            内核地址空间.激活();
+            let satp = 内核地址空间.多级页表.token();
+            asm!("csrw satp, {}", in(reg) satp);
+            asm!("sfence.vma");
         }
     }
     pub fn 内核地址空间token() -> usize {
