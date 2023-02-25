@@ -1,5 +1,7 @@
 use crate::mm::page_table::多级页表;
-use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址};
+use alloc::vec::Vec;
+use core::ops::Range;
+use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址, 陷入上下文};
 use core::arch::asm;
 use crate::mm::elf_reader::Elf文件;
 use super::address::逻辑段;
@@ -69,7 +71,7 @@ impl 地址空间 {
         地址空间
     }
     
-    pub fn 新建应用地址空间(elf文件数据: &[u8]) -> (多级页表, usize, usize) {
+    pub fn 新建应用地址空间(elf文件数据: &[u8]) -> (Self, usize, usize) {
         let mut 地址空间 = Self::新建空地址空间();
 
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
@@ -91,10 +93,27 @@ impl 地址空间 {
         地址空间.映射(逻辑段 { 虚拟地址范围: 应用陷入上下文存放地址()..0xfffffffffffff000 });
         
         (
-            地址空间.多级页表,
+            地址空间,
             用户栈栈顶,
             elf文件.入口地址(),
         )
+    }
+}
+
+impl 地址空间 {
+    pub fn 应用地址空间的上下文(&self) -> &'static mut 陷入上下文 {
+        let pa_ranges = self.多级页表.虚拟地址范围转换物理地址范围列表(应用陷入上下文存放地址()..0xfffffffffffff000);
+        unsafe {
+            &mut *(pa_ranges[0].start as *mut 陷入上下文)
+        }
+    }
+
+    pub fn token(&self) -> usize {
+        self.多级页表.token()
+    }
+
+    pub fn read(&self, va_range: Range<usize>) -> Vec<u8> {
+        self.多级页表.read(va_range)
     }
 }
 
