@@ -11,6 +11,8 @@
     .section .text
     .globl __trap_entry
     .globl __restore
+    .globl __KERNEL_STACK_TOP
+    .global __TRAP_CONTEXT_START
     .globl __trap_end
 __trap_entry:
     # 在rust代码中无法保证换栈指令位于分配指令之前，有可能先分配后换栈，这样会导致上下文分配到用户栈上；
@@ -43,7 +45,7 @@ __trap_entry:
 
     ld t0, 33*8(sp)
     # 移动到内核栈栈顶
-    li sp, 0xfffffffffffff000
+    ld sp, __KERNEL_STACK_TOP
     # 切换到内核地址空间
     csrw satp, t0
     sfence.vma
@@ -57,7 +59,7 @@ __restore:
     sfence.vma
 
     # a0指向用户地址空间中的TrapContext地址
-    li sp, 0xffffffffffffe000
+    ld sp, __TRAP_CONTEXT_START
 
     # 恢复控制和状态寄存器
     ld t0, 32*8(sp)
@@ -76,4 +78,11 @@ __restore:
     
     # 返回sepc指向的地址继续执行
     sret
+
+__KERNEL_STACK_TOP:
+    .quad 0xfffffffffffff000
+
+__TRAP_CONTEXT_START:
+    .quad 0xffffffffffffe000
+
 __trap_end:
