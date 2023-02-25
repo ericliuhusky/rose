@@ -113,7 +113,7 @@ impl 地址空间 {
     }
 
     pub fn 读取字节数组(&self, 虚拟地址范围: Range<usize>) -> Vec<u8> {
-        self.多级页表.read(虚拟地址范围)
+        self.多级页表.读取字节数组(虚拟地址范围)
     }
 
     pub fn 切换到当前地址空间(&self) {
