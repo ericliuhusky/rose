@@ -8,33 +8,33 @@ pub struct Elf文件<'a> {
 
 impl<'a> Elf文件<'a> {
     pub fn 解析(数据: &'a [u8]) -> Self {
-        let 头: &头 = 以某种类型来读取(数据);
+        let 头 = unsafe {
+            &*(数据 as *const [u8] as *const 头)
+        };
+        // 确保是elf格式的可执行文件
         assert_eq!(头.魔数, [0x7f, b'E', b'L', b'F']);
+        // 确保是64位
         assert_eq!(头.类型32或64位, 0x2);
 
-        let mut 程序段列表 = Vec::new();
-        for i in 0..头.程序段头数目 {
-            let 头 = Self::程序段头(数据, 头, i);
-            let 数据 = Self::程序段数据(数据, 头);
-            程序段列表.push(程序段 { 头, 数据 });
-        }
+        let 程序段列表 = (0..头.程序段头数目)
+            .map(|程序段头索引| {
+                let 程序段头起始 = 头.程序段头偏移 + 程序段头索引 as usize * 头.程序段头大小 as usize;
+                let 程序段头结尾 = 程序段头起始 + 头.程序段头大小 as usize;
+                let 程序段头 = unsafe {
+                    &*(&数据[程序段头起始..程序段头结尾] as *const [u8] as *const 程序段头)
+                };
+                let 程序段数据起始 = 程序段头.程序段数据偏移;
+                let 程序段数据结尾 = 程序段数据起始 + 程序段头.文件大小;
+                程序段 { 
+                    头: 程序段头, 
+                    数据: &数据[程序段数据起始..程序段数据结尾] 
+                }
+            })
+            .collect();
         Self { 
             头,
             程序段列表
         }
-    }
-
-    fn 程序段头(数据: &'a [u8], 头: &头, 程序段头索引: u16) -> &'a 程序段头 {
-        let 起始 = 头.程序段头偏移 + 程序段头索引 as usize * 头.程序段头大小 as usize;
-        let 结尾 = 起始 + 头.程序段头大小 as usize;
-        let 数据 = &数据[起始..结尾];
-        以某种类型来读取(数据)
-    }
-
-    fn 程序段数据(数据: &'a [u8], 头: &程序段头) -> &'a [u8] {
-        let 起始 = 头.程序段数据偏移;
-        let 结尾 = 起始 + 头.文件大小;
-        &数据[起始..结尾]
     }
 
     pub fn 入口地址(&self) -> usize {
@@ -42,13 +42,12 @@ impl<'a> Elf文件<'a> {
     }
 
     pub fn 程序段列表(&self) -> Vec<&程序段> {
-        let mut ps = Vec::new();
-        for p in &self.程序段列表 {
-            if p.需要被加载() {
-                ps.push(p);
-            }
-        }
-        ps
+        self.程序段列表
+            .iter()
+            .filter(|程序段| {
+                程序段.需要被加载()
+            })
+            .collect()
     }
 }
 
@@ -82,18 +81,10 @@ pub struct 程序段<'a> {
 
 impl<'a> 程序段<'_> {
     pub fn 虚拟地址范围(&self) -> Range<usize> {
-        let 起始虚拟地址 = self.头.起始虚拟地址;
-        let 结尾虚拟地址 = 起始虚拟地址 + self.头.内存大小;
-        起始虚拟地址..结尾虚拟地址
+        self.头.起始虚拟地址..self.头.起始虚拟地址 + self.头.内存大小
     }
 
     fn 需要被加载(&self) -> bool {
         self.头.类型 == 0x1
-    }
-}
-
-fn 以某种类型来读取<T>(字节串: &[u8]) -> &T {
-    unsafe {
-        &*(字节串.as_ptr() as *const T)
     }
 }
