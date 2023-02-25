@@ -112,8 +112,8 @@ impl 地址空间 {
         8usize << 60 | self.多级页表.根页表.物理页号
     }
 
-    pub fn read(&self, va_range: Range<usize>) -> Vec<u8> {
-        self.多级页表.read(va_range)
+    pub fn 读取字节数组(&self, 虚拟地址范围: Range<usize>) -> Vec<u8> {
+        self.多级页表.read(虚拟地址范围)
     }
 
     pub fn 切换到当前地址空间(&self) {
