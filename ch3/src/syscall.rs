@@ -21,11 +21,11 @@ pub fn 系统调用(系统调用标识: usize, 参数: [usize; 3]) -> isize {
 mod 系统调用_输出 {
     use crate::输出::输出;
 
-    pub fn 系统调用_输出(字节串指针: *const u8, 字节串长度: usize) -> isize {
-        let 字节串 = unsafe { core::slice::from_raw_parts(字节串指针, 字节串长度) };
-        let 字符串 = core::str::from_utf8(字节串).unwrap();
+    pub fn 系统调用_输出(字节数组指针: *const u8, 字节数组长度: usize) -> isize {
+        let 字节数组 = unsafe { core::slice::from_raw_parts(字节数组指针, 字节数组长度) };
+        let 字符串 = core::str::from_utf8(字节数组).unwrap();
         输出(字符串);
-        字节串长度 as isize
+        字节数组长度 as isize
     }
 }
 

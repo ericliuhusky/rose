@@ -22,13 +22,13 @@ mod 系统调用_输出 {
     use crate::输出::输出;
     use crate::task::任务管理器;
 
-    pub fn 系统调用_输出(字节串指针: *const u8, 字节串长度: usize) -> isize {
+    pub fn 系统调用_输出(字节数组指针: *const u8, 字节数组长度: usize) -> isize {
         let 当前任务的地址空间 = 任务管理器::当前任务的地址空间();
-        let va_range = 字节串指针 as usize..字节串指针 as usize + 字节串长度;
-        let 字节串 = 当前任务的地址空间.read(va_range);
-        let 字符串 = core::str::from_utf8(&字节串).unwrap();
+        let va_range = 字节数组指针 as usize..字节数组指针 as usize + 字节数组长度;
+        let 字节数组 = 当前任务的地址空间.read(va_range);
+        let 字符串 = core::str::from_utf8(&字节数组).unwrap();
         输出(字符串);
-        字节串长度 as isize
+        字节数组长度 as isize
     }
 }
 

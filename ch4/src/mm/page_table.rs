@@ -75,7 +75,7 @@ impl 多级页表 {
         *pte = 页表项::新建存放物理页号的页表项(物理页号, 用户是否可见);
     }
     pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
-        let dsts = self.虚拟地址范围转换字节串列表(va_range);
+        let dsts = self.虚拟地址范围转换字节数组列表(va_range);
         let mut i = 0;
         for dst in dsts {
             if i >= data.len() {
@@ -89,7 +89,7 @@ impl 多级页表 {
         }
     }
     pub fn read(&self, va_range: Range<usize>) -> Vec<u8> {
-        let bytes_array = self.虚拟地址范围转换字节串列表(va_range);
+        let bytes_array = self.虚拟地址范围转换字节数组列表(va_range);
         let mut v = Vec::new();
         for bytes in bytes_array {
             for byte in bytes {
@@ -98,7 +98,7 @@ impl 多级页表 {
         }
         v
     }
-    fn 虚拟地址范围转换字节串列表(&self, 虚拟地址范围: Range<usize>) -> Vec<&'static mut [u8]> {        
+    fn 虚拟地址范围转换字节数组列表(&self, 虚拟地址范围: Range<usize>) -> Vec<&'static mut [u8]> {        
         let 物理地址范围列表 = self.虚拟地址范围转换物理地址范围列表(虚拟地址范围);
         物理地址范围列表
             .iter()
