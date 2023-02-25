@@ -138,7 +138,4 @@ impl 多级页表 {
             })
             .collect()
     }
-    pub fn token(&self) -> usize {
-        8usize << 60 | self.根页表.物理页号
-    }
 }

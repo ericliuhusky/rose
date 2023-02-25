@@ -109,7 +109,7 @@ impl 地址空间 {
     }
 
     pub fn token(&self) -> usize {
-        self.多级页表.token()
+        8usize << 60 | self.多级页表.根页表.物理页号
     }
 
     pub fn read(&self, va_range: Range<usize>) -> Vec<u8> {
