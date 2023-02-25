@@ -20,7 +20,7 @@ __trap_entry:
 
     # 换栈，sp指向用户地址空间中的TrapContext地址，sp原先存放的用户栈栈顶地址存放在sscratch
     csrw sscratch, sp
-    li sp, 0xffffffffffffe000
+    ld sp, __TRAP_CONTEXT_START
 
     # 此时只有sp寄存器可以使用，用户栈栈顶地址已经保存在sscratch，即使改变sp寄存器也可从sscratch恢复
     # 此时使用其它寄存器，会导致其它寄存器的值被改变覆盖原有值，使得其它寄存器无法恢复
