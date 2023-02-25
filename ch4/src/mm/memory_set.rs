@@ -1,5 +1,3 @@
-//! Implementation of [`MapArea`] and [`MemorySet`].
-
 use crate::mm::page_table::多级页表;
 use crate::config::{可用物理内存结尾地址, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
 use core::arch::asm;

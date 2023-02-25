@@ -76,9 +76,6 @@ impl 多级页表 {
         assert!(!pte.是有效的());
         *pte = 页表项::新建存放物理页号的页表项(物理页号, 用户是否可见);
     }
-    fn 虚拟页号转换物理页号(&self, 虚拟页号: usize) -> usize {
-        self.查找存放物理页号的页表项(虚拟页号, false).物理页号()
-    }
     pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
         let dsts = self.虚拟地址范围转换字节串列表(va_range);
         let mut i = 0;
@@ -120,9 +117,9 @@ impl 多级页表 {
         let vpn_range = 逻辑段 { 虚拟地址范围 }.虚拟页号范围();
         let vpn_len = vpn_range.len();
         vpn_range
-            // 虚拟页列表转物理页列表
-            .map(|vp| {
-                self.虚拟页号转换物理页号(vp)
+            // 虚拟页号范围转换物理页号列表
+            .map(|虚拟页号| {
+                self.查找存放物理页号的页表项(虚拟页号, false).物理页号()
             })
             // 物理页列表转物理地址列表
             .enumerate()
