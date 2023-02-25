@@ -5,7 +5,7 @@ use crate::mm::frame_allocator::物理内存管理器;
 use super::address::{内存地址, 逻辑段};
 
 #[repr(C)]
-pub struct 页表项(usize);
+struct 页表项(usize);
 
 impl 页表项 {
     fn 新建存放物理页号的页表项(物理页号: usize, 用户是否可见: bool) -> Self {
