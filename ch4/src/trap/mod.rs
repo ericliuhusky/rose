@@ -25,7 +25,7 @@ pub fn 初始化() {
 /// 处理中断、异常或系统调用
 pub fn trap_handler() {
     let 当前多级页表 = 任务管理器::当前多级页表();
-    let 上下文 = 当前多级页表.translated_trap_context();
+    let 上下文 = 陷入上下文::应用地址空间的上下文(当前多级页表);
     match 读取异常() {
         异常::用户系统调用 => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行

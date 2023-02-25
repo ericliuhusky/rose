@@ -11,7 +11,7 @@ impl 任务 {
     pub fn new(elf_data: &[u8]) -> Self {
         let (多级页表, 用户栈栈顶, 应用入口地址) = 地址空间::新建应用地址空间(elf_data);
         let 状态 = 任务状态::就绪;
-        let trap_cx = 多级页表.translated_trap_context();
+        let trap_cx = 陷入上下文::应用地址空间的上下文(&多级页表);
         *trap_cx = 陷入上下文::应用初始上下文(
             应用入口地址,
             用户栈栈顶,

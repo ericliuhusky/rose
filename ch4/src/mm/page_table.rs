@@ -1,8 +1,6 @@
 use core::ops::Range;
 use crate::mm::address::内存分页;
 use alloc::vec::Vec;
-use crate::config::{TRAP_CONTEXT, TRAP_CONTEXT_END};
-use crate::trap::陷入上下文;
 use crate::mm::frame_allocator::物理内存管理器;
 use super::address::{内存地址, 逻辑段};
 
@@ -111,7 +109,7 @@ impl 多级页表 {
             })
             .collect()
     }
-    fn 虚拟地址范围转换物理地址范围列表(&self, 虚拟地址范围: Range<usize>) -> Vec<Range<usize>> {
+    pub fn 虚拟地址范围转换物理地址范围列表(&self, 虚拟地址范围: Range<usize>) -> Vec<Range<usize>> {
         let va_start = 虚拟地址范围.start;
         let va_end = 虚拟地址范围.end;
         let vpn_range = 逻辑段 { 虚拟地址范围 }.虚拟页号范围();
@@ -139,12 +137,6 @@ impl 多级页表 {
                 pa_start..pa_end
             })
             .collect()
-    }
-    pub fn translated_trap_context(&self) -> &mut 陷入上下文 {
-        let pa_ranges = self.虚拟地址范围转换物理地址范围列表(TRAP_CONTEXT..TRAP_CONTEXT_END);
-        unsafe {
-            &mut *(pa_ranges[0].start as *mut 陷入上下文)
-        }
     }
     pub fn token(&self) -> usize {
         8usize << 60 | self.根页表.物理页号
