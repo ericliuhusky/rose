@@ -1,7 +1,6 @@
 mod task;
 
 use crate::loader::{读取应用数目, 读取应用数据};
-use crate::mm::memory_set::地址空间;
 use alloc::vec::Vec;
 use task::{任务, 任务状态};
 use crate::格式化输出并换行;
@@ -27,22 +26,20 @@ impl 任务管理器 {
         }
     }
 
-    pub fn 当前任务(&mut self) -> &mut 任务 {
-        &mut self.任务列表[self.当前任务索引 as usize]
+    pub fn 当前任务() -> &'static mut 任务 {
+        unsafe {
+            &mut 任务管理器.任务列表[任务管理器.当前任务索引 as usize]
+        }
     }
 
     pub fn 暂停并运行下一个任务() {
-        unsafe {
-            任务管理器.当前任务().状态 = 任务状态::就绪;
-            Self::运行下一个任务();
-        }
+        Self::当前任务().状态 = 任务状态::就绪;
+        Self::运行下一个任务();
     }
 
     pub fn 终止并运行下一个任务() {
-        unsafe {
-            任务管理器.当前任务().状态 = 任务状态::终止;
-            Self::运行下一个任务();
-        }
+        Self::当前任务().状态 = 任务状态::终止;
+        Self::运行下一个任务();
     }
 
     fn 查找下一个就绪任务(&mut self) -> Option<&mut 任务> {
@@ -75,12 +72,6 @@ impl 任务管理器 {
                 格式化输出并换行!("[Kernel] All applications completed!");
                 终止();
             }
-        }
-    }
-
-    pub fn 当前任务的地址空间() -> &'static 地址空间 {
-        unsafe {
-            &任务管理器.当前任务().地址空间
         }
     }
 }

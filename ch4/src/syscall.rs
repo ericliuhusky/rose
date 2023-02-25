@@ -23,7 +23,7 @@ mod 系统调用_输出 {
     use crate::task::任务管理器;
 
     pub fn 系统调用_输出(字节数组指针: *const u8, 字节数组长度: usize) -> isize {
-        let 当前任务的地址空间 = 任务管理器::当前任务的地址空间();
+        let 当前任务的地址空间 = &任务管理器::当前任务().地址空间;
         let va_range = 字节数组指针 as usize..字节数组指针 as usize + 字节数组长度;
         let 字节数组 = 当前任务的地址空间.读取字节数组(va_range);
         let 字符串 = core::str::from_utf8(&字节数组).unwrap();
