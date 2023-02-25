@@ -10,7 +10,6 @@ mod syscall;
 mod trap;
 mod loader;
 mod task;
-mod config;
 mod timer;
 mod mm;
 

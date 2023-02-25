@@ -1,10 +1,12 @@
 use crate::mm::page_table::多级页表;
-use crate::config::{可用物理内存结尾地址, TRAP_CONTEXT, TRAP_CONTEXT_END, 内核栈栈底, 内核栈栈顶};
+use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址};
 use core::arch::asm;
 use crate::mm::elf_reader::Elf文件;
 use super::address::逻辑段;
 use super::page_table::页表;
 use crate::mm::frame_allocator::物理内存管理器;
+
+pub const 可用物理内存结尾地址: usize = 0x80800000;
 
 extern "C" {
     fn stext();
@@ -63,7 +65,7 @@ impl 地址空间 {
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: ekernel as usize..可用物理内存结尾地址 });
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: 0x100000..0x102000 }); // MMIO VIRT_TEST/RTC  in virt machine
         // 内核栈
-        地址空间.映射(逻辑段 { 虚拟地址范围: 内核栈栈底..内核栈栈顶 });
+        地址空间.映射(逻辑段 { 虚拟地址范围: 内核栈栈顶() - 0x2000..内核栈栈顶() });
         地址空间
     }
     
@@ -86,7 +88,7 @@ impl 地址空间 {
         let 用户栈栈顶 = 用户栈栈底 + 0x2000;
         地址空间.用户可见映射(逻辑段 { 虚拟地址范围: 用户栈栈底..用户栈栈顶 });
         // map TrapContext
-        地址空间.映射(逻辑段 { 虚拟地址范围: TRAP_CONTEXT..TRAP_CONTEXT_END });
+        地址空间.映射(逻辑段 { 虚拟地址范围: 应用陷入上下文存放地址()..0xfffffffffffff000 });
         (
             地址空间.多级页表,
             用户栈栈顶,

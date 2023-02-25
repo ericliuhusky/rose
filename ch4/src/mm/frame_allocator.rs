@@ -1,4 +1,4 @@
-use crate::config::可用物理内存结尾地址;
+use super::memory_set::可用物理内存结尾地址;
 use super::address::内存地址;
 
 pub struct 物理内存管理器 {
