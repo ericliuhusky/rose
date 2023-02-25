@@ -78,44 +78,6 @@ impl 多级页表 {
         *目的页表项 = 页表项::新建存放物理页号的页表项(物理页号, 用户是否可见);
     }
 
-    pub fn write(&self, va_range: Range<usize>, data: &[u8]) {
-        let dsts = self.虚拟地址范围转换字节数组列表(va_range);
-        let mut i = 0;
-        for dst in dsts {
-            if i >= data.len() {
-                break;
-            }
-            let src = &data[i..i + dst.len()];
-            i += dst.len();
-            for i in 0..dst.len() {
-                dst[i] = src[i];
-            }
-        }
-    }
-
-    pub fn 读取字节数组(&self, 虚拟地址范围: Range<usize>) -> Vec<u8> {
-        let 字节数组列表 = self.虚拟地址范围转换字节数组列表(虚拟地址范围);
-        let mut v = Vec::new();
-        for 字节数组 in 字节数组列表 {
-            for 字节 in 字节数组 {
-                v.push(字节.clone());
-            }
-        }
-        v
-    }
-
-    fn 虚拟地址范围转换字节数组列表(&self, 虚拟地址范围: Range<usize>) -> Vec<&'static mut [u8]> {        
-        let 物理地址范围列表 = self.虚拟地址范围转换物理地址范围列表(虚拟地址范围);
-        物理地址范围列表
-            .iter()
-            .map(|物理地址范围| {
-                unsafe {
-                    core::slice::from_raw_parts_mut(物理地址范围.start as *mut u8, 物理地址范围.len())
-                }
-            })
-            .collect()
-    }
-
     pub fn 虚拟地址范围转换物理地址范围列表(&self, 虚拟地址范围: Range<usize>) -> Vec<Range<usize>> {
         let 起始虚拟地址 = 虚拟地址范围.start;
         let 结尾虚拟地址 = 虚拟地址范围.end;
@@ -144,5 +106,43 @@ impl 多级页表 {
                 起始物理地址..起始结尾地址
             })
             .collect()
+    }
+
+    fn 虚拟地址范围转换字节数组列表(&self, 虚拟地址范围: Range<usize>) -> Vec<&'static mut [u8]> {        
+        let 物理地址范围列表 = self.虚拟地址范围转换物理地址范围列表(虚拟地址范围);
+        物理地址范围列表
+            .iter()
+            .map(|物理地址范围| {
+                unsafe {
+                    core::slice::from_raw_parts_mut(物理地址范围.start as *mut u8, 物理地址范围.len())
+                }
+            })
+            .collect()
+    }
+
+    pub fn 读取字节数组(&self, 虚拟地址范围: Range<usize>) -> Vec<u8> {
+        let 字节数组列表 = self.虚拟地址范围转换字节数组列表(虚拟地址范围);
+        let mut v = Vec::new();
+        for 字节数组 in 字节数组列表 {
+            for 字节 in 字节数组 {
+                v.push(字节.clone());
+            }
+        }
+        v
+    }
+
+    pub fn 写入字节数组(&self, 虚拟地址范围: Range<usize>, 数据: &[u8]) {
+        let 字节数组列表 = self.虚拟地址范围转换字节数组列表(虚拟地址范围);
+        let mut i = 0;
+        for 字节数组 in 字节数组列表 {
+            if i >= 数据.len() {
+                break;
+            }
+            let 要写入的数据 = &数据[i..i + 字节数组.len()];
+            i += 字节数组.len();
+            for j in 0..字节数组.len() {
+                字节数组[j] = 要写入的数据[j];
+            }
+        }
     }
 }
