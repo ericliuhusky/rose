@@ -1,0 +1,49 @@
+pub struct 内存地址(pub usize);
+
+impl 内存地址 {
+    pub fn 页内偏移(&self) -> usize {
+        self.0 & 0xfff
+    }
+
+    pub fn 页号(&self) -> usize {
+        self.0 >> 12
+    }
+
+    pub fn 对齐到分页向下取整(&self) -> 内存地址 {
+        内存地址(self.0 & !0xfff)
+    }
+    pub fn 对齐到分页向上取整(&self) -> 内存地址 {
+        内存地址((self.0 + 0xfff) & !0xfff)
+    }
+}
+
+pub struct 内存分页(pub usize);
+
+impl 内存分页 {
+    pub fn 起始地址(&self) -> usize {
+        self.0 << 12
+    }
+
+    pub fn 结尾地址(&self) -> usize {
+        (self.0 + 1) << 12
+    }
+}
+
+use core::ops::Range;
+
+/// 一段连续地址的虚拟内存
+pub struct 逻辑段 {
+    pub 虚拟地址范围: Range<usize>
+}
+
+impl 逻辑段 {
+    pub fn 虚拟页号范围(&self) -> Range<usize> {
+        let 起始页号 = 内存地址(self.虚拟地址范围.start).对齐到分页向下取整().页号();
+        let 结尾页号 = 内存地址(self.虚拟地址范围.end).对齐到分页向上取整().页号();
+        起始页号..结尾页号
+    }
+
+    pub fn 对齐到分页的结尾地址(&self) -> usize {
+        内存地址(self.虚拟地址范围.end).对齐到分页向上取整().0
+    }
+}
