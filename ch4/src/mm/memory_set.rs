@@ -2,7 +2,6 @@ use crate::mm::page_table::多级页表;
 use alloc::vec::Vec;
 use core::ops::Range;
 use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址, 陷入上下文};
-use core::arch::asm;
 use crate::mm::elf_reader::Elf文件;
 use super::address::逻辑段;
 use super::page_table::页表;
@@ -114,14 +113,6 @@ impl 地址空间 {
 
     pub fn 读取字节数组(&self, 虚拟地址范围: Range<usize>) -> Vec<u8> {
         self.多级页表.读取字节数组(虚拟地址范围)
-    }
-
-    pub fn 切换到当前地址空间(&self) {
-        let satp = self.token();
-        unsafe {
-            asm!("csrw satp, {}", in(reg) satp);
-            asm!("sfence.vma");
-        }
     }
 }
 
