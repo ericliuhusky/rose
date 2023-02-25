@@ -57,7 +57,7 @@ impl 地址空间 {
         }
     }
 
-    fn 新建内核地址空间() -> Self {
+    pub fn 新建内核地址空间() -> Self {
         let mut 地址空间 = Self::新建空地址空间();
 
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: stext as usize..etext as usize });
@@ -115,28 +115,17 @@ impl 地址空间 {
     pub fn read(&self, va_range: Range<usize>) -> Vec<u8> {
         self.多级页表.read(va_range)
     }
-}
 
-pub struct 内核地址空间 {}
-
-impl 内核地址空间 {
-    pub fn 初始化() {
+    pub fn 切换到当前地址空间(&self) {
+        let satp = self.token();
         unsafe {
-            内核地址空间 = 地址空间::新建内核地址空间();
-            let satp = 内核地址空间.多级页表.token();
             asm!("csrw satp, {}", in(reg) satp);
             asm!("sfence.vma");
         }
     }
-
-    pub fn token() -> usize {
-        unsafe {
-            内核地址空间.多级页表.token()
-        }
-    }
 }
 
-static mut 内核地址空间: 地址空间 = 地址空间 {
+pub static mut 内核地址空间: 地址空间 = 地址空间 {
     多级页表: 多级页表 {
         根页表: 页表 {
             物理页号: 0

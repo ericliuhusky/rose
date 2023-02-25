@@ -12,13 +12,16 @@ pub mod memory_set;
 pub mod page_table;
 mod elf_reader;
 
-use memory_set::内核地址空间;
+use memory_set::{地址空间, 内核地址空间};
 
 /// initiate heap allocator, frame allocator and kernel space
 pub fn init() {
     堆::初始化();
     frame_allocator::物理内存管理器::初始化();
-    内核地址空间::初始化();
+    unsafe {
+        内核地址空间 = 地址空间::新建内核地址空间();
+        内核地址空间.切换到当前地址空间();
+    }
 }
 
 mod 堆 {
