@@ -29,6 +29,12 @@ impl 任务管理器 {
         })
     }
 
+    // fn take_current() -> Rc<RefCell<TaskControlBlock>> {
+    //     unsafe {
+    //         TASK_MANAGER.current.take().unwrap()
+    //     }
+    // }
+
     pub fn 添加任务(任务: Rc<RefCell<任务>>) {
         unsafe {
             任务管理器.就绪任务队列.push(任务);
@@ -39,6 +45,10 @@ impl 任务管理器 {
         Self::可变当前任务(|mut 任务| {
             任务.状态 = 任务状态::就绪;
         });
+        // TODO: 纠结用take还是clone
+        // let task = Self::take_current();
+        // task.borrow_mut().task_status = TaskStatus::Ready;
+        // Self::add(task);
         unsafe {
             Self::添加任务(Rc::clone(任务管理器.当前任务.as_ref().unwrap()));
         }
