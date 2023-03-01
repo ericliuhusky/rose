@@ -102,6 +102,7 @@ mod 系统调用_时钟计数器 {
 mod 系统调用_进程 {
     use alloc::string::String;
     use crate::task::任务管理器;
+    use crate::task::task::任务状态;
     use crate::loader::通过名称读取应用数据;
 
     pub fn getpid() -> isize {
@@ -134,39 +135,30 @@ mod 系统调用_进程 {
     }
 
     pub fn waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
-        // if pid == -1 {
-        //     if !任务管理器::当前任务().子进程列表.is_empty() {
-        //         if let Some((子进程索引, 子进程)) = 任务管理器::当前任务().子进程列表.iter().enumerate().find(|(_, 子进程)| {
-        //             子进程.borrow().状态 == 任务状态::终止
-        //         }) {
-        //             任务管理器::可变当前任务(|mut 任务| {
-        //                 任务.子进程列表.remove(子进程索引)
-        //             });
-        //             let 子进程标识符 = 子进程.borrow().进程标识符.0;
-        //             子进程标识符 as isize
-        //         } else {
-        //             -2
-        //         }
-        //     } else {
-        //         -1
-        //     }
-        // } else {
-        //     if let Some((子进程索引, 子进程)) = 任务管理器::当前任务().子进程列表.iter().enumerate().find(|(_, 子进程)| {
-        //         子进程.borrow().进程标识符.0 == pid as usize
-        //     }) {
-        //         if 子进程.borrow().状态 == 任务状态::终止 {
-        //             任务管理器::可变当前任务(|mut 任务| {
-        //                 任务.子进程列表.remove(子进程索引)
-        //             });
-        //             let 子进程标识符 = 子进程.borrow().进程标识符.0;
-        //             子进程标识符 as isize
-        //         } else {
-        //             -2
-        //         }
-        //     } else {
-        //         -1
-        //     }
-        // }
-        -2
+        任务管理器::可变当前任务(|mut task| {
+            if !task
+                .子进程列表
+                .iter()
+                .any(|p| pid == -1 || pid as usize == p.borrow().进程标识符.0)
+            {
+                return -1;
+            }
+            
+            let pair = task.子进程列表.iter().enumerate().find(|(_, p)| {
+                let p = p.borrow();
+                p.状态 == 任务状态::终止 && (pid == -1 || pid as usize == p.进程标识符.0)
+            });
+            if let Some((idx, _)) = pair {
+                let child = task.子进程列表.remove(idx);
+                let found_pid = child.borrow().进程标识符.0;
+                // TODO: 终止代码
+                // let exit_code = child.borrow().终止代码;
+                // let refmut = task.memory_set.page_table.translated_refmut(exit_code_ptr);
+                // *refmut = exit_code;
+                found_pid as isize
+            } else {
+                -2
+            }
+        })
     }
 }
