@@ -23,7 +23,7 @@ pub fn 读取应用数据(应用索引: usize) -> &'static [u8] {
     }
 }
 
-pub fn 通过名称读取应用数据(应用名称: &str) -> &'static [u8] {
+pub fn 通过名称读取应用数据(应用名称: &str) -> Option<&'static [u8]> {
     let 应用数目 = 读取应用数目();
     extern "C" {
         fn _app_names();
@@ -47,5 +47,4 @@ pub fn 通过名称读取应用数据(应用名称: &str) -> &'static [u8] {
             应用名称列表[*应用索引] == 应用名称
         })
         .map(读取应用数据)
-        .unwrap()
 }

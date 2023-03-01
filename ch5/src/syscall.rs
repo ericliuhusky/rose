@@ -127,11 +127,14 @@ mod 系统调用_进程 {
             .iter()
             .map(|字节| *字节 as char)
             .collect();
-        let elf文件数据 = 通过名称读取应用数据(&应用名称);
-        任务管理器::可变当前任务(|mut 任务| {
-            任务.exec(elf文件数据);
-        });
-        0
+        if let Some(elf文件数据) = 通过名称读取应用数据(&应用名称) {
+            任务管理器::可变当前任务(|mut 任务| {
+                任务.exec(elf文件数据);
+            });
+            0
+        } else {
+            -1
+        }
     }
 
     pub fn waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
