@@ -161,13 +161,11 @@ impl 地址空间 {
                 if src_ppn == dst_ppn {
                     continue;
                 }
-                crate::格式化输出并换行!("{}, {}", src_ppn, dst_ppn);
                 unsafe {
                     let dst = core::slice::from_raw_parts_mut((dst_ppn << 12) as *mut u8, 4096);
                     let src = core::slice::from_raw_parts_mut((src_ppn << 12) as *mut u8, 4096);
                     dst.copy_from_slice(src); 
                 }
-                crate::格式化输出并换行!("end {}, {}", src_ppn, dst_ppn);
             }
             // let 数据 = 被复制的地址空间.读取字节数组(虚拟地址范围.clone());
             // 地址空间.多级页表.写入字节数组(虚拟地址范围.clone(), &数据);
