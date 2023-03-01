@@ -3,7 +3,8 @@ mod pid;
 
 use core::cell::{RefCell, Ref, RefMut};
 
-use crate::loader::{读取应用数目, 读取应用数据, 通过名称读取应用数据};
+use crate::loader::通过名称读取应用数据;
+use crate::trap::trap_return;
 use alloc::{vec::Vec, rc::Rc};
 use crate::格式化输出并换行;
 use crate::终止::终止;
@@ -64,10 +65,7 @@ impl 任务管理器 {
             下一个任务.borrow_mut().状态 = 任务状态::运行;
             任务管理器.当前任务 = Some(下一个任务);
             
-            extern "C" {
-                fn __restore(user_satp: usize);
-            }
-            __restore(Self::当前任务().地址空间.token());
+            trap_return();
         }
     }
 

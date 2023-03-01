@@ -55,6 +55,10 @@ pub fn trap_handler() {
             
         }
     }
+    trap_return();
+}
+
+pub fn trap_return() {
     let user_satp = 任务管理器::当前任务().地址空间.token();
     extern "C" {
         fn __restore(user_satp: usize);
