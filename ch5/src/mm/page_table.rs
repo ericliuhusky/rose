@@ -5,7 +5,7 @@ use crate::mm::frame_allocator::物理内存管理器;
 use super::{address::{内存地址, 连续地址虚拟内存}, frame_allocator::物理帧};
 
 #[repr(C)]
-struct 页表项(usize);
+pub struct 页表项(usize);
 
 impl 页表项 {
     fn 新建存放物理页号的页表项(物理页号: usize, 用户是否可见: bool) -> Self {
@@ -20,7 +20,7 @@ impl 页表项 {
         页表项(物理页号 << 10 | 0x1)
     }
 
-    fn 物理页号(&self) -> usize {
+    pub fn 物理页号(&self) -> usize {
         self.0 >> 10 
     }
 
@@ -69,7 +69,7 @@ pub struct 多级页表 {
 }
 
 impl 多级页表 {
-    fn 查找存放物理页号的页表项(&self, 虚拟页号: usize) -> &mut 页表项 {
+    pub fn 查找存放物理页号的页表项(&self, 虚拟页号: usize) -> &mut 页表项 {
         let 一级索引 = (虚拟页号 >> 18) & 0x1ff;
         let 二级索引 = (虚拟页号 >> 9) & 0x1ff;
         let 三级索引 = 虚拟页号 & 0x1ff;

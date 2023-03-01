@@ -154,8 +154,23 @@ impl 地址空间 {
                 恒等映射: 逻辑段.恒等映射,
                 用户可见: 逻辑段.用户可见
             });
-            let 数据 = 被复制的地址空间.读取字节数组(虚拟地址范围.clone());
-            地址空间.多级页表.写入字节数组(虚拟地址范围.clone(), &数据);
+            // TODO: 整理页表的完全复制，为何不能读完一部分数据再写入呢
+            for vpn in 逻辑段.连续地址虚拟内存.虚拟页号范围() {
+                let src_ppn = 被复制的地址空间.多级页表.查找存放物理页号的页表项(vpn).物理页号();
+                let dst_ppn = 地址空间.多级页表.查找存放物理页号的页表项(vpn).物理页号();
+                if src_ppn == dst_ppn {
+                    continue;
+                }
+                crate::格式化输出并换行!("{}, {}", src_ppn, dst_ppn);
+                unsafe {
+                    let dst = core::slice::from_raw_parts_mut((dst_ppn << 12) as *mut u8, 4096);
+                    let src = core::slice::from_raw_parts_mut((src_ppn << 12) as *mut u8, 4096);
+                    dst.copy_from_slice(src); 
+                }
+                crate::格式化输出并换行!("end {}, {}", src_ppn, dst_ppn);
+            }
+            // let 数据 = 被复制的地址空间.读取字节数组(虚拟地址范围.clone());
+            // 地址空间.多级页表.写入字节数组(虚拟地址范围.clone(), &数据);
         }
         地址空间
     }
