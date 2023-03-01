@@ -24,8 +24,8 @@ pub fn 初始化() {
 #[no_mangle] 
 /// 处理中断、异常或系统调用
 pub fn trap_handler() {
-    let 当前任务的地址空间 = &任务管理器::当前任务().地址空间;
-    let 上下文 = 当前任务的地址空间.陷入上下文();
+    // let 当前任务的地址空间 = 任务管理器::当前任务().borrow().地址空间;
+    let 上下文 = 任务管理器::当前任务().地址空间.陷入上下文();
     match 读取异常() {
         异常::用户系统调用 => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
@@ -41,11 +41,11 @@ pub fn trap_handler() {
         }
         异常::存储错误 | 异常::存储页错误 => {
             格式化输出并换行!("[kernel] PageFault in application, kernel killed it.");
-            任务管理器::终止并运行下一个任务();
+            任务管理器::终止并运行下一个任务(-2);
         }
         异常::非法指令 => {
             格式化输出并换行!("[kernel] IllegalInstruction in application, kernel killed it.");
-            任务管理器::终止并运行下一个任务();
+            任务管理器::终止并运行下一个任务(-3);
         }
         异常::中断(中断::时钟中断) => {
             为下一次时钟中断定时();
@@ -55,7 +55,7 @@ pub fn trap_handler() {
             
         }
     }
-    let user_satp = 当前任务的地址空间.token();
+    let user_satp = 任务管理器::当前任务().地址空间.token();
     extern "C" {
         fn __restore(user_satp: usize);
     }

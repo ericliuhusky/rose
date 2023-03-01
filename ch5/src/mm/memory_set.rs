@@ -176,6 +176,15 @@ impl 地址空间 {
     pub fn 读取字节数组(&self, 虚拟地址范围: Range<usize>) -> Vec<u8> {
         self.多级页表.读取字节数组(虚拟地址范围)
     }
+
+    pub fn 写入字节数组(&self, 虚拟地址范围: Range<usize>, 数据: &[u8]) {
+        self.多级页表.写入字节数组(虚拟地址范围, 数据);
+    }
+
+    pub fn 回收物理帧(&mut self) {
+        self.物理帧列表.clear();
+        self.多级页表.物理帧列表.clear();
+    } 
 }
 
 pub static mut 内核地址空间: 地址空间 = 地址空间 {

@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(default_alloc_error_handler)]
+#![feature(panic_info_message)]
 
 extern crate alloc;
 
@@ -23,7 +24,7 @@ fn rust_main() {
     trap::初始化();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
-    task::任务管理器::初始化();
+    task::任务管理器::添加初始进程();
     task::任务管理器::运行下一个任务();
 }
 
@@ -78,9 +79,22 @@ mod 终止 {
 mod rust裸机无标准库 {
     use core::panic::PanicInfo;
 
+    use crate::{终止::终止, 输出::格式化输出};
+
     // 需要提供崩溃处理
     #[panic_handler]
-    fn panic(_info: &PanicInfo) -> ! {
+    fn panic(info: &PanicInfo) -> ! {
+        if let Some(location) = info.location() {
+            crate::格式化输出并换行!(
+                "[kernel] Panicked at {}:{} {}",
+                location.file(),
+                location.line(),
+                info.message().unwrap()
+            );
+        } else {
+            crate::格式化输出并换行!("[kernel] Panicked: {}", info.message().unwrap());
+        }
+        终止();
         loop {}
     }
 }

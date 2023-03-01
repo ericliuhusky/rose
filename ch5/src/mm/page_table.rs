@@ -157,9 +157,9 @@ impl 多级页表 {
             if i >= 数据.len() {
                 break;
             }
-            let 要写入的数据 = &数据[i..i + 字节数组.len()];
-            i += 字节数组.len();
-            for j in 0..字节数组.len() {
+            let 要写入的数据 = &数据[i..i + 字节数组.len().min(数据.len())];
+            i += 字节数组.len().min(数据.len());
+            for j in 0..字节数组.len().min(数据.len()) {
                 字节数组[j] = 要写入的数据[j];
             }
         }
