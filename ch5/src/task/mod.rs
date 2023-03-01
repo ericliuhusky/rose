@@ -66,6 +66,13 @@ impl 任务管理器 {
             任务.子进程列表.clear();
             任务.地址空间.回收物理帧();
         });
+        // TODO: 将子进程挂在初始进程下面，也就是删除了当前进程它的子进程却不一定也结束
+        // {
+        //     let mut initproc_inner = INITPROC.inner.exclusive_access();
+        //     for child in inner.children.iter() {
+        //         initproc_inner.children.push(child.clone());
+        //     }
+        // }
         Self::运行下一个任务();
     }
 
