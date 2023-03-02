@@ -3,6 +3,9 @@
 #![feature(default_alloc_error_handler)]
 
 extern crate alloc;
+extern crate page_table;
+#[macro_use]
+extern crate lazy_static;
 
 use core::arch::global_asm;
 
