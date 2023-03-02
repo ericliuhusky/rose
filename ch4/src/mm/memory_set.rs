@@ -1,10 +1,8 @@
-use crate::mm::page_table::多级页表;
 use alloc::vec::Vec;
 use core::ops::Range;
 use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址, 陷入上下文};
 use crate::mm::elf_reader::Elf文件;
 use super::address::逻辑段;
-use super::page_table::页表;
 use crate::mm::frame_allocator::物理内存管理器;
 
 pub const 可用物理内存结尾地址: usize = 0x80800000;
@@ -23,36 +21,46 @@ extern "C" {
     fn __trap_end();
 }
 
+use crate::page_table::SV39PageTable;
+use crate::page_table::FrameAlloc;
+use crate::page_table::{PPN, VPN, VA};
+use crate::page_table::PageTableEntryFlags;
+
+struct TT;
+impl FrameAlloc for TT {
+    fn alloc() -> PPN {
+        let n = 物理内存管理器::分配物理页并返回页号();
+        PPN::new(n)
+    }
+}
+
 pub struct 地址空间 {
-    多级页表: 多级页表,
+    page_table: SV39PageTable<TT>
 }
 
 impl 地址空间 {
     fn 映射(&mut self, 逻辑段: 逻辑段) {
         for 虚拟页号 in 逻辑段.虚拟页号范围() {
             let 物理页号 = 物理内存管理器::分配物理页并返回页号();
-            self.多级页表.映射(虚拟页号, 物理页号, false);
+            self.page_table.map(VPN::new(虚拟页号), PPN::new(物理页号), PageTableEntryFlags::XWR);
         }
     }
     fn 用户可见映射(&mut self, 逻辑段: 逻辑段) {
         for 虚拟页号 in 逻辑段.虚拟页号范围() {
             let 物理页号 = 物理内存管理器::分配物理页并返回页号();
-            self.多级页表.映射(虚拟页号, 物理页号, true);
+            self.page_table.map(VPN::new(虚拟页号), PPN::new(物理页号), PageTableEntryFlags::UXWR);
         }
     }
     fn 恒等映射(&mut self, 逻辑段: 逻辑段) {
         for 虚拟页号 in 逻辑段.虚拟页号范围() {
             let 物理页号 = 虚拟页号;
-            self.多级页表.映射(虚拟页号, 物理页号, false);
+            self.page_table.map(VPN::new(虚拟页号), PPN::new(物理页号), PageTableEntryFlags::XWR);
         }
     }
 
     fn 新建空地址空间() -> Self {
-        let 物理页号 = 物理内存管理器::分配物理页并返回页号();
         Self { 
-            多级页表: 多级页表 { 
-                根页表: 页表 { 物理页号 } 
-            }
+            page_table: SV39PageTable::<TT>::new()
         }
     }
 
@@ -80,7 +88,7 @@ impl 地址空间 {
         let 程序段列表 = elf文件.程序段列表();
         for 程序段 in &程序段列表 {
             地址空间.用户可见映射(逻辑段 { 虚拟地址范围: 程序段.虚拟地址范围() });
-            地址空间.多级页表.写入字节数组(程序段.虚拟地址范围(), 程序段.数据);
+            地址空间.page_table.write(VA::new(程序段.虚拟地址范围().start), VA::new(程序段.虚拟地址范围().end), 程序段.数据)
         }
 
         let 最后一个程序段的虚拟地址范围 = 程序段列表.last().unwrap().虚拟地址范围();
@@ -101,25 +109,21 @@ impl 地址空间 {
 
 impl 地址空间 {
     pub fn 陷入上下文(&self) -> &'static mut 陷入上下文 {
-        let pa_ranges = self.多级页表.虚拟地址范围转换物理地址范围列表(应用陷入上下文存放地址()..0xfffffffffffff000);
+        let pa_ranges = self.page_table.translate_addr(VA::new(应用陷入上下文存放地址()), VA::new(0xfffffffffffff000));
         unsafe {
-            &mut *(pa_ranges[0].start as *mut 陷入上下文)
+            &mut *(pa_ranges[0].0.0 as *mut 陷入上下文)
         }
     }
 
     pub fn token(&self) -> usize {
-        8usize << 60 | self.多级页表.根页表.物理页号
+        8usize << 60 | self.page_table.root_ppn.0
     }
 
     pub fn 读取字节数组(&self, 虚拟地址范围: Range<usize>) -> Vec<u8> {
-        self.多级页表.读取字节数组(虚拟地址范围)
+        self.page_table.read(VA::new(虚拟地址范围.start), VA::new(虚拟地址范围.end))
     }
 }
 
-pub static mut 内核地址空间: 地址空间 = 地址空间 {
-    多级页表: 多级页表 {
-        根页表: 页表 {
-            物理页号: 0
-        }
-    },
-};
+lazy_static! {
+    pub static ref 内核地址空间: 地址空间 = 地址空间::新建内核地址空间();
+}
