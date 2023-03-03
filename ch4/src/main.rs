@@ -28,18 +28,11 @@ fn rust_main() {
 }
 
 mod 输出 {
-    use core::arch::asm;
     use core::fmt::{self, Write};
 
     pub fn 输出(字符串: &str) {
         for 字符 in 字符串.chars() {
-            unsafe {
-                asm!(
-                    "ecall",
-                    in("x10") 字符 as usize,
-                    in("x17") 1
-                );
-            }
+            sbi_call::putchar(字符 as usize);
         }
     }
 
