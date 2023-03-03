@@ -32,6 +32,10 @@ impl FrameAlloc for TT {
         let n = 物理内存管理器::分配物理页并返回页号();
         PPN::new(n)
     }
+
+    fn dealloc(frame: PPN) {
+        
+    }
 }
 
 pub struct 地址空间 {
@@ -41,20 +45,17 @@ pub struct 地址空间 {
 impl 地址空间 {
     fn 映射(&mut self, 逻辑段: 逻辑段) {
         for 虚拟页号 in 逻辑段.虚拟页号范围() {
-            let 物理页号 = 物理内存管理器::分配物理页并返回页号();
-            self.page_table.map(VPN::new(虚拟页号), PPN::new(物理页号), PageTableEntryFlags::XWR);
+            self.page_table.map(VPN::new(虚拟页号), false, PageTableEntryFlags::XWR);
         }
     }
     fn 用户可见映射(&mut self, 逻辑段: 逻辑段) {
         for 虚拟页号 in 逻辑段.虚拟页号范围() {
-            let 物理页号 = 物理内存管理器::分配物理页并返回页号();
-            self.page_table.map(VPN::new(虚拟页号), PPN::new(物理页号), PageTableEntryFlags::UXWR);
+            self.page_table.map(VPN::new(虚拟页号), false, PageTableEntryFlags::UXWR);
         }
     }
     fn 恒等映射(&mut self, 逻辑段: 逻辑段) {
         for 虚拟页号 in 逻辑段.虚拟页号范围() {
-            let 物理页号 = 虚拟页号;
-            self.page_table.map(VPN::new(虚拟页号), PPN::new(物理页号), PageTableEntryFlags::XWR);
+            self.page_table.map(VPN::new(虚拟页号), true, PageTableEntryFlags::XWR);
         }
     }
 
