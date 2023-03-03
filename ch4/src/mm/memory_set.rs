@@ -22,24 +22,12 @@ extern "C" {
 }
 
 use crate::page_table::SV39PageTable;
-use crate::page_table::FrameAlloc;
-use crate::page_table::{PPN, VPN, VA};
+use crate::page_table::{VPN, VA};
 use crate::page_table::PageTableEntryFlags;
 
-struct TT;
-impl FrameAlloc for TT {
-    fn alloc() -> PPN {
-        let n = 物理内存管理器::分配物理页并返回页号();
-        PPN::new(n)
-    }
-
-    fn dealloc(frame: PPN) {
-        
-    }
-}
 
 pub struct 地址空间 {
-    page_table: SV39PageTable<TT>
+    page_table: SV39PageTable<物理内存管理器>
 }
 
 impl 地址空间 {
@@ -61,7 +49,7 @@ impl 地址空间 {
 
     fn 新建空地址空间() -> Self {
         Self { 
-            page_table: SV39PageTable::<TT>::new()
+            page_table: SV39PageTable::<物理内存管理器>::new()
         }
     }
 

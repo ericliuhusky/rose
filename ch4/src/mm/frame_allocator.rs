@@ -1,3 +1,4 @@
+use crate::page_table::{FrameAlloc, PPN};
 use super::memory_set::可用物理内存结尾地址;
 use super::address::内存地址;
 
@@ -21,16 +22,22 @@ impl 物理内存管理器 {
             };
         }
     }
+}
 
-    pub fn 分配物理页并返回页号() -> usize {
+impl FrameAlloc for 物理内存管理器 {
+    fn alloc() -> PPN {
         unsafe {
             if 物理内存管理器.应当分配的物理页号 == 物理内存管理器.可用物理内存结尾页号 {
                 panic!()
             }
             let 应当分配的物理页号 = 物理内存管理器.应当分配的物理页号;
             物理内存管理器.应当分配的物理页号 += 1;
-            应当分配的物理页号
+            PPN::new(应当分配的物理页号)
         }
+    }
+
+    fn dealloc(_frame: PPN) {
+        
     }
 }
 
