@@ -1,7 +1,6 @@
 mod address;
 mod frame_allocator;
 pub mod memory_set;
-mod elf_reader;
 
 use memory_set::内核地址空间;
 
