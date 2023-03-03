@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 sbi_call = { path = "../crates/sbi_call" }
+print = { path = "../crates/print" }

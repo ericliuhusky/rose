@@ -2,6 +2,8 @@
 #![no_main]
 
 use core::arch::global_asm;
+use sbi_call::shutdown;
+use print::println;
 
 global_asm!(include_str!("entry.s"));
 
@@ -19,45 +21,16 @@ fn rust_main() {
         fn boot_stack(); // 栈底
         fn boot_stack_top(); // 栈顶
     }
-    
-    格式化输出并换行!(".text [{:#x}, {:#x})", stext as usize, etext as usize);
-    格式化输出并换行!(".rodata [{:#x}, {:#x})", srodata as usize, erodata as usize);
-    格式化输出并换行!(".data [{:#x}, {:#x})", sdata as usize, edata as usize);
-    格式化输出并换行!(
+    println!(".text [{:#x}, {:#x})", stext as usize, etext as usize);
+    println!(".rodata [{:#x}, {:#x})", srodata as usize, erodata as usize);
+    println!(".data [{:#x}, {:#x})", sdata as usize, edata as usize);
+    println!(
         "boot_stack [{:#x}, {:#x})",
         boot_stack as usize, boot_stack_top as usize
     );
-    格式化输出并换行!(".bss [{:#x}, {:#x})", sbss as usize, ebss as usize);
+    println!(".bss [{:#x}, {:#x})", sbss as usize, ebss as usize);
     
-    sbi_call::shutdown();
-}
-
-mod 输出 {
-    use core::fmt::{self, Write};
-
-    fn 输出(字符串: &str) {
-        for 字符 in 字符串.chars() {
-            sbi_call::putchar(字符 as usize);
-        }
-    }
-
-    struct 标准输出;
-    impl Write for 标准输出 {
-        fn write_str(&mut self, s: &str) -> fmt::Result {
-            输出(s);
-            Ok(())
-        }
-    }
-    pub fn 格式化输出(参数: fmt::Arguments) {
-        标准输出.write_fmt(参数).unwrap();
-    }
-
-    #[macro_export]
-    macro_rules! 格式化输出并换行 {
-        ($fmt: literal $(, $($arg: tt)+)?) => {
-            $crate::输出::格式化输出(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
-        }
-    }
+    shutdown();
 }
 
 mod rust裸机无标准库 {

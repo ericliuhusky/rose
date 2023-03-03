@@ -1,0 +1,6 @@
+[package]
+name = "print"
+version = "0.1.0"
+
+[dependencies]
+sbi_call = { path = "../sbi_call" }
