@@ -1,4 +1,4 @@
-use crate::page_table::{FrameAlloc, PPN};
+use page_table::{FrameAlloc, PPN};
 use super::memory_set::可用物理内存结尾地址;
 use super::address::内存地址;
 
