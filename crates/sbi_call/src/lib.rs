@@ -24,6 +24,7 @@ pub fn putchar(c: usize) {
     sbi_call(SBI_PUTCHAR, [c, 0, 0]);
 }
 
-pub fn shutdown() {
+pub fn shutdown() -> ! {
     sbi_call(SBI_SHUTDOWN, [0, 0, 0]);
+    panic!("shutdown")
 }

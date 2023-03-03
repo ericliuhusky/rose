@@ -4,6 +4,7 @@
 use core::arch::global_asm;
 use sbi_call::shutdown;
 use print::println;
+use panic;
 
 global_asm!(include_str!("entry.s"));
 
@@ -31,14 +32,4 @@ fn rust_main() {
     println!(".bss [{:#x}, {:#x})", sbss as usize, ebss as usize);
     
     shutdown();
-}
-
-mod rust裸机无标准库 {
-    use core::panic::PanicInfo;
-
-    // 需要提供崩溃处理
-    #[panic_handler]
-    fn panic(_info: &PanicInfo) -> ! {
-        loop {}
-    }
 }
