@@ -2,7 +2,6 @@ use alloc::vec::Vec;
 use core::ops::Range;
 use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址, 陷入上下文};
 use elf_reader::ElfFile;
-use super::address::逻辑段;
 use crate::mm::frame_allocator::物理内存管理器;
 use lazy_static::lazy_static;
 
@@ -116,4 +115,23 @@ impl 地址空间 {
 
 lazy_static! {
     pub static ref 内核地址空间: 地址空间 = 地址空间::新建内核地址空间();
+}
+
+
+
+/// 一段连续地址的虚拟内存
+pub struct 逻辑段 {
+    pub 虚拟地址范围: Range<usize>
+}
+
+impl 逻辑段 {
+    pub fn 虚拟页号范围(&self) -> Range<usize> {
+        let 起始页号 = VA::new(self.虚拟地址范围.start).align_to_lower().page_number().0;
+        let 结尾页号 = VA::new(self.虚拟地址范围.end).align_to_upper().page_number().0;
+        起始页号..结尾页号
+    }
+
+    pub fn 对齐到分页的结尾地址(&self) -> usize {
+        VA::new(self.虚拟地址范围.end).align_to_upper().0
+    }
 }

@@ -1,6 +1,5 @@
-use page_table::{FrameAlloc, PPN};
+use page_table::{FrameAlloc, PPN, PA};
 use super::memory_set::可用物理内存结尾地址;
-use super::address::内存地址;
 
 pub struct 物理内存管理器 {
     应当分配的物理页号: usize,
@@ -14,8 +13,8 @@ impl 物理内存管理器 {
             fn ekernel();
         }
         unsafe {
-            let 应当分配的物理页号 = 内存地址(ekernel as usize).对齐到分页向上取整().页号();
-            let 可用物理内存结尾页号 = 内存地址(可用物理内存结尾地址).对齐到分页向下取整().页号();
+            let 应当分配的物理页号 = PA::new(ekernel as usize).align_to_upper().page_number().0;
+            let 可用物理内存结尾页号 = PA::new(可用物理内存结尾地址).align_to_lower().page_number().0;
             物理内存管理器 = Self {
                 应当分配的物理页号,
                 可用物理内存结尾页号
