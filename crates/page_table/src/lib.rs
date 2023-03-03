@@ -79,7 +79,15 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
 }
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
-    pub fn map(&mut self, vpn: VPN, ppn: PPN, flags: PageTableEntryFlags) {
+    pub fn map(&mut self, vpn: VPN, identical: bool, flags: PageTableEntryFlags) {
+        let ppn;
+        if identical {
+            ppn = PPN::new(vpn.0);
+        } else {
+            let frame = FrameAllocator::alloc();
+            self.frames.push(frame);
+            ppn = frame;
+        }
         let pte = self.find_pte_create(vpn);
         assert!(!pte.is_valid());
         *pte = PageTableEntry::new(ppn, flags);
