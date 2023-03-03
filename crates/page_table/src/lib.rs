@@ -9,21 +9,26 @@ pub use page_table::PageTableEntryFlags;
 pub use address::{VPN, PPN, VA, PA};
 use page_table::{PageTableEntry, PageTable};
 use core::marker::PhantomData;
+use alloc::vec;
 use alloc::vec::Vec;
 
 pub trait FrameAlloc {
     fn alloc() -> PPN;
+    fn dealloc(frame: PPN);
 }
 
 pub struct SV39PageTable<FrameAllocator: FrameAlloc> {
     pub root_ppn: PPN,
+    frames: Vec<PPN>,
     _phantom: PhantomData<FrameAllocator>
 }
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
     pub fn new() -> Self {
+        let frame = FrameAllocator::alloc(); 
         Self { 
-            root_ppn: FrameAllocator::alloc(), 
+            root_ppn: frame, 
+            frames: vec![frame],
             _phantom: PhantomData
         }
     }
@@ -31,6 +36,28 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
     // ppn -> pa -> page_table -> pte -> ppn
+    fn find_pte_create(&mut self, vpn: VPN) -> &mut PageTableEntry {
+        let indexs = vpn.indexs();
+        let mut ppn = self.root_ppn;
+        for i in 0..2 {
+            let pa = ppn.start_addr();
+            let mut pt = PageTable::from(pa);
+            let pte = &mut pt[indexs[i]];
+            if pte.is_valid() {
+                ppn = pte.ppn();
+            } else {
+                let frame = FrameAllocator::alloc();
+                ppn = frame;
+                self.frames.push(frame);
+                pt[indexs[i]] = PageTableEntry::new(ppn, PageTableEntryFlags::POINT_TO_NEXT);
+            }
+        }
+        let pa = ppn.start_addr();
+        let pt = PageTable::from(pa);
+        let pte = &mut pt.0[indexs[2]];
+        pte
+    }
+
     fn find_pte(&self, vpn: VPN) -> &mut PageTableEntry {
         let indexs = vpn.indexs();
         let mut ppn = self.root_ppn;
@@ -41,8 +68,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
             if pte.is_valid() {
                 ppn = pte.ppn();
             } else {
-                ppn = FrameAllocator::alloc();
-                pt[indexs[i]] = PageTableEntry::new(ppn, PageTableEntryFlags::POINT_TO_NEXT);
+                panic!()
             }
         }
         let pa = ppn.start_addr();
@@ -53,8 +79,8 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
 }
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
-    pub fn map(&self, vpn: VPN, ppn: PPN, flags: PageTableEntryFlags) {
-        let pte = self.find_pte(vpn);
+    pub fn map(&mut self, vpn: VPN, ppn: PPN, flags: PageTableEntryFlags) {
+        let pte = self.find_pte_create(vpn);
         assert!(!pte.is_valid());
         *pte = PageTableEntry::new(ppn, flags);
     }
@@ -134,6 +160,14 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
             for j in 0..len {
                 buffer[j] = src[j];
             }
+        }
+    }
+}
+
+impl<FrameAllocator: FrameAlloc> Drop for SV39PageTable<FrameAllocator> {
+    fn drop(&mut self) {
+        for frame in &self.frames {
+            FrameAllocator::dealloc(*frame);
         }
     }
 }
