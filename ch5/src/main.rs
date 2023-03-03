@@ -4,8 +4,6 @@
 #![feature(panic_info_message)]
 
 extern crate alloc;
-#[macro_use]
-extern crate lazy_static;
 
 use core::arch::global_asm;
 

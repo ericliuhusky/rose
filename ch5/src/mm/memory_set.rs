@@ -5,6 +5,7 @@ use crate::mm::elf_reader::Elf文件;
 use super::address::{逻辑段, 连续地址虚拟内存};
 // use super::frame_allocator::物理帧;
 use crate::mm::frame_allocator::物理内存管理器;
+use lazy_static::lazy_static;
 
 pub const 可用物理内存结尾地址: usize = 0x80800000;
 
