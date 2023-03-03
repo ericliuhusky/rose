@@ -1,10 +1,9 @@
 use alloc::vec::Vec;
 use core::ops::Range;
 use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址, 陷入上下文};
-use crate::mm::elf_reader::Elf文件;
 use super::address::{逻辑段, 连续地址虚拟内存};
-// use super::frame_allocator::物理帧;
 use crate::mm::frame_allocator::物理内存管理器;
+use elf_reader::ElfFile;
 use lazy_static::lazy_static;
 
 pub const 可用物理内存结尾地址: usize = 0x80800000;
@@ -106,18 +105,18 @@ impl 地址空间 {
             用户可见: false,
          });
 
-        let elf文件 = Elf文件::解析(elf文件数据);
-        let 程序段列表 = elf文件.程序段列表();
+        let elf文件 = ElfFile::read(elf文件数据);
+        let 程序段列表 = elf文件.programs();
         for 程序段 in &程序段列表 {
             地址空间.映射(逻辑段 { 
-                连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 程序段.虚拟地址范围() },
+                连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 程序段.virtual_address_range() },
                 恒等映射: false,
                 用户可见: true,
              });
-            地址空间.page_table.write(VA::new(程序段.虚拟地址范围().start), VA::new(程序段.虚拟地址范围().end), 程序段.数据);
+            地址空间.page_table.write(VA::new(程序段.virtual_address_range().start), VA::new(程序段.virtual_address_range().end), 程序段.data);
         }
 
-        let 最后一个程序段的虚拟地址范围 = 程序段列表.last().unwrap().虚拟地址范围();
+        let 最后一个程序段的虚拟地址范围 = 程序段列表.last().unwrap().virtual_address_range();
 
         let 用户栈栈底 = 连续地址虚拟内存 { 虚拟地址范围: 最后一个程序段的虚拟地址范围 }.对齐到分页的结尾地址();
         let 用户栈栈顶 = 用户栈栈底 + 0x2000;
@@ -136,7 +135,7 @@ impl 地址空间 {
         (
             地址空间,
             用户栈栈顶,
-            elf文件.入口地址(),
+            elf文件.entry_address(),
         )
     }
 
