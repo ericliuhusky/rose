@@ -2,7 +2,6 @@
 #![no_main]
 
 use core::arch::global_asm;
-use 终止::终止;
 
 global_asm!(include_str!("entry.s"));
 
@@ -30,22 +29,15 @@ fn rust_main() {
     );
     格式化输出并换行!(".bss [{:#x}, {:#x})", sbss as usize, ebss as usize);
     
-    终止();
+    sbi_call::shutdown();
 }
 
 mod 输出 {
-    use core::arch::asm;
     use core::fmt::{self, Write};
 
     fn 输出(字符串: &str) {
         for 字符 in 字符串.chars() {
-            unsafe {
-                asm!(
-                    "ecall",
-                    in("x10") 字符 as usize,
-                    in("x17") 1
-                );
-            }
+            sbi_call::putchar(字符 as usize);
         }
     }
 
@@ -64,19 +56,6 @@ mod 输出 {
     macro_rules! 格式化输出并换行 {
         ($fmt: literal $(, $($arg: tt)+)?) => {
             $crate::输出::格式化输出(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
-        }
-    }
-}
-
-mod 终止 {
-    use core::arch::asm;
-
-    pub fn 终止() {
-        unsafe {
-            asm!(
-                "sw {0}, 0({1})",
-                in(reg)0x5555, in(reg)0x100000
-            );
         }
     }
 }
