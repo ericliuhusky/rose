@@ -22,9 +22,9 @@ extern "C" {
     fn __trap_end();
 }
 
-use crate::page_table::SV39PageTable;
-use crate::page_table::{VPN, VA};
-use crate::page_table::PageTableEntryFlags;
+use page_table::SV39PageTable;
+use page_table::{VPN, VA};
+use page_table::PageTableEntryFlags;
 
 
 pub struct 地址空间 {
