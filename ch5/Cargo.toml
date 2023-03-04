@@ -11,4 +11,4 @@ sbi_call = { path = "../crates/sbi_call" }
 print = { path = "../crates/print" }
 panic = { path = "../crates/panic" }
 riscv_register = { path = "../crates/riscv_register" }
-heap = { path = "../crates/heap" }
+heap_allocator = { path = "../crates/heap_allocator" }

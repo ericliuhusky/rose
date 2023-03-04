@@ -6,7 +6,7 @@ use memory_set::内核地址空间;
 use riscv_register::satp;
 
 pub fn 初始化() {
-    heap::init();
+    heap_allocator::init();
     frame_allocator::物理内存管理器::初始化();
     unsafe {
         // 切换到内核地址空间
