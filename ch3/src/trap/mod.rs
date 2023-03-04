@@ -3,7 +3,7 @@ use crate::task::任务管理器;
 use crate::syscall::系统调用;
 use core::arch::global_asm;
 pub use context::陷入上下文;
-use riscv_register::scause::{self, Exception, Interrupt};
+use riscv_register::{scause::{self, Exception, Interrupt}, stvec};
 use crate::timer::为下一次时钟中断定时;
 
 global_asm!(include_str!("trap.s"));
@@ -13,9 +13,7 @@ pub fn 初始化() {
         fn __trap_entry();
     }
     // 设置异常处理入口地址为__trap_entry
-    unsafe {
-        core::arch::asm!("csrw stvec, {}", in(reg) __trap_entry as usize);
-    }
+    stvec::write(__trap_entry as usize);
 }
 
 
