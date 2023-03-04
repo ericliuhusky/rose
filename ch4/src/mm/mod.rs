@@ -2,6 +2,7 @@ mod frame_allocator;
 pub mod memory_set;
 
 use memory_set::内核地址空间;
+use riscv_register::satp;
 
 pub fn 初始化() {
     堆::初始化();
@@ -9,7 +10,7 @@ pub fn 初始化() {
     unsafe {
         // 切换到内核地址空间
         let satp = 内核地址空间.token();
-        core::arch::asm!("csrw satp, {}", in(reg) satp);
+        satp::write(satp);
         core::arch::asm!("sfence.vma");
     }
 }
