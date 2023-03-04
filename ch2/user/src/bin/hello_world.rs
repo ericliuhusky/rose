@@ -5,7 +5,7 @@
 extern crate lib;
 
 #[no_mangle]
-fn main() -> i32 {
+fn main() -> isize {
     println!("Hello, world!");
     0
 }
