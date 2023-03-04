@@ -3,7 +3,7 @@ use 系统调用_终止::系统调用_终止;
 
 const 系统调用标识_输出: usize = 1;
 const 系统调用标识_终止: usize = 2;
-const SYS_PUTCHAR: usize = 3;
+const SYS_PUTCHAR: usize = 9;
 
 pub fn 系统调用(系统调用标识: usize, 参数: [usize; 3]) -> isize {
     match 系统调用标识 {
