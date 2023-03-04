@@ -1,7 +1,5 @@
 use crate::trap::陷入上下文;
 use sbi_call::shutdown;
-const 应用内存区起始地址: usize = 0x80400000;
-const 应用内存区大小限制: usize = 0x20000;
 const 用户栈栈顶: usize = 0x80422000;
 const 内核栈栈顶: usize = 0x80424000;
 
@@ -21,19 +19,23 @@ pub struct 应用管理器 {
 }
 
 impl 应用管理器 {
-    fn 加载应用到应用内存区(&self, 应用索引: usize) {
+    fn 加载应用到应用内存区(&self, 应用索引: usize) -> usize {
         if 应用索引 >= self.应用数目 {
             println!("[kernel] All applications completed!");
             shutdown();
         }
         println!("[kernel] Loading app_{}", 应用索引);
         unsafe {
-            // 清空应用内存区
-            core::slice::from_raw_parts_mut(应用内存区起始地址 as *mut u8, 应用内存区大小限制).fill(0);
-
             let 应用数据 = 读取应用数据(应用索引);
-            let 应用占用的内存 = core::slice::from_raw_parts_mut(应用内存区起始地址 as *mut u8, 应用数据.len());
-            应用占用的内存.copy_from_slice(应用数据);
+            let elf = elf_reader::ElfFile::read(应用数据);
+            for p in elf.programs() {
+                let start_va = p.virtual_address_range().start;
+                let end_va = p.virtual_address_range().end;
+                let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
+                let src = p.data;
+                dst.copy_from_slice(src);
+            }
+            elf.entry_address()
         }
     }
 
@@ -52,7 +54,7 @@ impl 应用管理器 {
     pub fn 运行下一个应用() {
         unsafe {
             let 当前应用索引 = 应用管理器.当前应用索引;
-            应用管理器.加载应用到应用内存区(当前应用索引);
+            let ea = 应用管理器.加载应用到应用内存区(当前应用索引);
             应用管理器.当前应用索引 += 1;
 
             extern "C" {
@@ -61,7 +63,7 @@ impl 应用管理器 {
             __restore(
                 将上下文压入内核栈后的栈顶(
                     陷入上下文::应用初始上下文(
-                        应用内存区起始地址,
+                        ea,
                         用户栈栈顶
                     )
                 )
