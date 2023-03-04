@@ -20,6 +20,6 @@ pub fn init() {
 }
 
 #[alloc_error_handler]
-pub fn alloc_error(layout: core::alloc::Layout) -> ! {
+fn alloc_error(layout: core::alloc::Layout) -> ! {
     panic!("Heap allocation error, layout = {:?}", layout);
 }
