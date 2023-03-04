@@ -1,5 +1,5 @@
-use core::arch::asm;
 use riscv_register::{time, sie};
+use sbi_call::set_timer;
 
 const 一毫秒时钟计数器的增量: usize = 12500;
 
@@ -7,19 +7,9 @@ fn 读取时钟计数器的值() -> usize {
     time::read()
 }
 
-fn 设置触发时钟中断的时钟计数器的值(时钟计数器的值: usize) {
-    unsafe {
-        asm!(
-            "ecall",
-            in("x10") 时钟计数器的值,
-            in("x17") 0,
-        );
-    }
-}
-
 pub fn 为下一次时钟中断定时() {
     // 10ms后触发时钟中断
-    设置触发时钟中断的时钟计数器的值(读取时钟计数器的值() + 一毫秒时钟计数器的增量 * 10);
+    set_timer(读取时钟计数器的值() + 一毫秒时钟计数器的增量 * 10);
 }
 
 pub fn 开启时钟中断() {
