@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 buddy_system_allocator = "0.6"
+sys_call = { path = "../../user_crates/sys_call" }
+print = { path = "../../user_crates/print" }
+panic = { path = "../../user_crates/panic" }

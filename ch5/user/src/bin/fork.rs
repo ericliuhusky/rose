@@ -5,14 +5,14 @@
 extern crate user;
 
 use user::{fork, getpid, wait};
-use user::终止::终止;
+use user::exit;
 
 #[no_mangle]
 pub fn main() -> i32 {
     println!("[fork]");
     if fork() == 0 {
         println!("child[{}]", getpid());
-        终止(0);
+        exit(0);
     }
 
     println!("parent[{}] waiting...", getpid());
