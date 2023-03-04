@@ -5,7 +5,6 @@
 extern crate lib;
 
 #[no_mangle]
-fn main() -> isize {
+fn main() {
     println!("Hello, world!");
-    0
 }

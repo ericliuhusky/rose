@@ -6,11 +6,10 @@ extern crate lib;
 use core::arch::asm;
 
 #[no_mangle]
-fn main() -> isize {
+fn main() {
     println!("Try to execute privileged instruction in U Mode");
     println!("Kernel should kill this application!");
     unsafe {
         asm!("sret");
     }
-    0
 }
