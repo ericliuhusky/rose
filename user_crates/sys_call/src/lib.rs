@@ -17,7 +17,7 @@ fn sys_call(id: usize, args: [usize; 3]) -> isize {
     ret
 }
 
-const SYS_PUTCHAR: usize = 3;
+const SYS_PUTCHAR: usize = 9;
 const SYS_EXIT: usize = 2;
 
 pub fn putchar(c: usize) {
