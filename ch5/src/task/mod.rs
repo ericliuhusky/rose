@@ -6,8 +6,7 @@ use core::cell::{RefCell, Ref, RefMut};
 use crate::loader::通过名称读取应用数据;
 use crate::trap::trap_return;
 use alloc::{vec::Vec, rc::Rc};
-use crate::格式化输出并换行;
-use crate::终止::终止;
+use sbi_call::shutdown;
 use self::task::{任务, 任务状态};
 
 
@@ -57,8 +56,8 @@ impl 任务管理器 {
 
     pub fn 终止并运行下一个任务(终止代码: i32) {
         if Self::当前任务().进程标识符.0 == 0 {
-            格式化输出并换行!("[Kernel] exit!");
-            终止();
+            println!("[Kernel] exit!");
+            shutdown();
         }
         Self::可变当前任务(|mut 任务| {
             任务.状态 = 任务状态::终止;

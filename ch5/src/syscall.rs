@@ -4,7 +4,6 @@ use 系统调用_读取::系统调用_读取;
 use 系统调用_让出时间片::系统调用_让出时间片;
 use 系统调用_时钟计数器::系统调用_读取时钟计数器的毫秒值;
 use 系统调用_进程::{getpid, fork, exec, waitpid};
-use crate::格式化输出并换行;
 
 const 系统调用标识_读取: usize = 0;
 const 系统调用标识_输出: usize = 1;
@@ -32,31 +31,29 @@ pub fn 系统调用(系统调用标识: usize, 参数: [usize; 3]) -> isize {
         系统调用标识_进程_EXEC => exec(参数[0] as *const u8, 参数[1]),
         系统调用标识_进程_WAITPID => waitpid(参数[0] as isize, 参数[1] as *mut i32),
         _ => {
-            格式化输出并换行!("[kernel] Unsupported syscall_id: {}", 系统调用标识);
+            println!("[kernel] Unsupported syscall_id: {}", 系统调用标识);
             -1
         }
     }
 }
 
 mod 系统调用_输出 {
-    use crate::输出::输出;
     use crate::task::任务管理器;
 
     pub fn 系统调用_输出(字节数组指针: *const u8, 字节数组长度: usize) -> isize {
         let va_range = 字节数组指针 as usize..字节数组指针 as usize + 字节数组长度;
         let 字节数组 = 任务管理器::当前任务().地址空间.读取字节数组(va_range);
         let 字符串 = core::str::from_utf8(&字节数组).unwrap();
-        输出(字符串);
+        print!("{}", 字符串);
         字节数组长度 as isize
     }
 }
 
 mod 系统调用_终止 {
     use crate::task::任务管理器;
-    use crate::格式化输出并换行;
 
     pub fn 系统调用_终止(代码: i32) -> isize {
-        格式化输出并换行!("[kernel] Application exited with code {}", 代码);
+        println!("[kernel] Application exited with code {}", 代码);
         任务管理器::终止并运行下一个任务(代码);
         -1
     }

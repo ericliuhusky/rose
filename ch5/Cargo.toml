@@ -8,3 +8,6 @@ buddy_system_allocator = "0.6"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 page_table = { path = "../crates/page_table" }
 elf_reader = { path = "../crates/elf_reader" }
+sbi_call = { path = "../crates/sbi_call" }
+print = { path = "../crates/print" }
+panic = { path = "../crates/panic" }
