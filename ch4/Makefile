@@ -5,8 +5,12 @@ KERNEL_ENTRY_PA := 0x80200000
 
 all: run
 
-build:
-	@cd ../user && cargo clean && cargo build --release
+build_user:
+	@cd ../user \
+		&& cargo clean \
+		&& cargo build --release
+
+build: build_user
 	@cargo clean
 	@cargo build --release
 	@rust-objcopy $(KERNEL_ELF) --strip-all -O binary $(KERNEL_BIN)
