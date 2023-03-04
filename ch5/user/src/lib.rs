@@ -11,7 +11,7 @@ fn _start() {
     extern "C" {
         fn main() -> isize;
     }
-    堆::初始化();
+    heap_allocator::init();
     let 终止代码 = unsafe { main() };
     exit(终止代码);
 }
@@ -22,31 +22,6 @@ pub fn fibonacci(x: u32) -> u32 {
     if x == 1 { return 1 }
     fibonacci(x - 2) + fibonacci(x - 1)
 }
-
-
-
-mod 堆 {
-    use buddy_system_allocator::LockedHeap;
-
-    static mut 内核堆: [u8; 16384] = [0; 16384];
-
-    #[global_allocator]
-    static 堆管理器: LockedHeap = LockedHeap::empty();
-
-    pub fn 初始化() {
-        unsafe {
-            堆管理器
-                .lock()
-                .init(内核堆.as_ptr() as usize, 内核堆.len());
-        }
-    }
-
-    #[alloc_error_handler]
-    pub fn handle_alloc_error(layout: core::alloc::Layout) -> ! {
-        panic!("Heap allocation error, layout = {:?}", layout);
-    }
-}
-
 
 use core::arch::asm;
 
