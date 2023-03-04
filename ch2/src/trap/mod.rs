@@ -1,10 +1,9 @@
 mod context;
-mod scause;
 use crate::batch::应用管理器;
 use crate::syscall::系统调用;
-use core::arch::{global_asm};
+use core::arch::global_asm;
 pub use context::陷入上下文;
-use scause::{读取异常, 异常};
+use riscv_register::scause::{self, Exception};
 
 global_asm!(include_str!("trap.s"));
 
@@ -22,8 +21,8 @@ pub fn 初始化() {
 #[no_mangle] 
 /// 处理中断、异常或系统调用
 pub fn trap_handler(上下文: &mut 陷入上下文) -> &mut 陷入上下文 {
-    match 读取异常() {
-        异常::用户系统调用 => {
+    match scause::read() {
+        Exception::UserEnvCall => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
             上下文.触发异常指令地址 += 4;
             上下文.通用寄存器[10] = 系统调用(
@@ -35,11 +34,11 @@ pub fn trap_handler(上下文: &mut 陷入上下文) -> &mut 陷入上下文 {
                 ]
             ) as usize;
         }
-        异常::存储错误 | 异常::存储页错误 => {
+        Exception::StoreFault | Exception::StorePageFault => {
             println!("[kernel] PageFault in application, kernel killed it.");
             应用管理器::运行下一个应用();
         }
-        异常::非法指令 => {
+        Exception::IllegalInstruction => {
             println!("[kernel] IllegalInstruction in application, kernel killed it.");
             应用管理器::运行下一个应用();
         }
