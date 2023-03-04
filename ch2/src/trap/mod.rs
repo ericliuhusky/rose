@@ -4,7 +4,6 @@ use crate::batch::应用管理器;
 use crate::syscall::系统调用;
 use core::arch::{global_asm};
 pub use context::陷入上下文;
-use crate::格式化输出并换行;
 use scause::{读取异常, 异常};
 
 global_asm!(include_str!("trap.s"));
@@ -37,11 +36,11 @@ pub fn trap_handler(上下文: &mut 陷入上下文) -> &mut 陷入上下文 {
             ) as usize;
         }
         异常::存储错误 | 异常::存储页错误 => {
-            格式化输出并换行!("[kernel] PageFault in application, kernel killed it.");
+            println!("[kernel] PageFault in application, kernel killed it.");
             应用管理器::运行下一个应用();
         }
         异常::非法指令 => {
-            格式化输出并换行!("[kernel] IllegalInstruction in application, kernel killed it.");
+            println!("[kernel] IllegalInstruction in application, kernel killed it.");
             应用管理器::运行下一个应用();
         }
         _ => {

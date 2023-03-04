@@ -1,6 +1,5 @@
 use crate::trap::陷入上下文;
-use crate::格式化输出并换行;
-use crate::终止::终止;
+use sbi_call::shutdown;
 const 应用内存区起始地址: usize = 0x80400000;
 const 应用内存区大小限制: usize = 0x20000;
 const 用户栈栈顶: usize = 0x80422000;
@@ -24,10 +23,10 @@ pub struct 应用管理器 {
 impl 应用管理器 {
     fn 加载应用到应用内存区(&self, 应用索引: usize) {
         if 应用索引 >= self.应用数目 {
-            格式化输出并换行!("[kernel] All applications completed!");
-            终止();
+            println!("[kernel] All applications completed!");
+            shutdown();
         }
-        格式化输出并换行!("[kernel] Loading app_{}", 应用索引);
+        println!("[kernel] Loading app_{}", 应用索引);
         unsafe {
             // 清空应用内存区
             core::slice::from_raw_parts_mut(应用内存区起始地址 as *mut u8, 应用内存区大小限制).fill(0);
@@ -46,7 +45,7 @@ impl 应用管理器 {
                 当前应用索引: 0,
             };
     
-            格式化输出并换行!("[kernel] num_app = {}", 应用数目);
+            println!("[kernel] num_app = {}", 应用数目);
         }
     }
 
