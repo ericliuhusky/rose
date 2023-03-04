@@ -18,8 +18,8 @@ global_asm!(include_str!("link_app.s"));
 #[no_mangle]
 fn rust_main() {
     println!("[kernel] Hello, world!");
+    heap_allocator::init();
     trap::初始化();
-    loader::加载所有应用到应用内存区();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
     task::任务管理器::初始化();

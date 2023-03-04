@@ -1,11 +1,5 @@
 use crate::trap::陷入上下文;
 
-const 应用内存区大小限制: usize = 0x20000;
-const 应用内存区起始地址: [usize; 3] = [
-    0x80400000,
-    0x80420000,
-    0x80440000
-];
 const 用户栈栈顶: [usize; 3] = [
     0x80422000,
     0x80444000,
@@ -50,28 +44,26 @@ fn 读取应用数据(应用索引: usize) -> &'static [u8] {
     }
 }
 
-fn 加载应用到应用内存区(应用索引: usize) {
+fn 加载应用到应用内存区(应用索引: usize) -> usize {
     unsafe {
-        // 清空应用内存区
-        core::slice::from_raw_parts_mut(应用内存区起始地址[应用索引] as *mut u8, 应用内存区大小限制).fill(0);
-
         let 应用数据 = 读取应用数据(应用索引);
-        let 应用占用的内存 = core::slice::from_raw_parts_mut(应用内存区起始地址[应用索引] as *mut u8, 应用数据.len());
-        应用占用的内存.copy_from_slice(应用数据);
-    }
-}
-
-pub fn 加载所有应用到应用内存区() {
-    let 应用数目 = 读取应用数目();
-    for 应用索引 in 0..应用数目 {
-        加载应用到应用内存区(应用索引);
+        let elf = elf_reader::ElfFile::read(应用数据);
+            for p in elf.programs() {
+                let start_va = p.virtual_address_range().start;
+                let end_va = p.virtual_address_range().end;
+                let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
+                let src = p.data;
+                dst.copy_from_slice(src);
+            }
+        elf.entry_address()
     }
 }
 
 pub fn 将应用初始上下文压入内核栈后的栈顶(应用索引: usize) -> usize {
+    let ea = 加载应用到应用内存区(应用索引);
     将上下文压入内核栈后的栈顶(
         陷入上下文::应用初始上下文(
-            应用内存区起始地址[应用索引],
+            ea,
             用户栈栈顶[应用索引]
         ),
         应用索引
