@@ -19,11 +19,16 @@ fn sbi_call(id: usize, args: [usize; 3]) -> usize {
 
 const SBI_SET_TIMER: usize = 0;
 const SBI_PUTCHAR: usize = 1;
+const SBI_GETCHAR: usize = 2;
 const SBI_SHUTDOWN: usize = 8;
 
 
 pub fn putchar(c: usize) {
     sbi_call(SBI_PUTCHAR, [c, 0, 0]);
+}
+
+pub fn getchar() -> usize {
+    sbi_call(SBI_GETCHAR, [0, 0, 0])
 }
 
 pub fn shutdown() -> ! {
