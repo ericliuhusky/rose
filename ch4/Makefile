@@ -6,7 +6,7 @@ KERNEL_ENTRY_PA := 0x80200000
 all: run
 
 build:
-	@cd ../user && cargo clean && cargo build --release --target riscv64gc-unknown-none-elf
+	@cd ../user && cargo clean && cargo build --release
 	@cargo clean
 	@cargo build --release
 	@rust-objcopy $(KERNEL_ELF) --strip-all -O binary $(KERNEL_BIN)
