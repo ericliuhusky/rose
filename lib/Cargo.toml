@@ -1,0 +1,9 @@
+[package]
+name = "lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sys_call = { path = "../user_crates/sys_call" }
+print = { path = "../user_crates/print" }
+panic = { path = "../user_crates/panic" }
