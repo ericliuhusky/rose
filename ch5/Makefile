@@ -16,7 +16,7 @@ build_user:
 
 build: build_user
 	@cargo clean
-	@cargo build --config $(config) --target $(target) --release
+	@cargo +nightly build --config $(config) --target $(target) --release
 	@rust-objcopy $(KERNEL_ELF) --strip-all -O binary $(KERNEL_BIN)
 
 run: build

@@ -26,7 +26,7 @@ build_user:
 
 build: build_user
 	@cargo clean
-	@cargo build --config $(config) --target $(target) --release
+	@cargo +nightly build --config $(config) --target $(target) --release
 	@rust-objcopy $(内核ELF文件) --strip-all -O binary $(内核二进制文件)
 
 run: build
