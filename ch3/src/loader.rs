@@ -48,19 +48,25 @@ fn 加载应用到应用内存区(应用索引: usize) -> usize {
     unsafe {
         let 应用数据 = 读取应用数据(应用索引);
         let elf = elf_reader::ElfFile::read(应用数据);
-            for p in elf.programs() {
-                let start_va = p.virtual_address_range().start;
-                let end_va = p.virtual_address_range().end;
-                let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
-                let src = p.data;
-                dst.copy_from_slice(src);
+        println!("{:x}", elf.entry_address());
+        for p in elf.programs() {
+            let start_va = p.virtual_address_range().start;
+            let end_va = p.virtual_address_range().end;
+            println!("{:x},{:x}", start_va, end_va);
+            if start_va < 0x80200000 {
+                continue;
             }
+            let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
+            let src = p.data;
+            dst.copy_from_slice(src);
+        }
         elf.entry_address()
     }
 }
 
 pub fn 将应用初始上下文压入内核栈后的栈顶(应用索引: usize) -> usize {
     let ea = 加载应用到应用内存区(应用索引);
+    println!("{:x}", ea);
     将上下文压入内核栈后的栈顶(
         陷入上下文::应用初始上下文(
             ea,
