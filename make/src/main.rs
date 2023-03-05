@@ -62,21 +62,42 @@ fn main() {
     let link_arg = match ch {
         "ch0" => "-Ttext=0x80200000",
         "ch1" => "-Tsrc/linker.ld",
+        "ch2" => "-Tsrc/linker.ld",
         _ => ""
     };
     let nightly = match ch {
         "ch0" => false,
         "ch1" => true,
+        "ch2" => true,
         _ => false
     };
     let dir = match ch {
         "ch0" => "../ch0",
         "ch1" => "../ch1",
+        "ch2" => "../ch2",
+        _ => ""
+    };
+    let has_user = match ch {
+        "ch0" => false,
+        "ch1" => false,
+        "ch2" => true,
+        _ => false
+    };
+    let link_arg_user = match ch {
+        "ch0" => "",
+        "ch1" => "",
+        "ch2" => "-Ttext=0x80400000",
         _ => ""
     };
     
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
+
+    if has_user {
+        let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_user);
+        clean("../user");
+        build("../user", &config_user, true);
+    }
      
     clean(dir);
     let config = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg);
