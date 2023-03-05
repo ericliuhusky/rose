@@ -10,9 +10,9 @@ KERNEL_ENTRY_PA := 0x80200000
 all: run
 
 build_user:
-	@cd ../user \
-		&& cargo clean \
-		&& cargo build --target $(target) --release
+	@cd ../user && \
+		cargo clean && \
+		cargo build --target $(target) --release
 
 build: build_user
 	@cargo clean

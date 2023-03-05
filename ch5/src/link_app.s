@@ -21,7 +21,7 @@ _app_names:
     .global app_0_end
     .align 3
 app_0_start:
-    .incbin "./user/target/riscv64gc-unknown-none-elf/release/fork"
+    .incbin "../user/target/riscv64gc-unknown-none-elf/release/fork"
 app_0_end:
 
     .section .data
@@ -29,7 +29,7 @@ app_0_end:
     .global app_1_end
     .align 3
 app_1_start:
-    .incbin "./user/target/riscv64gc-unknown-none-elf/release/initproc"
+    .incbin "../user/target/riscv64gc-unknown-none-elf/release/initproc"
 app_1_end:
 
     .section .data
@@ -37,7 +37,7 @@ app_1_end:
     .global app_2_end
     .align 3
 app_2_start:
-    .incbin "./user/target/riscv64gc-unknown-none-elf/release/shell"
+    .incbin "../user/target/riscv64gc-unknown-none-elf/release/shell"
 app_2_end:
 
     .section .data
@@ -45,5 +45,5 @@ app_2_end:
     .global app_3_end
     .align 3
 app_3_start:
-    .incbin "./user/target/riscv64gc-unknown-none-elf/release/sleep"
+    .incbin "../user/target/riscv64gc-unknown-none-elf/release/sleep"
 app_3_end:

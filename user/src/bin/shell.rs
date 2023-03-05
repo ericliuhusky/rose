@@ -5,7 +5,7 @@
 extern crate alloc;
 
 #[macro_use]
-extern crate user;
+extern crate lib;
 
 const LF: u8 = 0x0au8;
 const CR: u8 = 0x0du8;
@@ -13,8 +13,8 @@ const DL: u8 = 0x7fu8;
 const BS: u8 = 0x08u8;
 
 use alloc::string::String;
-use user::getchar;
-use user::{exec, fork, waitpid};
+use lib::getchar;
+use lib::{exec, fork, waitpid};
 
 #[no_mangle]
 pub fn main() -> i32 {

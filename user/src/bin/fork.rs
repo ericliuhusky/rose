@@ -2,10 +2,10 @@
 #![no_main]
 
 #[macro_use]
-extern crate user;
+extern crate lib;
 
-use user::{fork, getpid, wait};
-use user::exit;
+use lib::{fork, getpid, wait};
+use lib::exit;
 
 #[no_mangle]
 pub fn main() -> i32 {

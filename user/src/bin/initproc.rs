@@ -2,9 +2,9 @@
 #![no_main]
 
 #[macro_use]
-extern crate user;
+extern crate lib;
 
-use user::{exec, fork, wait, yield_};
+use lib::{exec, fork, wait, yield_};
 
 #[no_mangle]
 fn main() -> i32 {

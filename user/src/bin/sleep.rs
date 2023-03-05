@@ -2,9 +2,9 @@
 #![no_main]
 
 #[macro_use]
-extern crate user;
+extern crate lib;
 
-use user::{get_time, sleep};
+use lib::{get_time, sleep};
 
 #[no_mangle]
 pub fn main() -> i32 {

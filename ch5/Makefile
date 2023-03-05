@@ -9,8 +9,12 @@ KERNEL_ENTRY_PA := 0x80200000
 
 all: run
 
-build:
-	@cd ./user && make build
+build_user:
+	@cd ../user && \
+		cargo clean && \
+		cargo build --target $(target) --release
+
+build: build_user
 	@cargo clean
 	@cargo build --config $(config) --target $(target) --release
 	@rust-objcopy $(KERNEL_ELF) --strip-all -O binary $(KERNEL_BIN)
