@@ -14,15 +14,17 @@ fn clean(dir: &str) {
         .unwrap();
 }
 
-fn build(dir: &str, config: Option<&str>, nightly: bool, bin: Option<&str>) {
+fn build(dir: &str, nightly: bool, config: Option<&str>, bin: Option<&str>) {
     let mut cmd = Command::new("cargo");
+    cmd.current_dir(dir);
     if nightly {
         cmd.arg("+nightly");
     }
+    cmd.arg("build");
     if let Some(config) = config {
         cmd.args(["--config", config]);
     }
-    cmd.current_dir(dir).arg("build").args(["--target", TARGET]);
+    cmd.args(["--target", TARGET]);
     if let Some(bin) = bin {
         cmd.args(["--bin", bin]);
     }
@@ -161,28 +163,29 @@ fn main() {
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
 
+    fn rustflags(link_arg: &str) -> String {
+        format!(
+            r#"target.{}.rustflags = ["-Clink-arg={}"]"#,
+            TARGET, link_arg
+        )
+    }
+
     if let Some(users) = ch.users {
         clean("../user");
         for user in users {
             if let Some(entry) = user.enrty {
                 let link_arg = format!("-Ttext={:x}", entry);
-                let config = format!(
-                    r#"target.{}.rustflags = ["-Clink-arg={}"]"#,
-                    TARGET, link_arg
-                );
-                build("../user", Some(&config), true, Some(user.bin));
+                let config = rustflags(&link_arg);
+                build("../user", true, Some(&config), Some(user.bin));
             } else {
-                build("../user", None, true, Some(user.bin));
+                build("../user", true, None, Some(user.bin));
             }
         }
     }
 
     clean(ch.dir);
-    let config = format!(
-        r#"target.{}.rustflags = ["-Clink-arg={}"]"#,
-        TARGET, ch.link_arg
-    );
-    build(ch.dir, Some(&config), ch.nightly, None);
+    let config = rustflags(ch.link_arg);
+    build(ch.dir, ch.nightly, Some(&config), None);
     elf_to_bin(ch.dir, &kernel_elf, &kernel_bin);
 
     let output = qemu_run(ch.dir, &kernel_bin);
