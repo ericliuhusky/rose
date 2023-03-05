@@ -28,9 +28,14 @@ impl 应用管理器 {
         unsafe {
             let 应用数据 = 读取应用数据(应用索引);
             let elf = elf_reader::ElfFile::read(应用数据);
+            println!("{:x}", elf.entry_address());
             for p in elf.programs() {
                 let start_va = p.virtual_address_range().start;
                 let end_va = p.virtual_address_range().end;
+                println!("{:x},{:x}", start_va, end_va);
+                if start_va < 0x80200000 {
+                    continue;
+                }
                 let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
                 let src = p.data;
                 dst.copy_from_slice(src);

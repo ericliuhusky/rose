@@ -5,10 +5,14 @@
 
 all: run
 
-build:
-	@cd ./user && make build
+build_user:
+	@cd ../user && \
+		cargo clean && \
+		cargo build --config 'target.riscv64gc-unknown-none-elf.rustflags = ["-Clink-arg=-Ttext=0x80400000"]' --target riscv64gc-unknown-none-elf --release
+
+build: build_user
 	@cargo clean
-	@cargo build --release
+	@cargo build --config 'target.riscv64gc-unknown-none-elf.rustflags = ["-Clink-arg=-Tsrc/linker.ld"]' --target riscv64gc-unknown-none-elf --release
 	@rust-objcopy $(内核ELF文件) --strip-all -O binary $(内核二进制文件)
 
 run: build
