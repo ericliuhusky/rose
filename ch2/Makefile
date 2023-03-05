@@ -1,18 +1,25 @@
-内核ELF文件 := target/riscv64gc-unknown-none-elf/release/rcore
+target := riscv64gc-unknown-none-elf
+link-arg := -Tsrc/linker.ld
+config := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg)"]'
+
+link-arg-user := -Ttext=0x80400000
+config-user := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg-user)"]'
+
+内核ELF文件 := target/$(target)/release/rcore
 内核二进制文件 := $(内核ELF文件).bin
 引导程序 := ../rustsbi-qemu.bin
 内核入口地址 := 0x80200000
 
 all: run
 
-build_user:
+build-user:
 	@cd ../user && \
 		cargo clean && \
-		cargo build --config 'target.riscv64gc-unknown-none-elf.rustflags = ["-Clink-arg=-Ttext=0x80400000"]' --target riscv64gc-unknown-none-elf --release
+		cargo build --config $(config-user) --target $(target) --release
 
-build: build_user
+build: build-user
 	@cargo clean
-	@cargo build --config 'target.riscv64gc-unknown-none-elf.rustflags = ["-Clink-arg=-Tsrc/linker.ld"]' --target riscv64gc-unknown-none-elf --release
+	@cargo build --config $(config) --target $(target) --release
 	@rust-objcopy $(内核ELF文件) --strip-all -O binary $(内核二进制文件)
 
 run: build
