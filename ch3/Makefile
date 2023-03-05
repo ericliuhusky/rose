@@ -9,7 +9,7 @@ config-user2 := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg-user2)"]'
 link-arg-user3 := -Ttext=0x80440000
 config-user3 := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg-user3)"]'
 
-内核ELF文件 := target/$(target)/release/rcore
+内核ELF文件 := target/$(target)/release/kernel
 内核二进制文件 := $(内核ELF文件).bin
 引导程序 := ../rustsbi-qemu.bin
 内核入口地址 := 0x80200000

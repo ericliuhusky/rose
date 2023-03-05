@@ -2,7 +2,7 @@ target := riscv64gc-unknown-none-elf
 link-arg := -Tsrc/linker.ld
 config := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg)"]'
 
-KERNEL_ELF := target/$(target)/release/rcore
+KERNEL_ELF := target/$(target)/release/kernel
 KERNEL_BIN := $(KERNEL_ELF).bin
 BOOTLOADER := ../rustsbi-qemu.bin
 KERNEL_ENTRY_PA := 0x80200000
