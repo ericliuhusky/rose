@@ -4,9 +4,9 @@ const KERNEL_ENTRY: &str = "0x80200000";
 
 use std::process::Command;
 
-fn clean(ch: &str) {
+fn clean(dir: &str) {
     Command::new("cargo")
-        .current_dir(format!("../{}", ch))
+        .current_dir(dir)
         .arg("clean")
         .spawn()
         .expect("clean")
@@ -14,13 +14,13 @@ fn clean(ch: &str) {
         .expect("wait clean");
 }
 
-fn build(ch: &str, config: &str, nightly: bool) {
+fn build(dir: &str, config: &str, nightly: bool) {
     let mut cmd = Command::new("cargo");
     if nightly {
         cmd.arg("+nightly");
     }
     cmd
-        .current_dir(format!("../{}", ch)) 
+        .current_dir(dir) 
         .arg("build")
         .args(["--config", config])
         .args(["--target", TARGET])
@@ -31,9 +31,9 @@ fn build(ch: &str, config: &str, nightly: bool) {
         .expect("wait build");
 }
 
-fn elf_to_bin(ch: &str, kernel_elf: &str, kernel_bin: &str) {
+fn elf_to_bin(dir: &str, kernel_elf: &str, kernel_bin: &str) {
     Command::new("rust-objcopy")
-        .current_dir(format!("../{}", ch))
+        .current_dir(dir)
         .arg(kernel_elf)
         .arg("--strip-all")
         .args(["-O", "binary", kernel_bin])
@@ -43,9 +43,9 @@ fn elf_to_bin(ch: &str, kernel_elf: &str, kernel_bin: &str) {
         .expect("wait elf_to_bin");
 }
 
-fn qemu_run(ch: &str, kernel_bin: &str) -> String {
+fn qemu_run(dir: &str, kernel_bin: &str) -> String {
     Command::new("qemu-system-riscv64")
-        .current_dir(format!("../{}", ch))
+        .current_dir(dir)
         .args(["-machine", "virt"])
         .arg("-nographic")
         .args(["-bios", BOOTLOADER])
@@ -69,15 +69,20 @@ fn main() {
         "ch1" => true,
         _ => false
     };
+    let dir = match ch {
+        "ch0" => "../ch0",
+        "ch1" => "../ch1",
+        _ => ""
+    };
     
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
      
-    clean(&ch);
+    clean(dir);
     let config = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg);
-    build(&ch, &config, nightly);
-    elf_to_bin(&ch, &kernel_elf, &kernel_bin);
+    build(dir, &config, nightly);
+    elf_to_bin(dir, &kernel_elf, &kernel_bin);
     
-    let output = qemu_run(&ch, &kernel_bin);
+    let output = qemu_run(dir, &kernel_bin);
     print!("{}", output);
 }
