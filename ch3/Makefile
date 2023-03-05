@@ -2,11 +2,11 @@ target := riscv64gc-unknown-none-elf
 link-arg := -Tsrc/linker.ld
 config := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg)"]'
 
-link-arg-user1 := -Ttext=0x80400000
+link-arg-user1 := -Ttext=0x80600000
 config-user1 := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg-user1)"]'
-link-arg-user2 := -Ttext=0x80420000
+link-arg-user2 := -Ttext=0x80620000
 config-user2 := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg-user2)"]'
-link-arg-user3 := -Ttext=0x80440000
+link-arg-user3 := -Ttext=0x80640000
 config-user3 := 'target.$(target).rustflags = ["-Clink-arg=$(link-arg-user3)"]'
 
 内核ELF文件 := target/$(target)/release/kernel

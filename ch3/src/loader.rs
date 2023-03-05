@@ -58,7 +58,10 @@ fn 加载应用到应用内存区(应用索引: usize) -> usize {
             }
             let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
             let src = p.data;
-            dst.copy_from_slice(src);
+            let len = dst.len().min(src.len());
+            for j in 0..len {
+                dst[j] = src[j];
+            }
         }
         elf.entry_address()
     }
