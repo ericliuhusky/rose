@@ -114,7 +114,9 @@ fn main() {
         if let Some(link_arg_users) = link_arg_users {
             if link_arg_users.len() == 1 {
                 let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_users[0]);
-                build("../user", Some(&config_user), true, None);
+                build("../user", Some(&config_user), true, Some("hello_world"));
+                build("../user", Some(&config_user), true, Some("priv_inst"));
+                build("../user", Some(&config_user), true, Some("store_fault"));
             } else {
                 let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_users[0]);
                 build("../user", Some(&config_user), true, Some("00write_a"));
@@ -125,7 +127,9 @@ fn main() {
             }
             
         } else {
-            build("../user", None, true, None);
+            build("../user", None, true, Some("00write_a"));
+            build("../user", None, true, Some("01write_b"));
+            build("../user", None, true, Some("02write_c"));
         }
     }
      
