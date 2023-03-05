@@ -1,6 +1,6 @@
 use 系统调用_输出::{系统调用_输出, sys_putchar};
 use 系统调用_终止::系统调用_终止;
-use 系统调用_读取::系统调用_读取;
+use 系统调用_读取::{系统调用_读取, sys_getchar};
 use 系统调用_让出时间片::系统调用_让出时间片;
 use 系统调用_时钟计数器::系统调用_读取时钟计数器的毫秒值;
 use 系统调用_进程::{getpid, fork, exec, waitpid};
@@ -15,6 +15,7 @@ const 系统调用标识_进程_FORK: usize = 6;
 const 系统调用标识_进程_EXEC: usize = 7;
 const 系统调用标识_进程_WAITPID: usize = 8;
 const SYS_PUTCHAR: usize = 9;
+const SYS_GETCHAR: usize = 10;
 
 pub fn 系统调用(系统调用标识: usize, 参数: [usize; 3]) -> isize {
     match 系统调用标识 {
@@ -32,6 +33,7 @@ pub fn 系统调用(系统调用标识: usize, 参数: [usize; 3]) -> isize {
         系统调用标识_进程_EXEC => exec(参数[0] as *const u8, 参数[1]),
         系统调用标识_进程_WAITPID => waitpid(参数[0] as isize, 参数[1] as *mut i32),
         SYS_PUTCHAR => sys_putchar(参数[0]),
+        SYS_GETCHAR => sys_getchar(),
         _ => {
             println!("[kernel] Unsupported syscall_id: {}", 系统调用标识);
             -1
@@ -76,6 +78,10 @@ mod 系统调用_读取 {
         let 虚拟地址范围 = 字节数组指针 as usize..字节数组指针 as usize + 字节数组长度;
         任务管理器::当前任务().地址空间.写入字节数组(虚拟地址范围, &字符数组);
         1
+    }
+
+    pub fn sys_getchar() -> isize {
+        sbi_call::getchar() as isize
     }
 }
 

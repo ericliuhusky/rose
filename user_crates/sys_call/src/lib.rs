@@ -27,6 +27,7 @@ const SYS_FORK: usize = 6;
 const SYS_EXEC: usize = 7;
 const SYS_WAITPID: usize = 8;
 const SYS_PUTCHAR: usize = 9;
+const SYS_GETCHAR: usize = 10;
 
 pub fn read(buffer: &mut [u8]) -> isize {
     sys_call(SYS_READ, [buffer as *mut [u8] as *mut u8 as usize, buffer.len(), 0])
@@ -34,6 +35,10 @@ pub fn read(buffer: &mut [u8]) -> isize {
 
 pub fn putchar(c: usize) {
     sys_call(SYS_PUTCHAR, [c, 0, 0]);
+}
+
+pub fn getchar() -> isize {
+    sys_call(SYS_GETCHAR, [0, 0, 0])
 }
 
 pub fn exit(exit_code: isize) -> ! {

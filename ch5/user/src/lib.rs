@@ -20,9 +20,7 @@ fn _start() {
 use core::arch::asm;
 
 pub fn getchar() -> u8 {
-    let mut c = [0u8; 1];
-    read(&mut c);
-    c[0]
+    sys_call::getchar() as u8
 }
 
 pub use sys_call::{read, yield_, get_time, getpid, fork, exec};
