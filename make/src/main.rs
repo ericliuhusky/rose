@@ -1,5 +1,4 @@
 const TARGET: &str = "riscv64gc-unknown-none-elf";
-const LINK_ARG: &str = "-Ttext=0x80200000";
 const BOOTLOADER: &str = "../rustsbi-qemu.bin";
 const KERNEL_ENTRY: &str = "0x80200000";
 
@@ -15,9 +14,13 @@ fn clean(ch: &str) {
         .expect("wait clean");
 }
 
-fn build(ch: &str, config: &str) {
-    Command::new("cargo")
-        .current_dir(format!("../{}", ch))
+fn build(ch: &str, config: &str, nightly: bool) {
+    let mut cmd = Command::new("cargo");
+    if nightly {
+        cmd.arg("+nightly");
+    }
+    cmd
+        .current_dir(format!("../{}", ch)) 
         .arg("build")
         .args(["--config", config])
         .args(["--target", TARGET])
@@ -55,14 +58,24 @@ fn qemu_run(ch: &str, kernel_bin: &str) -> String {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let ch = &args[1];
+    let ch = args[1].as_str();
+    let link_arg = match ch {
+        "ch0" => "-Ttext=0x80200000",
+        "ch1" => "-Tsrc/linker.ld",
+        _ => ""
+    };
+    let nightly = match ch {
+        "ch0" => false,
+        "ch1" => true,
+        _ => false
+    };
     
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
      
     clean(&ch);
-    let config = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, LINK_ARG);
-    build(&ch, &config);
+    let config = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg);
+    build(&ch, &config, nightly);
     elf_to_bin(&ch, &kernel_elf, &kernel_bin);
     
     let output = qemu_run(&ch, &kernel_bin);
