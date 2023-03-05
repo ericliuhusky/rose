@@ -12,7 +12,7 @@ all: run
 build_user:
 	@cd ../user \
 		&& cargo clean \
-		&& cargo build --release
+		&& cargo build --target $(target) --release
 
 build: build_user
 	@cargo clean
