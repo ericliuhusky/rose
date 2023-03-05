@@ -8,6 +8,7 @@ fn clean(dir: &str) {
     Command::new("cargo")
         .current_dir(dir)
         .arg("clean")
+        .arg("--quiet")
         .spawn()
         .unwrap()
         .wait()
@@ -28,7 +29,12 @@ fn build(dir: &str, nightly: bool, config: Option<&str>, bin: Option<&str>) {
     if let Some(bin) = bin {
         cmd.args(["--bin", bin]);
     }
-    cmd.arg("--release").spawn().unwrap().wait().unwrap();
+    cmd.arg("--release")
+        .arg("--quiet")
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
 }
 
 fn elf_to_bin(dir: &str, kernel_elf: &str, kernel_bin: &str) {
