@@ -14,15 +14,17 @@ fn clean(dir: &str) {
         .expect("wait clean");
 }
 
-fn build(dir: &str, config: &str, nightly: bool) {
+fn build(dir: &str, config: Option<&str>, nightly: bool) {
     let mut cmd = Command::new("cargo");
     if nightly {
         cmd.arg("+nightly");
     }
+    if let Some(config) = config {
+        cmd.args(["--config", config]);
+    }
     cmd
         .current_dir(dir) 
         .arg("build")
-        .args(["--config", config])
         .args(["--target", TARGET])
         .arg("--release")
         .spawn()
@@ -63,45 +65,54 @@ fn main() {
         "ch0" => "-Ttext=0x80200000",
         "ch1" => "-Tsrc/linker.ld",
         "ch2" => "-Tsrc/linker.ld",
+        "ch4" => "-Tsrc/linker.ld",
         _ => ""
     };
     let nightly = match ch {
         "ch0" => false,
         "ch1" => true,
         "ch2" => true,
+        "ch4" => true,
         _ => false
     };
     let dir = match ch {
         "ch0" => "../ch0",
         "ch1" => "../ch1",
         "ch2" => "../ch2",
+        "ch4" => "../ch4",
         _ => ""
     };
     let has_user = match ch {
         "ch0" => false,
         "ch1" => false,
         "ch2" => true,
+        "ch4" => true,
         _ => false
     };
     let link_arg_user = match ch {
-        "ch0" => "",
-        "ch1" => "",
-        "ch2" => "-Ttext=0x80400000",
-        _ => ""
+        "ch0" => None,
+        "ch1" => None,
+        "ch2" => Some("-Ttext=0x80400000"),
+        "ch4" => None,
+        _ => None
     };
     
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
 
     if has_user {
-        let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_user);
         clean("../user");
-        build("../user", &config_user, true);
+        if let Some(link_arg_user) = link_arg_user {
+            let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_user);
+            build("../user", Some(&config_user), true);
+        } else {
+            build("../user", None, true);
+        }
     }
      
     clean(dir);
     let config = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg);
-    build(dir, &config, nightly);
+    build(dir, Some(&config), nightly);
     elf_to_bin(dir, &kernel_elf, &kernel_bin);
     
     let output = qemu_run(dir, &kernel_bin);
