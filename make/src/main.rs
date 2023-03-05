@@ -62,82 +62,127 @@ fn qemu_run(dir: &str, kernel_bin: &str) -> String {
         .iter().map(|b| *b as char).collect()
 }
 
+struct Makefile {
+    link_arg: &'static str,
+    nightly: bool,
+    dir: &'static str,
+    users: Option<[User; 3]>
+}
+
+struct User {
+    bin: &'static str,
+    enrty: Option<usize>
+}
+
+const CH0: Makefile = Makefile {
+    link_arg: "-Ttext=0x80200000",
+    nightly: false,
+    dir: "../ch0",
+    users: None
+};
+
+const CH1: Makefile = Makefile {
+    link_arg: "-Tsrc/linker.ld",
+    nightly: true,
+    dir: "../ch1",
+    users: None
+};
+
+const CH2: Makefile = Makefile {
+    link_arg: "-Tsrc/linker.ld",
+    nightly: true,
+    dir: "../ch2",
+    users: Some([
+        User {
+            bin: "hello_world",
+            enrty: Some(0x80400000)
+        },
+        User {
+            bin: "priv_inst",
+            enrty: Some(0x80400000)
+        },
+        User {
+            bin: "store_fault",
+            enrty: Some(0x80400000)
+        }
+    ])
+};
+
+const CH3: Makefile = Makefile {
+    link_arg: "-Tsrc/linker.ld",
+    nightly: true,
+    dir: "../ch3",
+    users: Some([
+        User {
+            bin: "00write_a",
+            enrty: Some(0x80600000)
+        },
+        User {
+            bin: "01write_b",
+            enrty: Some(0x80620000)
+        },
+        User {
+            bin: "02write_c",
+            enrty: Some(0x80640000)
+        }
+    ])
+};
+
+const CH4: Makefile = Makefile {
+    link_arg: "-Tsrc/linker.ld",
+    nightly: true,
+    dir: "../ch4",
+    users: Some([
+        User {
+            bin: "00write_a",
+            enrty: None
+        },
+        User {
+            bin: "01write_b",
+            enrty: None
+        },
+        User {
+            bin: "02write_c",
+            enrty: None
+        }
+    ])
+};
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let ch = args[1].as_str();
-    let link_arg = match ch {
-        "ch0" => "-Ttext=0x80200000",
-        "ch1" => "-Tsrc/linker.ld",
-        "ch2" => "-Tsrc/linker.ld",
-        "ch3" => "-Tsrc/linker.ld",
-        "ch4" => "-Tsrc/linker.ld",
-        _ => ""
+
+    let ch = match ch {
+        "ch0" => CH0,
+        "ch1" => CH1,
+        "ch2" => CH2,
+        "ch3" => CH3,
+        "ch4" => CH4,
+        _ => panic!()
     };
-    let nightly = match ch {
-        "ch0" => false,
-        "ch1" => true,
-        "ch2" => true,
-        "ch3" => true,
-        "ch4" => true,        
-        _ => false
-    };
-    let dir = match ch {
-        "ch0" => "../ch0",
-        "ch1" => "../ch1",
-        "ch2" => "../ch2",
-        "ch3" => "../ch3",
-        "ch4" => "../ch4",
-        _ => ""
-    };
-    let has_user = match ch {
-        "ch0" => false,
-        "ch1" => false,
-        "ch2" => true,
-        "ch3" => true,
-        "ch4" => true,
-        _ => false
-    };
-    let link_arg_users = match ch {
-        "ch0" => None,
-        "ch1" => None,
-        "ch2" => Some(vec!["-Ttext=0x80400000"]),
-        "ch3" => Some(vec!["-Ttext=0x80600000", "-Ttext=0x80620000", "-Ttext=0x80640000"]),
-        "ch4" => None,
-        _ => None
-    };
+
     
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
 
-    if has_user {
+    if let Some(users) = ch.users {
         clean("../user");
-        if let Some(link_arg_users) = link_arg_users {
-            if link_arg_users.len() == 1 {
-                let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_users[0]);
-                build("../user", Some(&config_user), true, Some("hello_world"));
-                build("../user", Some(&config_user), true, Some("priv_inst"));
-                build("../user", Some(&config_user), true, Some("store_fault"));
+        for user in users {
+            if let Some(entry) = user.enrty {
+                let link_arg = format!("-Ttext={:x}", entry);
+                let config = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg);
+                build("../user", Some(&config), true, Some(user.bin));
             } else {
-                let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_users[0]);
-                build("../user", Some(&config_user), true, Some("00write_a"));
-                let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_users[1]);
-                build("../user", Some(&config_user), true, Some("01write_b"));
-                let config_user = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg_users[2]);
-                build("../user", Some(&config_user), true, Some("02write_c"));
+                build("../user", None, true, Some(user.bin));
             }
-            
-        } else {
-            build("../user", None, true, Some("00write_a"));
-            build("../user", None, true, Some("01write_b"));
-            build("../user", None, true, Some("02write_c"));
         }
     }
      
-    clean(dir);
-    let config = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, link_arg);
-    build(dir, Some(&config), nightly, None);
-    elf_to_bin(dir, &kernel_elf, &kernel_bin);
+    clean(ch.dir);
+    let config = format!(r#"target.{}.rustflags = ["-Clink-arg={}"]"#, TARGET, ch.link_arg);
+    build(ch.dir, Some(&config), ch.nightly, None);
+    elf_to_bin(ch.dir, &kernel_elf, &kernel_bin);
     
-    let output = qemu_run(dir, &kernel_bin);
+    let output = qemu_run(ch.dir, &kernel_bin);
     print!("{}", output);
 }
