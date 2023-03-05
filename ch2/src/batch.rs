@@ -26,6 +26,8 @@ impl 应用管理器 {
         }
         println!("[kernel] Loading app_{}", 应用索引);
         unsafe {
+            // 清空
+            core::slice::from_raw_parts_mut(0x80400000 as *mut u8, 0x20000).fill(0);
             let 应用数据 = 读取应用数据(应用索引);
             let elf = elf_reader::ElfFile::read(应用数据);
             println!("{:x}", elf.entry_address());
@@ -38,7 +40,11 @@ impl 应用管理器 {
                 }
                 let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
                 let src = p.data;
-                dst.copy_from_slice(src);
+                
+                let len = dst.len().min(src.len());
+                for j in 0..len {
+                    dst[j] = src[j];
+                }
             }
             elf.entry_address()
         }
