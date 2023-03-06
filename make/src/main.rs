@@ -1,93 +1,46 @@
+use std::{fs::File, io::Write};
+
 const TARGET: &str = "riscv64gc-unknown-none-elf";
 const BOOTLOADER: &str = "../rustsbi-qemu.bin";
 const KERNEL_ENTRY: &str = "0x80200000";
 
-use std::io::{self, Read, Write};
-use std::process::{Command, Stdio};
-use std::thread;
-use std::time::Duration;
-
-fn clean(dir: &str) {
-    Command::new("cargo")
-        .current_dir(dir)
-        .arg("clean")
-        .arg("--quiet")
-        .spawn()
-        .unwrap()
-        .wait()
-        .unwrap();
+fn clean() -> String {
+    String::from("cargo clean")
 }
 
-fn build(dir: &str, nightly: bool, config: Option<&str>, bin: Option<&str>) {
-    let mut cmd = Command::new("cargo");
-    cmd.current_dir(dir);
+fn build(nightly: bool, config: Option<&str>, bin: Option<&str>) -> String {
+    let mut cmd = String::from("cargo");
     if nightly {
-        cmd.arg("+nightly");
+        cmd.push_str(" +nightly");
     }
-    cmd.arg("build");
+    cmd.push_str(" build");
     if let Some(config) = config {
-        cmd.args(["--config", config]);
+        cmd.push_str(format!(" --config '{}'", config).as_str());
     }
-    cmd.args(["--target", TARGET]);
+    cmd.push_str(format!(" --target {}", TARGET).as_str());
     if let Some(bin) = bin {
-        cmd.args(["--bin", bin]);
+        cmd.push_str(format!(" --bin {}", bin).as_str());
     }
-    cmd.arg("--release")
-        .arg("--quiet")
-        .spawn()
-        .unwrap()
-        .wait()
-        .unwrap();
+    cmd.push_str(" --release");
+    cmd
 }
 
-fn elf_to_bin(dir: &str, kernel_elf: &str, kernel_bin: &str) {
-    Command::new("rust-objcopy")
-        .current_dir(dir)
-        .arg(kernel_elf)
-        .arg("--strip-all")
-        .args(["-O", "binary", kernel_bin])
-        .spawn()
-        .unwrap()
-        .wait()
-        .unwrap();
+fn elf_to_bin(kernel_elf: &str, kernel_bin: &str) -> String {
+    format!(
+        "rust-objcopy {} --strip-all -O binary {}",
+        kernel_elf, kernel_bin
+    )
 }
 
-fn qemu_run(dir: &str, kernel_bin: &str) {
-    let mut child = Command::new("qemu-system-riscv64")
-        .current_dir(dir)
-        .args(["-machine", "virt"])
-        .arg("-nographic")
-        .args(["-bios", BOOTLOADER])
-        .args([
-            "-device",
-            &format!("loader,file={},addr={}", kernel_bin, KERNEL_ENTRY),
-        ])
-        .stdout(Stdio::piped())
-        .stdin(Stdio::piped())
-        .spawn()
-        .unwrap();
-    let mut child_stdout = child.stdout.take().unwrap();
-    let mut child_stdin = child.stdin.take().unwrap();
-
-    let out_thread = thread::spawn(move || loop {
-        let mut buf = [0; 0x1000];
-        let len = child_stdout.read(&mut buf).unwrap();
-        if len == 0 {
-            break;
-        }
-        io::stdout().write_all(&buf).unwrap();
-        thread::sleep(Duration::from_millis(10));
-    });
-    let in_thread = thread::spawn(move || loop {
-        let mut buf = String::new();
-        io::stdin().read_line(&mut buf).unwrap();
-        child_stdin.write_all(buf.as_bytes()).unwrap();
-        thread::sleep(Duration::from_millis(10));
-    });
-
-    out_thread.join().unwrap();
-    in_thread.join().unwrap();
-    child.wait().unwrap();
+fn qemu_run(kernel_bin: &str) -> String {
+    format!(
+        "qemu-system-riscv64 \
+            -machine virt \
+            -nographic \
+            -bios {} \
+            -device loader,file={},addr={}",
+        BOOTLOADER, kernel_bin, KERNEL_ENTRY
+    )
 }
 
 struct Makefile {
@@ -197,19 +150,6 @@ const CH5: Makefile = Makefile {
 };
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let ch = args[1].as_str();
-
-    let ch = match ch {
-        "ch0" => CH0,
-        "ch1" => CH1,
-        "ch2" => CH2,
-        "ch3" => CH3,
-        "ch4" => CH4,
-        "ch5" => CH5,
-        _ => panic!(),
-    };
-
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
 
@@ -220,23 +160,43 @@ fn main() {
         )
     }
 
-    if let Some(users) = ch.users {
-        clean("../user");
-        for user in users {
-            if let Some(entry) = user.enrty {
-                let link_arg = format!("-Ttext={:x}", entry);
-                let config = rustflags(&link_arg);
-                build("../user", true, Some(&config), Some(user.bin));
-            } else {
-                build("../user", true, None, Some(user.bin));
+    for ch in [CH0, CH1, CH2, CH3, CH4, CH5] {
+        let mut makefile = String::from("run:\n");
+        if let Some(users) = ch.users {
+            let mut build_user = String::from("cd ../user");
+            build_user.push_str(format!(" && {}", clean()).as_str());
+            for user in users {
+                let build_cmd;
+                if let Some(entry) = user.enrty {
+                    let link_arg = format!("-Ttext={:x}", entry);
+                    let config = rustflags(&link_arg);
+                    build_cmd = build(true, Some(&config), Some(user.bin));
+                } else {
+                    build_cmd = build(true, None, Some(user.bin));
+                }
+                build_user.push_str(format!(" && {}", build_cmd).as_str())
             }
+            makefile.push_str(format!("\t@{}\n", build_user).as_str());
         }
+
+        let config = rustflags(ch.link_arg);
+        let build_cmd = build(ch.nightly, Some(&config), None);
+
+        let elf_to_bin_cmd = elf_to_bin(&kernel_elf, &kernel_bin);
+        let qemu_cmd = qemu_run(&kernel_bin);
+
+        makefile.push_str(
+            format!(
+                "\t@{}\n\t@{}\n\t@{}\n\t@{}\n",
+                clean(),
+                build_cmd,
+                elf_to_bin_cmd,
+                qemu_cmd
+            )
+            .as_str(),
+        );
+
+        let mut f = File::create(format!("{}/Makefile", ch.dir).as_str()).unwrap();
+        f.write_all(makefile.as_bytes()).unwrap();
     }
-
-    clean(ch.dir);
-    let config = rustflags(ch.link_arg);
-    build(ch.dir, ch.nightly, Some(&config), None);
-    elf_to_bin(ch.dir, &kernel_elf, &kernel_bin);
-
-    qemu_run(ch.dir, &kernel_bin);
 }
