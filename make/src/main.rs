@@ -55,47 +55,44 @@ struct User {
     enrty: Option<usize>,
 }
 
-static mut CH0: Makefile = Makefile {
-    link_arg: "-Ttext=0x80200000",
-    nightly: false,
-    dir: "../ch0",
-    users: Vec::new(),
-};
-
-static mut CH1: Makefile = Makefile {
-    link_arg: "-Tsrc/linker.ld",
-    nightly: true,
-    dir: "../ch1",
-    users: Vec::new(),
-};
-
-static mut CH2: Makefile = Makefile {
-    link_arg: "-Tsrc/linker.ld",
-    nightly: true,
-    dir: "../ch2",
-    users: Vec::new(),
-};
-
-static mut CH3: Makefile = Makefile {
-    link_arg: "-Tsrc/linker.ld",
-    nightly: true,
-    dir: "../ch3",
-    users: Vec::new(),
-};
-
-static mut CH4: Makefile = Makefile {
-    link_arg: "-Tsrc/linker.ld",
-    nightly: true,
-    dir: "../ch4",
-    users: Vec::new(),
-};
-
-static mut CH5: Makefile = Makefile {
-    link_arg: "-Tsrc/linker.ld",
-    nightly: true,
-    dir: "../ch5",
-    users: Vec::new(),
-};
+static mut CH: [Makefile; 6] = [
+    Makefile {
+        link_arg: "-Ttext=0x80200000",
+        nightly: false,
+        dir: "../ch0",
+        users: Vec::new(),
+    },
+    Makefile {
+        link_arg: "-Tsrc/linker.ld",
+        nightly: true,
+        dir: "../ch1",
+        users: Vec::new(),
+    },
+    Makefile {
+        link_arg: "-Tsrc/linker.ld",
+        nightly: true,
+        dir: "../ch2",
+        users: Vec::new(),
+    },
+    Makefile {
+        link_arg: "-Tsrc/linker.ld",
+        nightly: true,
+        dir: "../ch3",
+        users: Vec::new(),
+    },
+    Makefile {
+        link_arg: "-Tsrc/linker.ld",
+        nightly: true,
+        dir: "../ch4",
+        users: Vec::new(),
+    },
+    Makefile {
+        link_arg: "-Tsrc/linker.ld",
+        nightly: true,
+        dir: "../ch5",
+        users: Vec::new(),
+    },
+];
 
 fn main() {
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
@@ -109,7 +106,7 @@ fn main() {
     }
 
     unsafe {
-        CH2.users = vec![
+        CH[2].users = vec![
             User {
                 bin: "hello_world",
                 enrty: Some(0x80400000),
@@ -126,7 +123,7 @@ fn main() {
     }
 
     unsafe {
-        CH3.users = vec![
+        CH[3].users = vec![
             User {
                 bin: "00write_a",
                 enrty: Some(0x80600000),
@@ -143,7 +140,7 @@ fn main() {
     }
 
     unsafe {
-        CH4.users = vec![
+        CH[4].users = vec![
             User {
                 bin: "00write_a",
                 enrty: None,
@@ -160,7 +157,7 @@ fn main() {
     }
 
     unsafe {
-        CH5.users = vec![
+        CH[5].users = vec![
             User {
                 bin: "initproc",
                 enrty: None,
@@ -180,7 +177,7 @@ fn main() {
         ];
     }
 
-    for ch in unsafe { [&CH0, &CH1, &CH2, &CH3, &CH4, &CH5] } {
+    for ch in unsafe { &CH } {
         let mut makefile = String::from("run:\n");
         if !ch.users.is_empty() {
             let mut build_user = String::from("cd ../user");
