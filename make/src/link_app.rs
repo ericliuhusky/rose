@@ -1,4 +1,4 @@
-use super::config::{Makefile, TARGET};
+use super::config::{Makefile, LOGO, TARGET};
 use std::{fs::File, io::Write};
 
 pub fn create_link_app(ch: &Makefile) {
@@ -8,11 +8,12 @@ pub fn create_link_app(ch: &Makefile) {
     let mut f = File::create(format!("{}/src/link_app.s", ch.dir)).unwrap();
     writeln!(
         f,
-        r#"# created by crate make
+        r#"{}
     .section .data
     .globl _num_app
 _num_app:
     .quad {}"#,
+        LOGO,
         ch.users.len()
     )
     .unwrap();

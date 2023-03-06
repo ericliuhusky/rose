@@ -1,4 +1,4 @@
-use super::config::{LinkArg, Makefile, BOOTLOADER, KERNEL_ENTRY, TARGET};
+use super::config::{LinkArg, Makefile, BOOTLOADER, KERNEL_ENTRY, LOGO, TARGET};
 use std::{fs::File, io::Write};
 
 fn build(nightly: bool, link_arg: Option<&LinkArg>, bin: Option<&str>) -> String {
@@ -52,16 +52,18 @@ pub fn create_makefile(ch: &Makefile) {
     let mut f = File::create(format!("{}/Makefile", ch.dir).as_str()).unwrap();
     writeln!(
         f,
-        "run:\n\
-        \t@{0}\n\
-        \t@cargo clean\n\
+        "{0}\n\
+        run:\n\
         \t@{1}\n\
-        \t@rust-objcopy target/{2}/release/kernel --strip-all -O binary target/{2}/release/kernel.bin\n\
+        \t@cargo clean\n\
+        \t@{2}\n\
+        \t@rust-objcopy target/{3}/release/kernel --strip-all -O binary target/{3}/release/kernel.bin\n\
         \t@qemu-system-riscv64 \
             -machine virt \
             -nographic \
-            -bios {3} \
-            -device loader,file=target/{2}/release/kernel.bin,addr={4}",
+            -bios {4} \
+            -device loader,file=target/{3}/release/kernel.bin,addr={5}",
+        LOGO,
         build_user,
         build(ch.nightly, Some(&ch.link_arg), None),
         TARGET,
