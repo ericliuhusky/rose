@@ -60,8 +60,9 @@ fn main() {
 
     for ch in ch() {
         let mut makefile = String::from("run:\n");
+        let mut build_user = String::new();
         if !ch.users.is_empty() {
-            let mut build_user = String::from("cd ../user");
+            build_user.push_str("cd ../user");
             build_user.push_str(format!(" && {}", clean()).as_str());
             for user in &ch.users {
                 let build_cmd;
@@ -74,8 +75,9 @@ fn main() {
                 }
                 build_user.push_str(format!(" && {}", build_cmd).as_str())
             }
-            makefile.push_str(format!("\t@{}\n", build_user).as_str());
         }
+
+        makefile.push_str(format!("\t@{}\n", build_user).as_str());
 
         let config = rustflags(ch.link_arg);
         let build_cmd = build(ch.nightly, Some(&config), None);
