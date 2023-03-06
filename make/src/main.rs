@@ -8,7 +8,7 @@ const BOOTLOADER: &str = "../rustsbi-qemu.bin";
 const KERNEL_ENTRY: &str = "0x80200000";
 
 fn build(nightly: bool, config: Option<&str>, bin: Option<&str>) -> String {
-    let nightly = if nightly { "+nightly" } else { "" };
+    let nightly = if nightly { " +nightly" } else { "" };
     let config = if let Some(config) = config {
         format!("--config '{}'", config)
     } else {
@@ -20,7 +20,7 @@ fn build(nightly: bool, config: Option<&str>, bin: Option<&str>) -> String {
         String::new()
     };
     format!(
-        "cargo {} build {} --target {} {} --release",
+        "cargo{} build {} --target {} {} --release",
         nightly, config, TARGET, bin
     )
 }
