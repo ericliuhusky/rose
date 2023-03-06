@@ -52,7 +52,7 @@ fn main() {
                 };
                 users.push_str(format!(" && {}", build_cmd).as_str());
             }
-            format!("cd ../user && cargo clean {}", users)
+            format!("cd ../user && cargo clean{}", users)
         };
 
         let config = rustflags(ch.link_arg);
