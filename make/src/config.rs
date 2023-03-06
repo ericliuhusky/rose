@@ -10,47 +10,48 @@ pub struct User {
     pub enrty: Option<usize>,
 }
 
-pub static mut CH: [Makefile; 6] = [
-    Makefile {
-        link_arg: "-Ttext=0x80200000",
-        nightly: false,
-        dir: "../ch0",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch1",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch2",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch3",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch4",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch5",
-        users: Vec::new(),
-    },
-];
+static mut CH: Vec<Makefile> = Vec::new();
 
 pub fn init() {
     unsafe {
+        CH = vec![
+            Makefile {
+                link_arg: "-Ttext=0x80200000",
+                nightly: false,
+                dir: "../ch0",
+                users: Vec::new(),
+            },
+            Makefile {
+                link_arg: "-Tsrc/linker.ld",
+                nightly: true,
+                dir: "../ch1",
+                users: Vec::new(),
+            },
+            Makefile {
+                link_arg: "-Tsrc/linker.ld",
+                nightly: true,
+                dir: "../ch2",
+                users: Vec::new(),
+            },
+            Makefile {
+                link_arg: "-Tsrc/linker.ld",
+                nightly: true,
+                dir: "../ch3",
+                users: Vec::new(),
+            },
+            Makefile {
+                link_arg: "-Tsrc/linker.ld",
+                nightly: true,
+                dir: "../ch4",
+                users: Vec::new(),
+            },
+            Makefile {
+                link_arg: "-Tsrc/linker.ld",
+                nightly: true,
+                dir: "../ch5",
+                users: Vec::new(),
+            },
+        ];
         CH[2].users = vec![
             User {
                 bin: "hello_world",
@@ -117,8 +118,6 @@ pub fn init() {
     }
 }
 
-pub fn get_ch() -> &'static [Makefile; 6] {
-    unsafe {
-        &CH
-    }
+pub fn ch() -> &'static Vec<Makefile> {
+    unsafe { &CH }
 }

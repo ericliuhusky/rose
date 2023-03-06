@@ -1,6 +1,6 @@
 mod config;
 
-use config::get_ch;
+use config::ch;
 use std::{fs::File, io::Write};
 
 const TARGET: &str = "riscv64gc-unknown-none-elf";
@@ -46,7 +46,6 @@ fn qemu_run(kernel_bin: &str) -> String {
     )
 }
 
-
 fn main() {
     config::init();
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
@@ -59,7 +58,7 @@ fn main() {
         )
     }
 
-    for ch in get_ch() {
+    for ch in ch() {
         let mut makefile = String::from("run:\n");
         if !ch.users.is_empty() {
             let mut build_user = String::from("cd ../user");
