@@ -7,10 +7,13 @@ const TARGET: &str = "riscv64gc-unknown-none-elf";
 const BOOTLOADER: &str = "../rustsbi-qemu.bin";
 const KERNEL_ENTRY: &str = "0x80200000";
 
-fn build(nightly: bool, config: Option<&str>, bin: Option<&str>) -> String {
+fn build(nightly: bool, link_arg: Option<&str>, bin: Option<&str>) -> String {
     let nightly = if nightly { " +nightly" } else { "" };
-    let config = if let Some(config) = config {
-        format!(" --config '{}'", config)
+    let config = if let Some(link_arg) = link_arg {
+        format!(
+            " --config 'target.{}.rustflags = [\"-Clink-arg={}\"]'",
+            TARGET, link_arg
+        )
     } else {
         String::new()
     };
@@ -30,12 +33,6 @@ fn main() {
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
 
-    fn rustflags(link_arg: &str) -> String {
-        format!(
-            r#"target.{}.rustflags = ["-Clink-arg={}"]"#,
-            TARGET, link_arg
-        )
-    }
 
     for ch in ch() {
         let build_user = if ch.users.is_empty() {
@@ -45,8 +42,7 @@ fn main() {
             for user in &ch.users {
                 let build_cmd = if let Some(entry) = user.enrty {
                     let link_arg = format!("-Ttext={:x}", entry);
-                    let config = rustflags(&link_arg);
-                    build(true, Some(&config), Some(user.bin))
+                    build(true, Some(&link_arg), Some(user.bin))
                 } else {
                     build(true, None, Some(user.bin))
                 };
@@ -55,7 +51,6 @@ fn main() {
             format!("cd ../user && cargo clean{}", users)
         };
 
-        let config = rustflags(ch.link_arg);
 
         let mut f = File::create(format!("{}/Makefile", ch.dir).as_str()).unwrap();
         writeln!(
@@ -71,7 +66,7 @@ fn main() {
                 -bios {} \
                 -device loader,file={},addr={}",
             build_user,
-            build(ch.nightly, Some(&config), None),
+            build(ch.nightly, Some(&ch.link_arg), None),
             kernel_elf,
             kernel_bin,
             BOOTLOADER,
