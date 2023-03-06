@@ -47,7 +47,7 @@ struct Makefile {
     link_arg: &'static str,
     nightly: bool,
     dir: &'static str,
-    users: Option<[User; 3]>,
+    users: Vec<User>,
 }
 
 struct User {
@@ -55,98 +55,46 @@ struct User {
     enrty: Option<usize>,
 }
 
-const CH0: Makefile = Makefile {
+static mut CH0: Makefile = Makefile {
     link_arg: "-Ttext=0x80200000",
     nightly: false,
     dir: "../ch0",
-    users: None,
+    users: Vec::new(),
 };
 
-const CH1: Makefile = Makefile {
+static mut CH1: Makefile = Makefile {
     link_arg: "-Tsrc/linker.ld",
     nightly: true,
     dir: "../ch1",
-    users: None,
+    users: Vec::new(),
 };
 
-const CH2: Makefile = Makefile {
+static mut CH2: Makefile = Makefile {
     link_arg: "-Tsrc/linker.ld",
     nightly: true,
     dir: "../ch2",
-    users: Some([
-        User {
-            bin: "hello_world",
-            enrty: Some(0x80400000),
-        },
-        User {
-            bin: "priv_inst",
-            enrty: Some(0x80400000),
-        },
-        User {
-            bin: "store_fault",
-            enrty: Some(0x80400000),
-        },
-    ]),
+    users: Vec::new(),
 };
 
-const CH3: Makefile = Makefile {
+static mut CH3: Makefile = Makefile {
     link_arg: "-Tsrc/linker.ld",
     nightly: true,
     dir: "../ch3",
-    users: Some([
-        User {
-            bin: "00write_a",
-            enrty: Some(0x80600000),
-        },
-        User {
-            bin: "01write_b",
-            enrty: Some(0x80620000),
-        },
-        User {
-            bin: "02write_c",
-            enrty: Some(0x80640000),
-        },
-    ]),
+    users: Vec::new(),
 };
 
-const CH4: Makefile = Makefile {
+static mut CH4: Makefile = Makefile {
     link_arg: "-Tsrc/linker.ld",
     nightly: true,
     dir: "../ch4",
-    users: Some([
-        User {
-            bin: "00write_a",
-            enrty: None,
-        },
-        User {
-            bin: "01write_b",
-            enrty: None,
-        },
-        User {
-            bin: "02write_c",
-            enrty: None,
-        },
-    ]),
+    users: Vec::new(),
 };
 
-const CH5: Makefile = Makefile {
+static mut CH5: Makefile = Makefile {
     link_arg: "-Tsrc/linker.ld",
     nightly: true,
     dir: "../ch5",
-    users: Some([
-        User {
-            bin: "initproc",
-            enrty: None,
-        },
-        User {
-            bin: "shell",
-            enrty: None,
-        },
-        User {
-            bin: "fork",
-            enrty: None,
-        },
-    ]),
+    users: Vec::new(),
 };
 
 fn main() {
@@ -160,12 +108,84 @@ fn main() {
         )
     }
 
-    for ch in [CH0, CH1, CH2, CH3, CH4, CH5] {
+    unsafe {
+        CH2.users = vec![
+            User {
+                bin: "hello_world",
+                enrty: Some(0x80400000),
+            },
+            User {
+                bin: "priv_inst",
+                enrty: Some(0x80400000),
+            },
+            User {
+                bin: "store_fault",
+                enrty: Some(0x80400000),
+            },
+        ];
+    }
+
+    unsafe {
+        CH3.users = vec![
+            User {
+                bin: "00write_a",
+                enrty: Some(0x80600000),
+            },
+            User {
+                bin: "01write_b",
+                enrty: Some(0x80620000),
+            },
+            User {
+                bin: "02write_c",
+                enrty: Some(0x80640000),
+            },
+        ];
+    }
+
+    unsafe {
+        CH4.users = vec![
+            User {
+                bin: "00write_a",
+                enrty: None,
+            },
+            User {
+                bin: "01write_b",
+                enrty: None,
+            },
+            User {
+                bin: "02write_c",
+                enrty: None,
+            },
+        ];
+    }
+
+    unsafe {
+        CH5.users = vec![
+            User {
+                bin: "initproc",
+                enrty: None,
+            },
+            User {
+                bin: "shell",
+                enrty: None,
+            },
+            User {
+                bin: "fork",
+                enrty: None,
+            },
+            User {
+                bin: "sleep",
+                enrty: None,
+            },
+        ];
+    }
+
+    for ch in unsafe { [&CH0, &CH1, &CH2, &CH3, &CH4, &CH5] } {
         let mut makefile = String::from("run:\n");
-        if let Some(users) = ch.users {
+        if !ch.users.is_empty() {
             let mut build_user = String::from("cd ../user");
             build_user.push_str(format!(" && {}", clean()).as_str());
-            for user in users {
+            for user in &ch.users {
                 let build_cmd;
                 if let Some(entry) = user.enrty {
                     let link_arg = format!("-Ttext={:x}", entry);
