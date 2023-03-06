@@ -25,13 +25,6 @@ fn build(nightly: bool, config: Option<&str>, bin: Option<&str>) -> String {
     )
 }
 
-fn elf_to_bin(kernel_elf: &str, kernel_bin: &str) -> String {
-    format!(
-        "rust-objcopy {} --strip-all -O binary {}",
-        kernel_elf, kernel_bin
-    )
-}
-
 fn main() {
     config::init();
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
@@ -71,7 +64,7 @@ fn main() {
             \t@{}\n\
             \t@cargo clean\n\
             \t@{}\n\
-            \t@{}\n\
+            \t@rust-objcopy {} --strip-all -O binary {}\n\
             \t@qemu-system-riscv64 \
                 -machine virt \
                 -nographic \
@@ -79,7 +72,8 @@ fn main() {
                 -device loader,file={},addr={}",
             build_user,
             build(ch.nightly, Some(&config), None),
-            elf_to_bin(&kernel_elf, &kernel_bin),
+            kernel_elf,
+            kernel_bin,
             BOOTLOADER,
             kernel_bin,
             KERNEL_ENTRY
