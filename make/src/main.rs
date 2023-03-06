@@ -59,7 +59,6 @@ fn main() {
     }
 
     for ch in ch() {
-        let mut makefile = String::from("run:\n");
         let mut build_user = String::new();
         if !ch.users.is_empty() {
             build_user.push_str("cd ../user");
@@ -77,26 +76,18 @@ fn main() {
             }
         }
 
-        makefile.push_str(format!("\t@{}\n", build_user).as_str());
-
         let config = rustflags(ch.link_arg);
-        let build_cmd = build(ch.nightly, Some(&config), None);
-
-        let elf_to_bin_cmd = elf_to_bin(&kernel_elf, &kernel_bin);
-        let qemu_cmd = qemu_run(&kernel_bin);
-
-        makefile.push_str(
-            format!(
-                "\t@{}\n\t@{}\n\t@{}\n\t@{}\n",
-                clean(),
-                build_cmd,
-                elf_to_bin_cmd,
-                qemu_cmd
-            )
-            .as_str(),
-        );
 
         let mut f = File::create(format!("{}/Makefile", ch.dir).as_str()).unwrap();
-        writeln!(f, "{}", makefile).unwrap();
+        writeln!(
+            f,
+            "run:\n\t@{}\n\t@{}\n\t@{}\n\t@{}\n\t@{}\n",
+            build_user,
+            clean(),
+            build(ch.nightly, Some(&config), None),
+            elf_to_bin(&kernel_elf, &kernel_bin),
+            qemu_run(&kernel_bin)
+        )
+        .unwrap();
     }
 }
