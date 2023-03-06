@@ -15,12 +15,12 @@ fn build(nightly: bool, config: Option<&str>, bin: Option<&str>) -> String {
         String::new()
     };
     let bin = if let Some(bin) = bin {
-        format!("--bin {}", bin)
+        format!(" --bin {}", bin)
     } else {
         String::new()
     };
     format!(
-        "cargo{} build {} --target {} {} --release",
+        "cargo{} build {} --target {}{} --release",
         nightly, config, TARGET, bin
     )
 }
