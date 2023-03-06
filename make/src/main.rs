@@ -46,15 +46,16 @@ fn main() {
                 .iter()
                 .map(|user| {
                     format!(
-                        " && {}",
+                        "&& {} ",
                         build(true, user.link_arg.as_ref(), Some(user.bin))
                     )
                 })
                 .collect();
 
             format!(
-                "cd ../user &&\
-                 cargo clean{}",
+                "cd ../user \
+                && cargo clean \
+                {}",
                 build_user_bins
             )
         };
