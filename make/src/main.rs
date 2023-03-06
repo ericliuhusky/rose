@@ -2,7 +2,10 @@ const TARGET: &str = "riscv64gc-unknown-none-elf";
 const BOOTLOADER: &str = "../rustsbi-qemu.bin";
 const KERNEL_ENTRY: &str = "0x80200000";
 
-use std::process::Command;
+use std::io::{self, Read, Write};
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::Duration;
 
 fn clean(dir: &str) {
     Command::new("cargo")
@@ -49,8 +52,8 @@ fn elf_to_bin(dir: &str, kernel_elf: &str, kernel_bin: &str) {
         .unwrap();
 }
 
-fn qemu_run(dir: &str, kernel_bin: &str) -> String {
-    Command::new("qemu-system-riscv64")
+fn qemu_run(dir: &str, kernel_bin: &str) {
+    let mut child = Command::new("qemu-system-riscv64")
         .current_dir(dir)
         .args(["-machine", "virt"])
         .arg("-nographic")
@@ -59,12 +62,32 @@ fn qemu_run(dir: &str, kernel_bin: &str) -> String {
             "-device",
             &format!("loader,file={},addr={}", kernel_bin, KERNEL_ENTRY),
         ])
-        .output()
-        .unwrap()
-        .stdout
-        .iter()
-        .map(|b| *b as char)
-        .collect()
+        .stdout(Stdio::piped())
+        .stdin(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut child_stdout = child.stdout.take().unwrap();
+    let mut child_stdin = child.stdin.take().unwrap();
+
+    let out_thread = thread::spawn(move || loop {
+        let mut buf = [0; 0x1000];
+        let len = child_stdout.read(&mut buf).unwrap();
+        if len == 0 {
+            break;
+        }
+        io::stdout().write_all(&buf).unwrap();
+        thread::sleep(Duration::from_millis(10));
+    });
+    let in_thread = thread::spawn(move || loop {
+        let mut buf = String::new();
+        io::stdin().read_line(&mut buf).unwrap();
+        child_stdin.write_all(buf.as_bytes()).unwrap();
+        thread::sleep(Duration::from_millis(10));
+    });
+
+    out_thread.join().unwrap();
+    in_thread.join().unwrap();
+    child.wait().unwrap();
 }
 
 struct Makefile {
@@ -153,6 +176,26 @@ const CH4: Makefile = Makefile {
     ]),
 };
 
+const CH5: Makefile = Makefile {
+    link_arg: "-Tsrc/linker.ld",
+    nightly: true,
+    dir: "../ch5",
+    users: Some([
+        User {
+            bin: "initproc",
+            enrty: None,
+        },
+        User {
+            bin: "shell",
+            enrty: None,
+        },
+        User {
+            bin: "fork",
+            enrty: None,
+        },
+    ]),
+};
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let ch = args[1].as_str();
@@ -163,6 +206,7 @@ fn main() {
         "ch2" => CH2,
         "ch3" => CH3,
         "ch4" => CH4,
+        "ch5" => CH5,
         _ => panic!(),
     };
 
@@ -194,6 +238,5 @@ fn main() {
     build(ch.dir, ch.nightly, Some(&config), None);
     elf_to_bin(ch.dir, &kernel_elf, &kernel_bin);
 
-    let output = qemu_run(ch.dir, &kernel_bin);
-    print!("{}", output);
+    qemu_run(ch.dir, &kernel_bin);
 }
