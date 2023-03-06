@@ -46,7 +46,11 @@ fn main() {
                 let build_cmd = build(true, user.link_arg.as_ref(), Some(user.bin));
                 users.push_str(format!(" && {}", build_cmd).as_str());
             }
-            format!("cd ../user && cargo clean{}", users)
+            format!(
+                "cd ../user &&\
+                 cargo clean{}",
+                users
+            )
         };
 
         let mut f = File::create(format!("{}/Makefile", ch.dir).as_str()).unwrap();
