@@ -17,6 +17,10 @@ pub enum LinkArg {
 
 static mut CH: Vec<Makefile> = Vec::new();
 
+pub const TARGET: &str = "riscv64gc-unknown-none-elf";
+pub const BOOTLOADER: &str = "../rustsbi-qemu.bin";
+pub const KERNEL_ENTRY: &str = "0x80200000";
+
 pub fn init() {
     unsafe {
         CH = vec![
