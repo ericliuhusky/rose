@@ -1,5 +1,5 @@
 pub struct Makefile {
-    pub link_arg: &'static str,
+    pub link_arg: LinkArg,
     pub nightly: bool,
     pub dir: &'static str,
     pub users: Vec<User>,
@@ -10,43 +10,48 @@ pub struct User {
     pub enrty: Option<usize>,
 }
 
+pub enum LinkArg {
+    Address(usize),
+    File(&'static str),
+}
+
 static mut CH: Vec<Makefile> = Vec::new();
 
 pub fn init() {
     unsafe {
         CH = vec![
             Makefile {
-                link_arg: "-Ttext=0x80200000",
+                link_arg: LinkArg::Address(0x80200000),
                 nightly: false,
                 dir: "../ch0",
                 users: Vec::new(),
             },
             Makefile {
-                link_arg: "-Tsrc/linker.ld",
+                link_arg: LinkArg::File("src/linker.ld"),
                 nightly: true,
                 dir: "../ch1",
                 users: Vec::new(),
             },
             Makefile {
-                link_arg: "-Tsrc/linker.ld",
+                link_arg: LinkArg::File("src/linker.ld"),
                 nightly: true,
                 dir: "../ch2",
                 users: Vec::new(),
             },
             Makefile {
-                link_arg: "-Tsrc/linker.ld",
+                link_arg: LinkArg::File("src/linker.ld"),
                 nightly: true,
                 dir: "../ch3",
                 users: Vec::new(),
             },
             Makefile {
-                link_arg: "-Tsrc/linker.ld",
+                link_arg: LinkArg::File("src/linker.ld"),
                 nightly: true,
                 dir: "../ch4",
                 users: Vec::new(),
             },
             Makefile {
-                link_arg: "-Tsrc/linker.ld",
+                link_arg: LinkArg::File("src/linker.ld"),
                 nightly: true,
                 dir: "../ch5",
                 users: Vec::new(),

@@ -1,18 +1,22 @@
 mod config;
 
-use config::ch;
+use config::{ch, LinkArg};
 use std::{fs::File, io::Write};
 
 const TARGET: &str = "riscv64gc-unknown-none-elf";
 const BOOTLOADER: &str = "../rustsbi-qemu.bin";
 const KERNEL_ENTRY: &str = "0x80200000";
 
-fn build(nightly: bool, link_arg: Option<&str>, bin: Option<&str>) -> String {
+fn build(nightly: bool, link_arg: Option<&LinkArg>, bin: Option<&str>) -> String {
     let nightly = if nightly { " +nightly" } else { "" };
     let config = if let Some(link_arg) = link_arg {
         format!(
             " --config 'target.{}.rustflags = [\"-Clink-arg={}\"]'",
-            TARGET, link_arg
+            TARGET,
+            match link_arg {
+                LinkArg::Address(arg) => format!("-Ttext={:x}", arg),
+                LinkArg::File(arg) => format!("-T{}", arg),
+            }
         )
     } else {
         String::new()
@@ -41,8 +45,7 @@ fn main() {
             let mut users = String::new();
             for user in &ch.users {
                 let build_cmd = if let Some(entry) = user.enrty {
-                    let link_arg = format!("-Ttext={:x}", entry);
-                    build(true, Some(&link_arg), Some(user.bin))
+                    build(true, Some(&LinkArg::Address(entry)), Some(user.bin))
                 } else {
                     build(true, None, Some(user.bin))
                 };
