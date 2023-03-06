@@ -41,15 +41,21 @@ fn main() {
         let build_user = if ch.users.is_empty() {
             String::new()
         } else {
-            let mut users = String::new();
-            for user in &ch.users {
-                let build_cmd = build(true, user.link_arg.as_ref(), Some(user.bin));
-                users.push_str(format!(" && {}", build_cmd).as_str());
-            }
+            let build_user_bins: String = ch
+                .users
+                .iter()
+                .map(|user| {
+                    format!(
+                        " && {}",
+                        build(true, user.link_arg.as_ref(), Some(user.bin))
+                    )
+                })
+                .collect();
+
             format!(
                 "cd ../user &&\
                  cargo clean{}",
-                users
+                build_user_bins
             )
         };
 
