@@ -37,7 +37,6 @@ fn main() {
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
 
-
     for ch in ch() {
         let build_user = if ch.users.is_empty() {
             String::new()
@@ -53,7 +52,6 @@ fn main() {
             }
             format!("cd ../user && cargo clean{}", users)
         };
-
 
         let mut f = File::create(format!("{}/Makefile", ch.dir).as_str()).unwrap();
         writeln!(
