@@ -95,6 +95,6 @@ fn main() {
         );
 
         let mut f = File::create(format!("{}/Makefile", ch.dir).as_str()).unwrap();
-        f.write_all(makefile.as_bytes()).unwrap();
+        writeln!(f, "{}", makefile).unwrap();
     }
 }
