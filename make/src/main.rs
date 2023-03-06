@@ -1,3 +1,6 @@
+mod config;
+
+use config::get_ch;
 use std::{fs::File, io::Write};
 
 const TARGET: &str = "riscv64gc-unknown-none-elf";
@@ -43,58 +46,9 @@ fn qemu_run(kernel_bin: &str) -> String {
     )
 }
 
-struct Makefile {
-    link_arg: &'static str,
-    nightly: bool,
-    dir: &'static str,
-    users: Vec<User>,
-}
-
-struct User {
-    bin: &'static str,
-    enrty: Option<usize>,
-}
-
-static mut CH: [Makefile; 6] = [
-    Makefile {
-        link_arg: "-Ttext=0x80200000",
-        nightly: false,
-        dir: "../ch0",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch1",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch2",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch3",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch4",
-        users: Vec::new(),
-    },
-    Makefile {
-        link_arg: "-Tsrc/linker.ld",
-        nightly: true,
-        dir: "../ch5",
-        users: Vec::new(),
-    },
-];
 
 fn main() {
+    config::init();
     let kernel_elf = format!("target/{}/release/kernel", TARGET);
     let kernel_bin = format!("{}.bin", kernel_elf);
 
@@ -105,79 +59,7 @@ fn main() {
         )
     }
 
-    unsafe {
-        CH[2].users = vec![
-            User {
-                bin: "hello_world",
-                enrty: Some(0x80400000),
-            },
-            User {
-                bin: "priv_inst",
-                enrty: Some(0x80400000),
-            },
-            User {
-                bin: "store_fault",
-                enrty: Some(0x80400000),
-            },
-        ];
-    }
-
-    unsafe {
-        CH[3].users = vec![
-            User {
-                bin: "00write_a",
-                enrty: Some(0x80600000),
-            },
-            User {
-                bin: "01write_b",
-                enrty: Some(0x80620000),
-            },
-            User {
-                bin: "02write_c",
-                enrty: Some(0x80640000),
-            },
-        ];
-    }
-
-    unsafe {
-        CH[4].users = vec![
-            User {
-                bin: "00write_a",
-                enrty: None,
-            },
-            User {
-                bin: "01write_b",
-                enrty: None,
-            },
-            User {
-                bin: "02write_c",
-                enrty: None,
-            },
-        ];
-    }
-
-    unsafe {
-        CH[5].users = vec![
-            User {
-                bin: "initproc",
-                enrty: None,
-            },
-            User {
-                bin: "shell",
-                enrty: None,
-            },
-            User {
-                bin: "fork",
-                enrty: None,
-            },
-            User {
-                bin: "sleep",
-                enrty: None,
-            },
-        ];
-    }
-
-    for ch in unsafe { &CH } {
+    for ch in get_ch() {
         let mut makefile = String::from("run:\n");
         if !ch.users.is_empty() {
             let mut build_user = String::from("cd ../user");
