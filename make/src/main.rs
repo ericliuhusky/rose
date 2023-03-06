@@ -44,8 +44,8 @@ fn main() {
         } else {
             let mut users = String::new();
             for user in &ch.users {
-                let build_cmd = if let Some(entry) = user.enrty {
-                    build(true, Some(&LinkArg::Address(entry)), Some(user.bin))
+                let build_cmd = if let Some(link_arg) = &user.link_arg {
+                    build(true, Some(link_arg), Some(user.bin))
                 } else {
                     build(true, None, Some(user.bin))
                 };

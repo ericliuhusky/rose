@@ -7,7 +7,7 @@ pub struct Makefile {
 
 pub struct User {
     pub bin: &'static str,
-    pub enrty: Option<usize>,
+    pub link_arg: Option<LinkArg>,
 }
 
 pub enum LinkArg {
@@ -60,64 +60,64 @@ pub fn init() {
         CH[2].users = vec![
             User {
                 bin: "hello_world",
-                enrty: Some(0x80400000),
+                link_arg: Some(LinkArg::Address(0x80400000)),
             },
             User {
                 bin: "priv_inst",
-                enrty: Some(0x80400000),
+                link_arg: Some(LinkArg::Address(0x80400000)),
             },
             User {
                 bin: "store_fault",
-                enrty: Some(0x80400000),
+                link_arg: Some(LinkArg::Address(0x80400000)),
             },
         ];
 
         CH[3].users = vec![
             User {
                 bin: "00write_a",
-                enrty: Some(0x80600000),
+                link_arg: Some(LinkArg::Address(0x80600000)),
             },
             User {
                 bin: "01write_b",
-                enrty: Some(0x80620000),
+                link_arg: Some(LinkArg::Address(0x80620000)),
             },
             User {
                 bin: "02write_c",
-                enrty: Some(0x80640000),
+                link_arg: Some(LinkArg::Address(0x80640000)),
             },
         ];
 
         CH[4].users = vec![
             User {
                 bin: "00write_a",
-                enrty: None,
+                link_arg: None,
             },
             User {
                 bin: "01write_b",
-                enrty: None,
+                link_arg: None,
             },
             User {
                 bin: "02write_c",
-                enrty: None,
+                link_arg: None,
             },
         ];
 
         CH[5].users = vec![
             User {
                 bin: "initproc",
-                enrty: None,
+                link_arg: None,
             },
             User {
                 bin: "shell",
-                enrty: None,
+                link_arg: None,
             },
             User {
                 bin: "fork",
-                enrty: None,
+                link_arg: None,
             },
             User {
                 bin: "sleep",
-                enrty: None,
+                link_arg: None,
             },
         ];
     }
