@@ -7,8 +7,7 @@ use core::arch::asm;
 
 #[no_mangle]
 fn main() {
-    println!("Try to execute privileged instruction in U Mode");
-    println!("Kernel should kill this application!");
+    println!("user sret");
     unsafe {
         asm!("sret");
     }
