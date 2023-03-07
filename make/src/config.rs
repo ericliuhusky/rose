@@ -32,7 +32,7 @@ pub fn init() {
                 users: Vec::new(),
             },
             Makefile {
-                link_arg: LinkArg::File("src/linker.ld"),
+                link_arg: LinkArg::Address(0x80200000),
                 nightly: true,
                 dir: "../ch1",
                 users: Vec::new(),
