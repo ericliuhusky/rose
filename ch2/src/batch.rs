@@ -24,7 +24,7 @@ pub struct 应用管理器 {
 }
 
 impl 应用管理器 {
-    fn 加载应用到应用内存区(&self, 应用索引: usize) -> usize {
+    fn 加载应用到应用内存区(&self, 应用索引: usize) -> (usize, usize) {
         if 应用索引 >= self.应用数目 {
             println!("[kernel] All applications completed!");
             shutdown();
@@ -51,7 +51,12 @@ impl 应用管理器 {
                     dst[j] = src[j];
                 }
             }
-            elf.entry_address()
+            let last_p_va_range = elf.programs().last().unwrap().virtual_address_range();
+            let user_stack_top = last_p_va_range.end + 0x2000;
+            (
+                user_stack_top,
+                elf.entry_address()
+            )
         }
     }
 
@@ -71,7 +76,7 @@ impl 应用管理器 {
     pub fn 运行下一个应用() {
         unsafe {
             let 当前应用索引 = 应用管理器.当前应用索引;
-            let ea = 应用管理器.加载应用到应用内存区(当前应用索引);
+            let (user_stack_top, entry) = 应用管理器.加载应用到应用内存区(当前应用索引);
             应用管理器.当前应用索引 += 1;
 
             extern "C" {
@@ -80,8 +85,8 @@ impl 应用管理器 {
             __restore(
                 将上下文压入内核栈后的栈顶(
                     陷入上下文::应用初始上下文(
-                        ea,
-                        用户栈栈顶
+                        entry,
+                        user_stack_top
                     )
                 )
             );
