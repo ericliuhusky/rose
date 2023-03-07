@@ -28,7 +28,7 @@ impl 应用管理器 {
         unsafe {
             // 清空
             core::slice::from_raw_parts_mut(0x80400000 as *mut u8, 0x20000).fill(0);
-            let 应用数据 = 读取应用数据(应用索引);
+            let 应用数据 = loader::read_app_data(应用索引);
             let elf = elf_reader::ElfFile::read(应用数据);
             println!("{:x}", elf.entry_address());
             for p in elf.programs() {
@@ -52,7 +52,7 @@ impl 应用管理器 {
 
     pub fn 初始化() {
         unsafe {
-            let 应用数目 = 读取应用数目();
+            let 应用数目 = loader::read_app_num();
             应用管理器 = Self {
                 应用数目,
                 当前应用索引: 0,
@@ -85,26 +85,3 @@ impl 应用管理器 {
 
 
 static mut 应用管理器: 应用管理器 = 应用管理器 {应用数目:0, 当前应用索引:0};
-
-fn 读取应用数目() -> usize {
-    extern "C" {
-        fn _num_app();
-    }
-    unsafe { (_num_app as usize as *const usize).read_volatile() }
-}
-
-fn 读取应用数据(应用索引: usize) -> &'static [u8] {
-    extern "C" {
-        fn _num_app();
-    }
-    let 应用数目 = 读取应用数目();
-    let 应用数目指针 = _num_app as usize as *const usize;
-    unsafe {
-        let 应用数据起始地址指针 = 应用数目指针.add(1);
-        let 应用数据起始地址列表 = core::slice::from_raw_parts(应用数据起始地址指针, 应用数目 + 1);
-        core::slice::from_raw_parts(
-            应用数据起始地址列表[应用索引] as *const u8,
-            应用数据起始地址列表[应用索引 + 1] - 应用数据起始地址列表[应用索引],
-        )
-    }
-}
