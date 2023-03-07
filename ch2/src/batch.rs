@@ -20,11 +20,9 @@ impl 应用管理器 {
             core::slice::from_raw_parts_mut(0x80400000 as *mut u8, 0x20000).fill(0);
             let 应用数据 = loader::read_app_data(应用索引);
             let elf = elf_reader::ElfFile::read(应用数据);
-            println!("{:x}", elf.entry_address());
             for p in elf.programs() {
                 let start_va = p.virtual_address_range().start;
                 let end_va = p.virtual_address_range().end;
-                println!("{:x},{:x}", start_va, end_va);
                 if start_va < 0x80200000 {
                     continue;
                 }
