@@ -14,7 +14,6 @@ impl 应用管理器 {
             println!("[kernel] All applications completed!");
             shutdown();
         }
-        println!("[kernel] Loading app_{}", 应用索引);
         unsafe {
             // 清空
             core::slice::from_raw_parts_mut(0x80400000 as *mut u8, 0x20000).fill(0);
@@ -51,8 +50,6 @@ impl 应用管理器 {
                 应用数目,
                 当前应用索引: 0,
             };
-
-            println!("[kernel] num_app = {}", 应用数目);
         }
     }
 
