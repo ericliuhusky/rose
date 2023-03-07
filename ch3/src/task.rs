@@ -1,4 +1,4 @@
-use crate::loader::{读取应用数目, 将应用初始上下文压入内核栈后的栈顶};
+use crate::loader::将应用初始上下文压入内核栈后的栈顶;
 use sbi_call::shutdown;
 
 struct 任务 {
@@ -21,7 +21,7 @@ pub struct 任务管理器 {
 
 impl 任务管理器 {
     pub fn 初始化() {
-        let 任务数目 = 读取应用数目();
+        let 任务数目 = loader::read_app_num();
         let 任务列表 = [
             任务 {
                 内核栈栈顶: 将应用初始上下文压入内核栈后的栈顶(0),

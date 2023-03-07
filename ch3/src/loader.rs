@@ -21,32 +21,10 @@ fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文, 应用索
     栈顶
 }
 
-pub fn 读取应用数目() -> usize {
-    extern "C" {
-        fn _num_app();
-    }
-    unsafe { (_num_app as usize as *const usize).read_volatile() }
-}
-
-fn 读取应用数据(应用索引: usize) -> &'static [u8] {
-    extern "C" {
-        fn _num_app();
-    }
-    let 应用数目 = 读取应用数目();
-    let 应用数目指针 = _num_app as usize as *const usize;
-    unsafe {
-        let 应用数据起始地址指针 = 应用数目指针.add(1);
-        let 应用数据起始地址列表 = core::slice::from_raw_parts(应用数据起始地址指针, 应用数目 + 1);
-        core::slice::from_raw_parts(
-            应用数据起始地址列表[应用索引] as *const u8,
-            应用数据起始地址列表[应用索引 + 1] - 应用数据起始地址列表[应用索引],
-        )
-    }
-}
 
 fn 加载应用到应用内存区(应用索引: usize) -> usize {
     unsafe {
-        let 应用数据 = 读取应用数据(应用索引);
+        let 应用数据 = loader::read_app_data(应用索引);
         let elf = elf_reader::ElfFile::read(应用数据);
         println!("{:x}", elf.entry_address());
         for p in elf.programs() {
