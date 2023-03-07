@@ -5,19 +5,19 @@ use alloc::vec::Vec;
 
 pub fn read_app_num() -> usize {
     extern "C" {
-        fn _num_app();
+        fn _app_num();
     }
-    unsafe { *(_num_app as usize as *const usize) }
+    unsafe { *(_app_num as usize as *const usize) }
 }
 
 pub fn read_app_data(i: usize) -> &'static [u8] {
     extern "C" {
-        fn _num_app();
+        fn _app_num();
     }
     let n = read_app_num();
-    let _num_app_ptr = _num_app as usize as *const usize;
+    let _app_num_ptr = _app_num as usize as *const usize;
     unsafe {
-        let start_address_ptr = _num_app_ptr.add(1);
+        let start_address_ptr = _app_num_ptr.add(1);
         let start_address_list = core::slice::from_raw_parts(start_address_ptr, n + 1);
         core::slice::from_raw_parts(
             start_address_list[i] as *const u8,

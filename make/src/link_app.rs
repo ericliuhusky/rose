@@ -10,8 +10,8 @@ pub fn create_link_app(ch: &Makefile) {
         f,
         r#"{}
     .section .data
-    .globl _num_app
-_num_app:
+    .globl _app_num
+_app_num:
     .quad {}"#,
         LOGO,
         ch.users.len()
