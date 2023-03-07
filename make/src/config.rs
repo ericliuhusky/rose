@@ -65,15 +65,15 @@ pub fn init() {
         CH[2].users = vec![
             User {
                 bin: "hello_world",
-                link_arg: Some(LinkArg::Address(0x80400000)),
+                link_arg: Some(LinkArg::Address(0x80500000)),
             },
             User {
                 bin: "priv_inst",
-                link_arg: Some(LinkArg::Address(0x80400000)),
+                link_arg: Some(LinkArg::Address(0x80500000)),
             },
             User {
                 bin: "store_fault",
-                link_arg: Some(LinkArg::Address(0x80400000)),
+                link_arg: Some(LinkArg::Address(0x80500000)),
             },
         ];
 

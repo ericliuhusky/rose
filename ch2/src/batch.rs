@@ -16,9 +16,10 @@ impl 应用管理器 {
         }
         unsafe {
             // 清空
-            core::slice::from_raw_parts_mut(0x80400000 as *mut u8, 0x20000).fill(0);
+            core::slice::from_raw_parts_mut(0x80500000 as *mut u8, 0x20000).fill(0);
             let 应用数据 = loader::read_app_data(应用索引);
             let elf = elf_reader::ElfFile::read(应用数据);
+            assert!(elf.entry_address() > KENRL_STACK_TOP);
             for p in elf.programs() {
                 let start_va = p.virtual_address_range().start;
                 let end_va = p.virtual_address_range().end;
