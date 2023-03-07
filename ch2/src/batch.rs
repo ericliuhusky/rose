@@ -1,11 +1,6 @@
 use crate::trap::陷入上下文;
 use sbi_call::shutdown;
 
-extern "C" {
-    fn ekernel();
-}
-
-const 用户栈栈顶: usize = 0x80422000;
 static mut KENRL_STACK_TOP: usize = 0;
 
 fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文) -> usize {
@@ -20,7 +15,7 @@ fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文) -> usize 
 
 pub struct 应用管理器 {
     应用数目: usize,
-    当前应用索引: usize
+    当前应用索引: usize,
 }
 
 impl 应用管理器 {
@@ -45,7 +40,7 @@ impl 应用管理器 {
                 }
                 let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
                 let src = p.data;
-                
+
                 let len = dst.len().min(src.len());
                 for j in 0..len {
                     dst[j] = src[j];
@@ -53,14 +48,14 @@ impl 应用管理器 {
             }
             let last_p_va_range = elf.programs().last().unwrap().virtual_address_range();
             let user_stack_top = last_p_va_range.end + 0x2000;
-            (
-                user_stack_top,
-                elf.entry_address()
-            )
+            (user_stack_top, elf.entry_address())
         }
     }
 
     pub fn 初始化() {
+        extern "C" {
+            fn ekernel();
+        }
         unsafe {
             KENRL_STACK_TOP = ekernel as usize + 0x2000;
             let 应用数目 = loader::read_app_num();
@@ -68,7 +63,7 @@ impl 应用管理器 {
                 应用数目,
                 当前应用索引: 0,
             };
-    
+
             println!("[kernel] num_app = {}", 应用数目);
         }
     }
@@ -82,17 +77,14 @@ impl 应用管理器 {
             extern "C" {
                 fn __restore(cx_addr: usize);
             }
-            __restore(
-                将上下文压入内核栈后的栈顶(
-                    陷入上下文::应用初始上下文(
-                        entry,
-                        user_stack_top
-                    )
-                )
-            );
+            __restore(将上下文压入内核栈后的栈顶(
+                陷入上下文::应用初始上下文(entry, user_stack_top),
+            ));
         }
     }
 }
 
-
-static mut 应用管理器: 应用管理器 = 应用管理器 {应用数目:0, 当前应用索引:0};
+static mut 应用管理器: 应用管理器 = 应用管理器 {
+    应用数目: 0,
+    当前应用索引: 0,
+};
