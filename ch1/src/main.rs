@@ -1,11 +1,10 @@
 #![no_std]
 #![no_main]
 
-use core::arch::global_asm;
 use sbi_call::shutdown;
 use print::println;
-use panic;
-use entry;
+extern crate panic;
+extern crate entry;
 
 
 #[no_mangle]
