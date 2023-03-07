@@ -14,12 +14,12 @@ mod mm;
 
 use core::arch::global_asm;
 use panic;
+use entry;
 
-global_asm!(include_str!("entry.s"));
 global_asm!(include_str!("link_app.s"));
 
 #[no_mangle]
-fn rust_main() {
+fn main() {
     println!("[kernel] Hello, world!");
     mm::初始化();
     trap::初始化();
