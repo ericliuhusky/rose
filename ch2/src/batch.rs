@@ -1,10 +1,15 @@
 use crate::trap::陷入上下文;
 use sbi_call::shutdown;
+
+extern "C" {
+    fn ekernel();
+}
+
 const 用户栈栈顶: usize = 0x80422000;
-const 内核栈栈顶: usize = 0x80424000;
+static mut KENRL_STACK_TOP: usize = 0;
 
 fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文) -> usize {
-    let mut 栈顶 = 内核栈栈顶;
+    let mut 栈顶 = unsafe { KENRL_STACK_TOP };
     栈顶 -= core::mem::size_of::<陷入上下文>();
     let 上下文指针 = 栈顶 as *mut 陷入上下文;
     unsafe {
@@ -52,6 +57,7 @@ impl 应用管理器 {
 
     pub fn 初始化() {
         unsafe {
+            KENRL_STACK_TOP = ekernel as usize + 0x2000;
             let 应用数目 = loader::read_app_num();
             应用管理器 = Self {
                 应用数目,

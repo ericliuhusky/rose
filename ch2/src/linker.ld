@@ -10,4 +10,15 @@ SECTIONS
     .rodata : {
         *(.rodata .rodata.*)
     }
+
+    .data : {
+        *(.data .data.*)
+    }
+
+    .bss : {
+        *(.bss .bss.*)
+    }
+
+
+    ekernel = .;
 }
