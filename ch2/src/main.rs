@@ -8,8 +8,8 @@ mod syscall;
 mod trap;
 mod batch;
 use core::arch::global_asm;
-use panic;
-use entry;
+extern crate panic;
+extern crate entry;
 
 global_asm!(include_str!("link_app.s"));
 
