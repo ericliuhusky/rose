@@ -20,7 +20,7 @@ static mut CH: Vec<Makefile> = Vec::new();
 pub const TARGET: &str = "riscv64gc-unknown-none-elf";
 pub const BOOTLOADER: &str = "../rustsbi-qemu.bin";
 pub const KERNEL_ENTRY: &str = "0x80200000";
-pub const LOGO: &str = "# created by crate make";
+pub const LOGO: &str = "# created by make";
 
 pub fn init() {
     unsafe {
