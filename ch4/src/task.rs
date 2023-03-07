@@ -1,4 +1,3 @@
-use crate::loader::{读取应用数目, 读取应用数据};
 use alloc::vec::Vec;
 use sbi_call::shutdown;
 use crate::mm::memory_set::{地址空间, 内核地址空间};
@@ -40,10 +39,10 @@ pub struct 任务管理器 {
 
 impl 任务管理器 {
     pub fn 初始化() {
-        let 任务数目 = 读取应用数目();
+        let 任务数目 = loader::read_app_num();
         let 任务列表 = (0..任务数目)
             .map(|应用索引| {
-                任务::新建(读取应用数据(应用索引))
+                任务::新建(loader::read_app_data(应用索引))
             })
             .collect();
         unsafe {

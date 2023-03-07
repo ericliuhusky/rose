@@ -13,3 +13,4 @@ panic = { path = "../crates/panic" }
 riscv_register = { path = "../crates/riscv_register" }
 heap_allocator = { path = "../crates/heap_allocator" }
 entry = { path = "../crates/entry" }
+loader = { path = "../crates/loader" }

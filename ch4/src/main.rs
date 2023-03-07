@@ -7,7 +7,6 @@ extern crate print;
 
 mod syscall;
 mod trap;
-mod loader;
 mod task;
 mod timer;
 mod mm;
