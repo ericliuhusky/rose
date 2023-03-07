@@ -3,7 +3,7 @@
 
 use print::{println, print};
 pub use sys_call::{exit, read, yield_, get_time, getpid, fork, exec};
-use panic;
+extern crate panic;
 
 #[no_mangle]
 #[link_section = ".text.entry"]
