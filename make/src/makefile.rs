@@ -8,7 +8,7 @@ fn build(nightly: bool, link_arg: Option<&LinkArg>, bin: Option<&str>) -> String
             " --config 'target.{}.rustflags = [\"-Clink-arg={}\"]'",
             TARGET,
             match link_arg {
-                LinkArg::Address(arg) => format!("-Ttext={:x}", arg),
+                LinkArg::Address(arg) => format!("-Ttext={:#x}", arg),
                 LinkArg::File(arg) => format!("-T{}", arg),
             }
         )
