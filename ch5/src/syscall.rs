@@ -106,7 +106,6 @@ mod 系统调用_进程 {
     use alloc::string::String;
     use crate::task::任务管理器;
     use crate::task::task::任务状态;
-    use crate::loader::通过名称读取应用数据;
 
     pub fn getpid() -> isize {
         任务管理器::当前任务().进程标识符.0 as isize
@@ -130,7 +129,7 @@ mod 系统调用_进程 {
             .iter()
             .map(|字节| *字节 as char)
             .collect();
-        if let Some(elf文件数据) = 通过名称读取应用数据(&应用名称) {
+        if let Some(elf文件数据) = loader::read_app_data_by_name(&应用名称) {
             任务管理器::可变当前任务(|mut 任务| {
                 任务.exec(elf文件数据);
             });
