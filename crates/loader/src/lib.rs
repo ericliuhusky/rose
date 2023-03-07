@@ -4,7 +4,7 @@ pub fn read_app_num() -> usize {
     extern "C" {
         fn _num_app();
     }
-    unsafe { (_num_app as usize as *const usize).read_volatile() }
+    unsafe { *(_num_app as usize as *const usize) }
 }
 
 pub fn read_app_data(i: usize) -> &'static [u8] {
