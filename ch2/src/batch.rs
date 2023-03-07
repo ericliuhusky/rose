@@ -3,16 +3,6 @@ use sbi_call::shutdown;
 
 static mut KENRL_STACK_TOP: usize = 0;
 
-fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文) -> usize {
-    let mut 栈顶 = unsafe { KENRL_STACK_TOP };
-    栈顶 -= core::mem::size_of::<陷入上下文>();
-    let 上下文指针 = 栈顶 as *mut 陷入上下文;
-    unsafe {
-        *上下文指针 = 上下文;
-    }
-    栈顶
-}
-
 pub struct 应用管理器 {
     应用数目: usize,
     当前应用索引: usize,
@@ -74,12 +64,13 @@ impl 应用管理器 {
             let (user_stack_top, entry) = 应用管理器.加载应用到应用内存区(当前应用索引);
             应用管理器.当前应用索引 += 1;
 
+            let cx_addr = KENRL_STACK_TOP - core::mem::size_of::<陷入上下文>();
+            let cx_ptr = cx_addr as *mut 陷入上下文;
+            *cx_ptr = 陷入上下文::应用初始上下文(entry, user_stack_top);
             extern "C" {
-                fn __restore(cx_addr: usize);
+                fn __restore(cx_ptr: *mut 陷入上下文);
             }
-            __restore(将上下文压入内核栈后的栈顶(
-                陷入上下文::应用初始上下文(entry, user_stack_top),
-            ));
+            __restore(cx_ptr);
         }
     }
 }
