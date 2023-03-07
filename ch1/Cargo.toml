@@ -7,3 +7,4 @@ edition = "2021"
 sbi_call = { path = "../crates/sbi_call" }
 print = { path = "../crates/print" }
 panic = { path = "../crates/panic" }
+entry = { path = "../crates/entry" }
