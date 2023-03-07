@@ -15,11 +15,13 @@ impl 应用管理器 {
             shutdown();
         }
         unsafe {
-            // 清空
-            core::slice::from_raw_parts_mut(0x80500000 as *mut u8, 0x20000).fill(0);
             let 应用数据 = loader::read_app_data(应用索引);
             let elf = elf_reader::ElfFile::read(应用数据);
-            assert!(elf.entry_address() > KENRL_STACK_TOP);
+            let entry_address = elf.entry_address();
+            assert!(entry_address > KENRL_STACK_TOP);
+            let last_p_va_range = elf.programs().last().unwrap().virtual_address_range();
+            let user_stack_top = last_p_va_range.end + 0x2000;
+            core::slice::from_raw_parts_mut(entry_address as *mut u8, user_stack_top - entry_address).fill(0);
             for p in elf.programs() {
                 let start_va = p.virtual_address_range().start;
                 let end_va = p.virtual_address_range().end;
@@ -34,9 +36,7 @@ impl 应用管理器 {
                     dst[j] = src[j];
                 }
             }
-            let last_p_va_range = elf.programs().last().unwrap().virtual_address_range();
-            let user_stack_top = last_p_va_range.end + 0x2000;
-            (user_stack_top, elf.entry_address())
+            (user_stack_top, entry_address)
         }
     }
 
