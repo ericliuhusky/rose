@@ -14,7 +14,7 @@ global_asm!(include_str!("entry.s"));
 global_asm!(include_str!("link_app.s"));
 
 #[no_mangle]
-fn rust_main() {
+fn main() {
     println!("[kernel] Hello, world!");
     heap_allocator::init();
     trap::初始化();
