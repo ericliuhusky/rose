@@ -9,8 +9,8 @@ mod trap;
 mod batch;
 use core::arch::global_asm;
 use panic;
+use entry;
 
-global_asm!(include_str!("entry.s"));
 global_asm!(include_str!("link_app.s"));
 
 #[no_mangle]
