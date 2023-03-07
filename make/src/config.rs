@@ -79,30 +79,30 @@ pub fn init() {
 
         CH[3].users = vec![
             User {
-                bin: "00write_a",
+                bin: "fibonacci_a",
                 link_arg: Some(LinkArg::Address(0x80600000)),
             },
             User {
-                bin: "01write_b",
+                bin: "fibonacci_b",
                 link_arg: Some(LinkArg::Address(0x80620000)),
             },
             User {
-                bin: "02write_c",
+                bin: "fibonacci_c",
                 link_arg: Some(LinkArg::Address(0x80640000)),
             },
         ];
 
         CH[4].users = vec![
             User {
-                bin: "00write_a",
+                bin: "fibonacci_a",
                 link_arg: None,
             },
             User {
-                bin: "01write_b",
+                bin: "fibonacci_b",
                 link_arg: None,
             },
             User {
-                bin: "02write_c",
+                bin: "fibonacci_c",
                 link_arg: None,
             },
         ];
