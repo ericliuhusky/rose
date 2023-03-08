@@ -2,33 +2,33 @@ mod context;
 use crate::batch::应用管理器;
 use crate::syscall::sys_func;
 use core::arch::global_asm;
-pub use context::陷入上下文;
+pub use context::Context;
 use riscv_register::{scause::{self, Exception}, stvec};
 
-global_asm!(include_str!("trap.s"));
+global_asm!(include_str!("exception.s"));
 
 pub fn 初始化() {
     extern "C" {
-        fn __trap_entry();
+        fn __exception_entry();
     }
-    // 设置异常处理入口地址为__trap_entry
-    stvec::write(__trap_entry as usize);
+    // 设置异常处理入口地址为__exception_entry
+    stvec::write(__exception_entry as usize);
 }
 
 
 #[no_mangle] 
 /// 处理中断、异常或系统调用
-pub fn trap_handler(上下文: &mut 陷入上下文) -> &mut 陷入上下文 {
+pub fn exception_handler(上下文: &mut Context) -> &mut Context {
     match scause::read() {
         Exception::UserEnvCall => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
-            上下文.触发异常指令地址 += 4;
-            上下文.通用寄存器[10] = sys_func(
-                上下文.通用寄存器[17],
+            上下文.sepc += 4;
+            上下文.x[10] = sys_func(
+                上下文.x[17],
                 [
-                    上下文.通用寄存器[10],
-                    上下文.通用寄存器[11], 
-                    上下文.通用寄存器[12]
+                    上下文.x[10],
+                    上下文.x[11], 
+                    上下文.x[12]
                 ]
             ) as usize;
         }

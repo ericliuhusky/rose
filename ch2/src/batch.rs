@@ -1,4 +1,4 @@
-use crate::trap::陷入上下文;
+use crate::exception::Context;
 use sbi_call::shutdown;
 
 static mut KENRL_STACK_TOP: usize = 0;
@@ -60,11 +60,11 @@ impl 应用管理器 {
             let (user_stack_top, entry) = 应用管理器.加载应用到应用内存区(当前应用索引);
             应用管理器.当前应用索引 += 1;
 
-            let cx_addr = KENRL_STACK_TOP - core::mem::size_of::<陷入上下文>();
-            let cx_ptr = cx_addr as *mut 陷入上下文;
-            *cx_ptr = 陷入上下文::应用初始上下文(entry, user_stack_top);
+            let cx_addr = KENRL_STACK_TOP - core::mem::size_of::<Context>();
+            let cx_ptr = cx_addr as *mut Context;
+            *cx_ptr = Context::app_init(entry, user_stack_top);
             extern "C" {
-                fn __restore(cx_ptr: *mut 陷入上下文);
+                fn __restore(cx_ptr: *mut Context);
             }
             __restore(cx_ptr);
         }
