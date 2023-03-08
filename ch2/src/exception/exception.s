@@ -16,7 +16,7 @@ __exception_entry:
 
     # 换栈，sp指向内核栈，sp原先存放的用户栈栈顶地址存放在sscratch
     csrw sscratch, sp
-    ld sp, __CONTEXT_START_ADDR
+    ld sp, CONTEXT_START_ADDR
 
     # 此时只有sp寄存器可以使用，用户栈栈顶地址已经保存在sscratch，即使改变sp寄存器也可从sscratch恢复
     # 此时使用其它寄存器，会导致其它寄存器的值被改变覆盖原有值，使得其它寄存器无法恢复
@@ -40,12 +40,12 @@ __exception_entry:
     sd t1, 2*8(sp)
 
     mv a0, sp
-    ld sp, KENRL_STACK_TOP
+    ld sp, KERNEL_STACK_TOP
     call exception_handler
 
 
 __restore:
-    ld sp, __CONTEXT_START_ADDR
+    ld sp, CONTEXT_START_ADDR
 
     # 恢复控制和状态寄存器
     ld t0, 32*8(sp)
@@ -63,7 +63,3 @@ __restore:
 
     # 返回sepc指向的地址继续执行
     sret
-
-    .globl __CONTEXT_START_ADDR
-__CONTEXT_START_ADDR:
-    .quad 0x80600000

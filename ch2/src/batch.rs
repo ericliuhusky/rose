@@ -3,6 +3,8 @@ use sbi_call::shutdown;
 
 #[no_mangle]
 static mut KERNEL_STACK_TOP: usize = 0;
+#[no_mangle]
+static mut CONTEXT_START_ADDR: usize = 0;
 
 pub struct 应用管理器 {
     应用数目: usize,
@@ -47,6 +49,7 @@ impl 应用管理器 {
         }
         unsafe {
             KERNEL_STACK_TOP = ekernel as usize + 0x2000;
+            CONTEXT_START_ADDR = KERNEL_STACK_TOP;
             let 应用数目 = loader::read_app_num();
             应用管理器 = Self {
                 应用数目,
@@ -61,7 +64,7 @@ impl 应用管理器 {
             let (entry_address, user_stack_top) = 应用管理器.加载应用到应用内存区(当前应用索引);
             应用管理器.当前应用索引 += 1;
 
-            let cx_ptr = 0x80600000 as *mut Context;
+            let cx_ptr = CONTEXT_START_ADDR as *mut Context;
             *cx_ptr = Context::app_init(entry_address, user_stack_top);
             extern "C" {
                 fn __restore(cx_ptr: *mut Context);
