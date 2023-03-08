@@ -6,6 +6,7 @@ static mut KERNEL_STACK_TOP: usize = 0;
 #[no_mangle]
 static mut CONTEXT_START_ADDR: usize = 0;
 static mut APP_START_ADDR: usize = 0;
+static mut APP_END_ADDR: usize = 0;
 
 
 pub struct 应用管理器 {
@@ -26,7 +27,7 @@ impl 应用管理器 {
             assert!(entry_address > APP_START_ADDR);
             let last_p_va_end = elf.programs().last().unwrap().virtual_address_range().end;
             let user_stack_top = last_p_va_end + 0x2000;
-            core::slice::from_raw_parts_mut(APP_START_ADDR as *mut u8, user_stack_top - APP_START_ADDR).fill(0);
+            APP_END_ADDR = user_stack_top;
             for p in elf.programs() {
                 let start_va = p.virtual_address_range().start;
                 let end_va = p.virtual_address_range().end;
@@ -73,6 +74,12 @@ impl 应用管理器 {
                 fn __restore(cx_ptr: *mut Context);
             }
             __restore(cx_ptr);
+        }
+    }
+
+    pub fn recycle() {
+        unsafe {
+            core::slice::from_raw_parts_mut(APP_START_ADDR as *mut u8, APP_END_ADDR - APP_START_ADDR).fill(0);
         }
     }
 }

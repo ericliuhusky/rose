@@ -21,6 +21,7 @@ use crate::batch::应用管理器;
 
 fn exit(exit_code: isize) -> isize {
     println!("[kernel] Application exited with code {}", exit_code);
+    应用管理器::recycle();
     应用管理器::运行下一个应用();
     -1
 }
