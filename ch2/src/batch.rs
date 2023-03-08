@@ -71,9 +71,9 @@ impl 应用管理器 {
             let cx_ptr = CONTEXT_START_ADDR as *mut Context;
             *cx_ptr = Context::app_init(entry_address, user_stack_top);
             extern "C" {
-                fn __restore(cx_ptr: *mut Context);
+                fn __restore();
             }
-            __restore(cx_ptr);
+            __restore();
         }
     }
 
