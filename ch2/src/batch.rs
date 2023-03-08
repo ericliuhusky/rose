@@ -36,7 +36,7 @@ impl 应用管理器 {
                     dst[j] = src[j];
                 }
             }
-            (user_stack_top, entry_address)
+            (entry_address, user_stack_top)
         }
     }
 
@@ -57,12 +57,11 @@ impl 应用管理器 {
     pub fn 运行下一个应用() {
         unsafe {
             let 当前应用索引 = 应用管理器.当前应用索引;
-            let (user_stack_top, entry) = 应用管理器.加载应用到应用内存区(当前应用索引);
+            let (entry_address, user_stack_top) = 应用管理器.加载应用到应用内存区(当前应用索引);
             应用管理器.当前应用索引 += 1;
 
-            let cx_addr = KENRL_STACK_TOP - core::mem::size_of::<Context>();
-            let cx_ptr = cx_addr as *mut Context;
-            *cx_ptr = Context::app_init(entry, user_stack_top);
+            let cx_ptr = 0x80600000 as *mut Context;
+            *cx_ptr = Context::app_init(entry_address, user_stack_top);
             extern "C" {
                 fn __restore(cx_ptr: *mut Context);
             }
