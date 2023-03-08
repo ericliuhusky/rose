@@ -79,7 +79,9 @@ impl 应用管理器 {
 
     pub fn recycle() {
         unsafe {
-            core::slice::from_raw_parts_mut(APP_START_ADDR as *mut u8, APP_END_ADDR - APP_START_ADDR).fill(0);
+            for addr in APP_START_ADDR..APP_END_ADDR {
+                *(addr as *mut u8) = 0;
+            }
         }
     }
 }
