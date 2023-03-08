@@ -1,13 +1,27 @@
 use crate::trap::陷入上下文;
 
-const 内核栈栈顶: [usize; 3] = [
-    0x80468000,
-    0x8046a000,
-    0x8046c000
-];
+
+static mut KERNEL_STACK_TOP: [usize; 3] = [0; 3];
+
+pub fn init() {
+    extern "C" {
+        fn ekernel();
+    }
+    unsafe {
+        KERNEL_STACK_TOP = [
+            ekernel as usize + 0x2000,
+            ekernel as usize + 2 * 0x2000,
+            ekernel as usize + 3 * 0x2000
+        ];
+        for t in KERNEL_STACK_TOP {
+            println!("{:#x}", t);
+        }
+    }
+    
+}
 
 fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文, 应用索引: usize) -> usize {
-    let mut 栈顶 = 内核栈栈顶[应用索引];
+    let mut 栈顶 = unsafe { KERNEL_STACK_TOP[应用索引] };
     栈顶 -= core::mem::size_of::<陷入上下文>();
     let 上下文指针 = 栈顶 as *mut 陷入上下文;
     unsafe {
