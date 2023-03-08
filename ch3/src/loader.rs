@@ -1,23 +1,19 @@
+use alloc::vec::Vec;
 use crate::trap::陷入上下文;
 
 
-static mut KERNEL_STACK_TOP: [usize; 3] = [0; 3];
+static mut KERNEL_STACK_TOP: Vec<usize> = Vec::new();
 
 pub fn init() {
     extern "C" {
         fn ekernel();
     }
+    let n = loader::read_app_num();
     unsafe {
-        KERNEL_STACK_TOP = [
-            ekernel as usize + 0x2000,
-            ekernel as usize + 2 * 0x2000,
-            ekernel as usize + 3 * 0x2000
-        ];
-        for t in KERNEL_STACK_TOP {
-            println!("{:#x}", t);
+        for i in 0..n {
+            KERNEL_STACK_TOP.push(ekernel as usize + (i + 1) * 0x2000);
         }
     }
-    
 }
 
 
