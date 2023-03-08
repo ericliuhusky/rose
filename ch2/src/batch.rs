@@ -9,18 +9,18 @@ pub struct 应用管理器 {
 }
 
 impl 应用管理器 {
-    fn 加载应用到应用内存区(&self, 应用索引: usize) -> (usize, usize) {
-        if 应用索引 >= self.应用数目 {
+    fn 加载应用到应用内存区(&self, i: usize) -> (usize, usize) {
+        if i >= self.应用数目 {
             println!("[kernel] All applications completed!");
             shutdown();
         }
         unsafe {
-            let 应用数据 = loader::read_app_data(应用索引);
-            let elf = elf_reader::ElfFile::read(应用数据);
+            let app_data = loader::read_app_data(i);
+            let elf = elf_reader::ElfFile::read(app_data);
             let entry_address = elf.entry_address();
             assert!(entry_address > KENRL_STACK_TOP);
-            let last_p_va_range = elf.programs().last().unwrap().virtual_address_range();
-            let user_stack_top = last_p_va_range.end + 0x2000;
+            let last_p_va_end = elf.programs().last().unwrap().virtual_address_range().end;
+            let user_stack_top = last_p_va_end + 0x2000;
             core::slice::from_raw_parts_mut(entry_address as *mut u8, user_stack_top - entry_address).fill(0);
             for p in elf.programs() {
                 let start_va = p.virtual_address_range().start;
