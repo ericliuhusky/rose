@@ -6,6 +6,10 @@ static mut KERNEL_STACK_TOP: usize = 0;
 #[no_mangle]
 static mut CONTEXT_START_ADDR: usize = 0;
 
+fn app_start_addr() -> usize {
+    unsafe { CONTEXT_START_ADDR + core::mem::size_of::<Context>() }
+}
+
 pub struct 应用管理器 {
     应用数目: usize,
     当前应用索引: usize,
@@ -21,10 +25,11 @@ impl 应用管理器 {
             let app_data = loader::read_app_data(i);
             let elf = elf_reader::ElfFile::read(app_data);
             let entry_address = elf.entry_address();
-            assert!(entry_address > CONTEXT_START_ADDR + core::mem::size_of::<Context>());
+            let app_start_addr = app_start_addr();
+            assert!(entry_address > app_start_addr);
             let last_p_va_end = elf.programs().last().unwrap().virtual_address_range().end;
             let user_stack_top = last_p_va_end + 0x2000;
-            core::slice::from_raw_parts_mut(entry_address as *mut u8, user_stack_top - entry_address).fill(0);
+            core::slice::from_raw_parts_mut(app_start_addr as *mut u8, user_stack_top - app_start_addr).fill(0);
             for p in elf.programs() {
                 let start_va = p.virtual_address_range().start;
                 let end_va = p.virtual_address_range().end;
