@@ -21,7 +21,7 @@ impl 应用管理器 {
             let app_data = loader::read_app_data(i);
             let elf = elf_reader::ElfFile::read(app_data);
             let entry_address = elf.entry_address();
-            assert!(entry_address > KERNEL_STACK_TOP);
+            assert!(entry_address > CONTEXT_START_ADDR + core::mem::size_of::<Context>());
             let last_p_va_end = elf.programs().last().unwrap().virtual_address_range().end;
             let user_stack_top = last_p_va_end + 0x2000;
             core::slice::from_raw_parts_mut(entry_address as *mut u8, user_stack_top - entry_address).fill(0);
