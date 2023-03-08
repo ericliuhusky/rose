@@ -8,7 +8,6 @@
     ld x\n, \n*8(sp)
 .endm
 
-    .section .text
     .globl __exception_entry
     .globl __restore
 __exception_entry:
