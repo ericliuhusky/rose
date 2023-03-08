@@ -20,15 +20,6 @@ pub fn init() {
     
 }
 
-fn 将上下文压入内核栈后的栈顶(上下文: 陷入上下文, 应用索引: usize) -> usize {
-    let mut 栈顶 = unsafe { KERNEL_STACK_TOP[应用索引] };
-    栈顶 -= core::mem::size_of::<陷入上下文>();
-    let 上下文指针 = 栈顶 as *mut 陷入上下文;
-    unsafe {
-        *上下文指针 = 上下文;
-    }
-    栈顶
-}
 
 
 fn 加载应用到应用内存区(应用索引: usize) -> (usize, usize) {
@@ -58,11 +49,13 @@ fn 加载应用到应用内存区(应用索引: usize) -> (usize, usize) {
 
 pub fn 将应用初始上下文压入内核栈后的栈顶(应用索引: usize) -> usize {
     let (entry_address, user_stack_top) = 加载应用到应用内存区(应用索引);
-    将上下文压入内核栈后的栈顶(
-        陷入上下文::应用初始上下文(
+    let cx_addr = unsafe { KERNEL_STACK_TOP[应用索引] } - core::mem::size_of::<陷入上下文>();
+    let cx_ptr = cx_addr as *mut 陷入上下文;
+    unsafe {
+        *cx_ptr = 陷入上下文::应用初始上下文(
             entry_address,
             user_stack_top
-        ),
-        应用索引
-    )
+        );
+    }
+    cx_addr
 }
