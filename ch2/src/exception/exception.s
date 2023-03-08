@@ -40,7 +40,7 @@ __exception_entry:
     sd t1, 2*8(sp)
 
     mv a0, sp
-    li sp, 0x804d8900
+    ld sp, KENRL_STACK_TOP
     call exception_handler
 
 

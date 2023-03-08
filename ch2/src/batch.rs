@@ -1,7 +1,8 @@
 use crate::exception::Context;
 use sbi_call::shutdown;
 
-static mut KENRL_STACK_TOP: usize = 0;
+#[no_mangle]
+static mut KERNEL_STACK_TOP: usize = 0;
 
 pub struct 应用管理器 {
     应用数目: usize,
@@ -18,7 +19,7 @@ impl 应用管理器 {
             let app_data = loader::read_app_data(i);
             let elf = elf_reader::ElfFile::read(app_data);
             let entry_address = elf.entry_address();
-            assert!(entry_address > KENRL_STACK_TOP);
+            assert!(entry_address > KERNEL_STACK_TOP);
             let last_p_va_end = elf.programs().last().unwrap().virtual_address_range().end;
             let user_stack_top = last_p_va_end + 0x2000;
             core::slice::from_raw_parts_mut(entry_address as *mut u8, user_stack_top - entry_address).fill(0);
@@ -45,7 +46,7 @@ impl 应用管理器 {
             fn ekernel();
         }
         unsafe {
-            KENRL_STACK_TOP = ekernel as usize + 0x2000;
+            KERNEL_STACK_TOP = ekernel as usize + 0x2000;
             let 应用数目 = loader::read_app_num();
             应用管理器 = Self {
                 应用数目,
