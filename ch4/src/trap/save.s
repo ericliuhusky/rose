@@ -35,7 +35,7 @@ __trap_entry:
     # 保存用户栈
     sd t1, 2*8(sp)
 
-    ld t0, 33*8(sp)
+    ld t0, KERNEL_SATP
     # 移动到内核栈栈顶
     ld sp, KERNEL_STACK_TOP
     # 切换到内核地址空间
