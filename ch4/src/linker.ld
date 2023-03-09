@@ -5,7 +5,9 @@ SECTIONS
     stext = .;
     .text : {
         *(.text.entry)
+        strampoline = .;
         *(.text.trampoline)
+        etrampoline = .;
         *(.text .text.*)
     }
 

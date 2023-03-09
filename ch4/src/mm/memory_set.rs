@@ -25,8 +25,8 @@ extern "C" {
     fn sbss_with_stack();
     fn ebss();
     fn ekernel();
-    fn __trap_entry();
-    fn __trap_end();
+    fn strampoline();
+    fn etrampoline();
 }
 
 use page_table::SV39PageTable;
@@ -79,7 +79,7 @@ impl 地址空间 {
         let mut 地址空间 = Self::新建空地址空间();
 
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
-        地址空间.恒等映射(逻辑段 { 虚拟地址范围: __trap_entry as usize..__trap_end as usize });
+        地址空间.恒等映射(逻辑段 { 虚拟地址范围: strampoline as usize..etrampoline as usize });
 
         let elf文件 = ElfFile::read(elf文件数据);
         let 程序段列表 = elf文件.programs();
