@@ -1,4 +1,3 @@
-use crate::segment::CONTEXT_START_ADDR;
 use super::context::Context;
 use super::restore::restore_context;
 use core::arch::global_asm;
@@ -8,12 +7,14 @@ global_asm!(include_str!("save.s"));
 
 extern "C" {
     fn __save();
+    fn CONTEXT_START_ADDR();
 }
 
 #[no_mangle]
 fn save_context() {
     unsafe {
-        let cx = &mut *(CONTEXT_START_ADDR as *mut Context);
+        let addr = *(CONTEXT_START_ADDR as *const usize);
+        let cx = &mut *(addr as *mut Context);
         cx.sepc = riscv_register::sepc::read();
         cx.x[2] = riscv_register::sscratch::read();
         exception_handler();
