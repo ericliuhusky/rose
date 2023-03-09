@@ -1,5 +1,5 @@
 use crate::exception::Context;
-use alloc::vec::Vec;
+use alloc::{vec::Vec, collections::VecDeque};
 use sbi_call::shutdown;
 
 #[no_mangle]
@@ -9,11 +9,13 @@ static mut CONTEXT_START_ADDRS: Vec<usize> = Vec::new();
 static mut CONTEXT_START_ADDR: usize = 0;
 static mut APP_START_ADDR: usize = 0;
 
+#[derive(Clone)]
 struct 任务 {
     状态: 任务状态,
     i: usize
 }
 
+#[derive(Clone)]
 #[derive(PartialEq)]
 enum 任务状态 {
     就绪,
@@ -23,8 +25,8 @@ enum 任务状态 {
 
 pub struct 任务管理器 {
     任务数目: usize,
-    任务列表: Vec<任务>,
-    当前任务索引: isize,
+    ready_queue: VecDeque<任务>,
+    current: Option<任务>,
 }
 
 impl 任务管理器 {
@@ -42,7 +44,7 @@ impl 任务管理器 {
         }
 
         let 任务数目 = loader::read_app_num();
-        let mut 任务列表 = Vec::new();
+        let mut 任务列表 = VecDeque::new();
         for i in 0..任务数目 {
             let (entry_address, user_stack_top) = 加载应用到应用内存区(i);
             assert!(entry_address > unsafe { APP_START_ADDR });
@@ -53,7 +55,7 @@ impl 任务管理器 {
                     user_stack_top
                 );
             }
-            任务列表.push(任务 {
+            任务列表.push_back(任务 {
                 i,
                 状态: 任务状态::就绪
             })
@@ -61,19 +63,20 @@ impl 任务管理器 {
         unsafe {
             任务管理器 = 任务管理器 {
                 任务数目,
-                任务列表,
-                当前任务索引: -1
+                ready_queue: 任务列表,
+                current: None
             };
         }
     }
 
     fn 当前任务(&mut self) -> &mut 任务 {
-        &mut self.任务列表[self.当前任务索引 as usize]
+        self.current.as_mut().unwrap()
     }
 
     pub fn 暂停并运行下一个任务() {
         unsafe {
             任务管理器.当前任务().状态 = 任务状态::就绪;
+            任务管理器.ready_queue.push_back(任务管理器.current.as_ref().unwrap().clone());
             Self::运行下一个任务();
         }
     }
@@ -85,24 +88,14 @@ impl 任务管理器 {
         }
     }
 
-    fn 查找下一个就绪任务(&mut self) -> Option<&mut 任务> {
-        let 下一个任务索引 = (self.当前任务索引 + 1) as usize;
-        let 下一个就绪任务索引 = (下一个任务索引..下一个任务索引 + self.任务数目)
-            .map(|任务索引| 任务索引 % self.任务数目)
-            .find(|任务索引| self.任务列表[*任务索引].状态 == 任务状态::就绪);
-        if let Some(下一个就绪任务索引) = 下一个就绪任务索引 {
-            self.当前任务索引 = 下一个就绪任务索引 as isize;
-            Some(&mut self.任务列表[下一个就绪任务索引])
-        } else {
-            None
-        }
-    }
 
     pub fn 运行下一个任务() {
         unsafe {
-            if let Some(下一个任务) = 任务管理器.查找下一个就绪任务() {
+            if let Some(mut 下一个任务) = 任务管理器.ready_queue.pop_front() {
                 下一个任务.状态 = 任务状态::运行;
-                CONTEXT_START_ADDR = CONTEXT_START_ADDRS[下一个任务.i];
+                let i = 下一个任务.i;
+                任务管理器.current = Some(下一个任务);
+                CONTEXT_START_ADDR = CONTEXT_START_ADDRS[i];
                 extern "C" {
                     fn __restore();
                 }
@@ -117,8 +110,8 @@ impl 任务管理器 {
 
 static mut 任务管理器: 任务管理器 = 任务管理器 {
     任务数目: 0,
-    任务列表: Vec::new(),
-    当前任务索引: 0
+    ready_queue: VecDeque::new(),
+    current: None
 };
 
 
