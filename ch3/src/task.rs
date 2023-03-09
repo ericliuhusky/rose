@@ -1,4 +1,4 @@
-use crate::trap::陷入上下文;
+use crate::trap::Context;
 use alloc::vec::Vec;
 use sbi_call::shutdown;
 
@@ -35,10 +35,10 @@ impl 任务管理器 {
         unsafe {
             KERNEL_STACK_TOP = ekernel as usize + 0x2000;
             CONTEXT_START_ADDRS = [
-                KERNEL_STACK_TOP +  0 * core::mem::size_of::<陷入上下文>(),
-                KERNEL_STACK_TOP +  1 * core::mem::size_of::<陷入上下文>(),
-                KERNEL_STACK_TOP +  2 * core::mem::size_of::<陷入上下文>(),
-                KERNEL_STACK_TOP +  3 * core::mem::size_of::<陷入上下文>(),
+                KERNEL_STACK_TOP +  0 * core::mem::size_of::<Context>(),
+                KERNEL_STACK_TOP +  1 * core::mem::size_of::<Context>(),
+                KERNEL_STACK_TOP +  2 * core::mem::size_of::<Context>(),
+                KERNEL_STACK_TOP +  3 * core::mem::size_of::<Context>(),
             ];
         }
 
@@ -47,8 +47,8 @@ impl 任务管理器 {
         for i in 0..任务数目 {
             let (entry_address, user_stack_top) = 加载应用到应用内存区(i);
             unsafe {
-                let cx_ptr = CONTEXT_START_ADDRS[i] as *mut 陷入上下文;
-                *cx_ptr = 陷入上下文::应用初始上下文(
+                let cx_ptr = CONTEXT_START_ADDRS[i] as *mut Context;
+                *cx_ptr = Context::app_init(
                     entry_address,
                     user_stack_top
                 );
