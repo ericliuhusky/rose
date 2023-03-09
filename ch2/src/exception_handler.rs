@@ -1,8 +1,7 @@
 use crate::{batch::应用管理器, segment::CONTEXT_START_ADDR};
 use crate::syscall::sys_func;
 use riscv_register::{scause::{self, Exception}, stvec};
-pub use exception::context::Context;
-pub use exception::restore::restore_context;
+use exception::context::Context;
 
 #[no_mangle]
 /// 处理中断、异常或系统调用
