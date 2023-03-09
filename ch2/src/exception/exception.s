@@ -39,7 +39,6 @@ __exception_entry:
     # 保存用户栈
     sd t1, 2*8(sp)
 
-    mv a0, sp
     ld sp, KERNEL_STACK_TOP
     call exception_handler
 

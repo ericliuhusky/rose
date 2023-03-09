@@ -1,5 +1,5 @@
 mod context;
-use crate::batch::应用管理器;
+use crate::{batch::应用管理器, segment::CONTEXT_START_ADDR};
 use crate::syscall::sys_func;
 use core::arch::global_asm;
 pub use context::Context;
@@ -18,7 +18,8 @@ pub fn 初始化() {
 
 #[no_mangle] 
 /// 处理中断、异常或系统调用
-pub fn exception_handler(上下文: &mut Context) -> &mut Context {
+pub fn exception_handler() {
+    let 上下文 = unsafe { &mut *(CONTEXT_START_ADDR as *mut Context) };
     match scause::read() {
         Exception::UserEnvCall => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
@@ -44,5 +45,4 @@ pub fn exception_handler(上下文: &mut Context) -> &mut Context {
             
         }
     }
-    上下文
 }
