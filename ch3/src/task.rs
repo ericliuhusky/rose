@@ -23,9 +23,9 @@ pub struct TaskManager {
 
 impl TaskManager {
     pub fn init() {
-        let 任务数目 = loader::read_app_num();
-        let mut 任务列表 = VecDeque::new();
-        for i in 0..任务数目 {
+        let n = loader::read_app_num();
+        let mut ready_queue = VecDeque::new();
+        for i in 0..n {
             let (entry_address, user_stack_top) = 加载应用到应用内存区(i);
             assert!(entry_address > unsafe { APP_START_ADDR });
             unsafe {
@@ -35,14 +35,14 @@ impl TaskManager {
                     user_stack_top
                 );
             }
-            任务列表.push_back(Task {
+            ready_queue.push_back(Task {
                 i,
                 status: TaskStatus::Ready
             })
         }
         unsafe {
             任务管理器 = TaskManager {
-                ready_queue: 任务列表,
+                ready_queue,
                 current: None
             };
         }
@@ -66,10 +66,10 @@ impl TaskManager {
 
     pub fn run_next() {
         unsafe {
-            if let Some(mut 下一个任务) = 任务管理器.ready_queue.pop_front() {
-                下一个任务.status = TaskStatus::Running;
-                let i = 下一个任务.i;
-                任务管理器.current = Some(下一个任务);
+            if let Some(mut next) = 任务管理器.ready_queue.pop_front() {
+                next.status = TaskStatus::Running;
+                let i = next.i;
+                任务管理器.current = Some(next);
                 CONTEXT_START_ADDR = CONTEXT_START_ADDRS[i];
                 extern "C" {
                     fn __restore();
