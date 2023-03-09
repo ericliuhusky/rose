@@ -22,9 +22,15 @@ pub fn restore_context() {
     }
 }
 
+fn save_context() {
+    unsafe {
+        __save();
+    }
+}
+
 pub fn 初始化() {
     // 设置异常处理入口地址为__save
-    stvec::write(__save as usize);
+    stvec::write(save_context as usize);
 }
 
 
