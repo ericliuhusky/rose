@@ -67,13 +67,9 @@ impl 任务管理器 {
         }
     }
 
-    fn 当前任务(&mut self) -> &mut 任务 {
-        self.current.as_mut().unwrap()
-    }
-
     pub fn 暂停并运行下一个任务() {
         unsafe {
-            任务管理器.当前任务().状态 = 任务状态::就绪;
+            任务管理器.current.as_mut().unwrap().状态 = 任务状态::就绪;
             任务管理器.ready_queue.push_back(任务管理器.current.as_ref().unwrap().clone());
             Self::运行下一个任务();
         }
@@ -81,7 +77,7 @@ impl 任务管理器 {
 
     pub fn 终止并运行下一个任务() {
         unsafe {
-            任务管理器.当前任务().状态 = 任务状态::终止;
+            任务管理器.current.as_mut().unwrap().状态 = 任务状态::终止;
             Self::运行下一个任务();
         }
     }
