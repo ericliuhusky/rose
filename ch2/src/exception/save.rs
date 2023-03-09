@@ -1,5 +1,6 @@
 use crate::segment::CONTEXT_START_ADDR;
 use super::context::Context;
+use super::restore::restore_context;
 use core::arch::global_asm;
 use super::exception_handler;
 
@@ -16,5 +17,6 @@ fn save_context() {
         cx.sepc = riscv_register::sepc::read();
         cx.x[2] = riscv_register::sscratch::read();
         exception_handler();
+        restore_context();
     }
 }

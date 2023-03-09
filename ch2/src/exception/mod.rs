@@ -44,5 +44,4 @@ pub fn exception_handler() {
             
         }
     }
-    restore_context();
 }
