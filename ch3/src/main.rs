@@ -7,7 +7,6 @@ extern crate print;
 
 mod syscall;
 mod trap;
-mod loader;
 mod task;
 mod timer;
 use core::arch::global_asm;
@@ -23,7 +22,6 @@ fn main() {
     trap::初始化();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
-    loader::init();
     task::任务管理器::初始化();
     task::任务管理器::运行下一个任务();
 }

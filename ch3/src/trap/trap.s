@@ -16,9 +16,8 @@ __trap_entry:
     # 所以用汇编精细控制先换栈再分配上下文
 
     # 换栈，sp指向内核栈，sp原先存放的用户栈栈顶地址存放在sscratch
-    csrrw sp, sscratch, sp
-    # 在内核栈上分配上下文
-    addi sp, sp, -34*8
+    csrw sscratch, sp
+    ld sp, CONTEXT_START_ADDR
 
     # 此时只有sp寄存器可以使用，用户栈栈顶地址已经保存在sscratch，即使改变sp寄存器也可从sscratch恢复
     # 此时使用其它寄存器，会导致其它寄存器的值被改变覆盖原有值，使得其它寄存器无法恢复
@@ -42,18 +41,16 @@ __trap_entry:
     sd t1, 2*8(sp)
 
     mv a0, sp
+    ld sp, KERNEL_STACK_TOP
     call trap_handler
 
 
 __restore:
-    mv sp, a0
+    ld sp, CONTEXT_START_ADDR
 
     # 恢复控制和状态寄存器
     ld t0, 32*8(sp)
-    ld t1, 2*8(sp)
     csrw sepc, t0
-    # 恢复用户栈
-    csrw sscratch, t1
 
     # 从上下文恢复除sp(x2)外的所有通用寄存器
     ld x1, 1*8(sp)
@@ -63,10 +60,7 @@ __restore:
         .set n, n+1
     .endr
 
-    # 在内核栈上释放上下文
-    addi sp, sp, 34*8
-    # 换栈，sp指向用户栈，sp原先存放的内核栈栈顶地址存放在sscratch
-    csrrw sp, sscratch, sp
+    ld sp, 2*8(sp)
 
     # 返回sepc指向的地址继续执行
     sret

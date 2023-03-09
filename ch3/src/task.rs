@@ -1,10 +1,16 @@
-use crate::loader::将应用初始上下文压入内核栈后的栈顶;
+use crate::trap::陷入上下文;
 use alloc::vec::Vec;
 use sbi_call::shutdown;
 
+#[no_mangle]
+static mut KERNEL_STACK_TOP: usize = 0;
+static mut CONTEXT_START_ADDRS: [usize; 4] = [0; 4];
+#[no_mangle]
+static mut CONTEXT_START_ADDR: usize = 0;
+
 struct 任务 {
     状态: 任务状态,
-    内核栈栈顶: usize
+    i: usize
 }
 
 #[derive(PartialEq)]
@@ -22,11 +28,33 @@ pub struct 任务管理器 {
 
 impl 任务管理器 {
     pub fn 初始化() {
+        extern "C" {
+            fn ekernel();
+        }
+        let n = loader::read_app_num();
+        unsafe {
+            KERNEL_STACK_TOP = ekernel as usize + 0x2000;
+            CONTEXT_START_ADDRS = [
+                KERNEL_STACK_TOP +  0 * core::mem::size_of::<陷入上下文>(),
+                KERNEL_STACK_TOP +  1 * core::mem::size_of::<陷入上下文>(),
+                KERNEL_STACK_TOP +  2 * core::mem::size_of::<陷入上下文>(),
+                KERNEL_STACK_TOP +  3 * core::mem::size_of::<陷入上下文>(),
+            ];
+        }
+
         let 任务数目 = loader::read_app_num();
         let mut 任务列表 = Vec::new();
         for i in 0..任务数目 {
+            let (entry_address, user_stack_top) = 加载应用到应用内存区(i);
+            unsafe {
+                let cx_ptr = CONTEXT_START_ADDRS[i] as *mut 陷入上下文;
+                *cx_ptr = 陷入上下文::应用初始上下文(
+                    entry_address,
+                    user_stack_top
+                );
+            }
             任务列表.push(任务 {
-                内核栈栈顶: 将应用初始上下文压入内核栈后的栈顶(i),
+                i,
                 状态: 任务状态::就绪
             })
         }
@@ -74,10 +102,11 @@ impl 任务管理器 {
         unsafe {
             if let Some(下一个任务) = 任务管理器.查找下一个就绪任务() {
                 下一个任务.状态 = 任务状态::运行;
+                CONTEXT_START_ADDR = CONTEXT_START_ADDRS[下一个任务.i];
                 extern "C" {
-                    fn __restore(cx_addr: usize);
+                    fn __restore();
                 }
-                __restore(下一个任务.内核栈栈顶);
+                __restore();
             } else {
                 println!("[Kernel] All applications completed!");
                 shutdown();
@@ -91,3 +120,29 @@ static mut 任务管理器: 任务管理器 = 任务管理器 {
     任务列表: Vec::new(),
     当前任务索引: 0
 };
+
+
+fn 加载应用到应用内存区(应用索引: usize) -> (usize, usize) {
+    unsafe {
+        let 应用数据 = loader::read_app_data(应用索引);
+        let elf = elf_reader::ElfFile::read(应用数据);
+        println!("{:x}", elf.entry_address());
+        for p in elf.programs() {
+            let start_va = p.virtual_address_range().start;
+            let end_va = p.virtual_address_range().end;
+            println!("{:x},{:x}", start_va, end_va);
+            if start_va < 0x80200000 {
+                continue;
+            }
+            let dst = core::slice::from_raw_parts_mut(start_va as *mut u8, end_va - start_va);
+            let src = p.data;
+            let len = dst.len().min(src.len());
+            for j in 0..len {
+                dst[j] = src[j];
+            }
+        }
+        let last_p_va_end = elf.programs().last().unwrap().virtual_address_range().end;
+        let user_stack_top = last_p_va_end +0x2000;
+        (elf.entry_address(), user_stack_top)
+    }
+}
