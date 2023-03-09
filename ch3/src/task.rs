@@ -4,25 +4,25 @@ use sbi_call::shutdown;
 use crate::segment::{CONTEXT_START_ADDRS, CONTEXT_START_ADDR, APP_START_ADDR};
 
 
-struct 任务 {
-    状态: 任务状态,
+struct Task {
+    status: TaskStatus,
     i: usize
 }
 
 #[derive(PartialEq)]
-enum 任务状态 {
-    就绪,
-    运行,
-    终止,
+enum TaskStatus {
+    Ready,
+    Running,
+    Exited,
 }
 
-pub struct 任务管理器 {
-    ready_queue: VecDeque<任务>,
-    current: Option<任务>,
+pub struct TaskManager {
+    ready_queue: VecDeque<Task>,
+    current: Option<Task>,
 }
 
-impl 任务管理器 {
-    pub fn 初始化() {
+impl TaskManager {
+    pub fn init() {
         let 任务数目 = loader::read_app_num();
         let mut 任务列表 = VecDeque::new();
         for i in 0..任务数目 {
@@ -35,39 +35,39 @@ impl 任务管理器 {
                     user_stack_top
                 );
             }
-            任务列表.push_back(任务 {
+            任务列表.push_back(Task {
                 i,
-                状态: 任务状态::就绪
+                status: TaskStatus::Ready
             })
         }
         unsafe {
-            任务管理器 = 任务管理器 {
+            任务管理器 = TaskManager {
                 ready_queue: 任务列表,
                 current: None
             };
         }
     }
 
-    pub fn 暂停并运行下一个任务() {
+    pub fn suspend_and_run_next() {
         unsafe {
-            任务管理器.current.as_mut().unwrap().状态 = 任务状态::就绪;
+            任务管理器.current.as_mut().unwrap().status = TaskStatus::Ready;
             任务管理器.ready_queue.push_back(任务管理器.current.take().unwrap());
-            Self::运行下一个任务();
+            Self::run_next();
         }
     }
 
-    pub fn 终止并运行下一个任务() {
+    pub fn exit_and_run_next() {
         unsafe {
-            任务管理器.current.as_mut().unwrap().状态 = 任务状态::终止;
-            Self::运行下一个任务();
+            任务管理器.current.as_mut().unwrap().status = TaskStatus::Exited;
+            Self::run_next();
         }
     }
 
 
-    pub fn 运行下一个任务() {
+    pub fn run_next() {
         unsafe {
             if let Some(mut 下一个任务) = 任务管理器.ready_queue.pop_front() {
-                下一个任务.状态 = 任务状态::运行;
+                下一个任务.status = TaskStatus::Running;
                 let i = 下一个任务.i;
                 任务管理器.current = Some(下一个任务);
                 CONTEXT_START_ADDR = CONTEXT_START_ADDRS[i];
@@ -83,7 +83,7 @@ impl 任务管理器 {
     }
 }
 
-static mut 任务管理器: 任务管理器 = 任务管理器 {
+static mut 任务管理器: TaskManager = TaskManager {
     ready_queue: VecDeque::new(),
     current: None
 };

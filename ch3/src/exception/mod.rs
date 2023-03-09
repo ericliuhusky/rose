@@ -1,5 +1,5 @@
 mod context;
-use crate::task::任务管理器;
+use crate::task::TaskManager;
 use crate::syscall::sys_func;
 use core::arch::global_asm;
 pub use context::Context;
@@ -35,15 +35,15 @@ pub fn exception_handler(上下文: &mut Context) -> &mut Context {
         }
         Exception::StoreFault | Exception::StorePageFault => {
             println!("[kernel] PageFault in application, kernel killed it.");
-            任务管理器::终止并运行下一个任务();
+            TaskManager::exit_and_run_next();
         }
         Exception::IllegalInstruction => {
             println!("[kernel] IllegalInstruction in application, kernel killed it.");
-            任务管理器::终止并运行下一个任务();
+            TaskManager::exit_and_run_next();
         }
         Exception::Interrupt(Interrupt::Timer) => {
             为下一次时钟中断定时();
-            任务管理器::暂停并运行下一个任务();
+            TaskManager::suspend_and_run_next();
         }
         _ => {
             
