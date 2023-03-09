@@ -1,4 +1,4 @@
-use crate::trap::Context;
+use crate::exception::Context;
 use alloc::vec::Vec;
 use sbi_call::shutdown;
 

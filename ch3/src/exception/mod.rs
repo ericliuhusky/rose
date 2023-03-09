@@ -6,20 +6,20 @@ pub use context::Context;
 use riscv_register::{scause::{self, Exception, Interrupt}, stvec};
 use crate::timer::为下一次时钟中断定时;
 
-global_asm!(include_str!("trap.s"));
+global_asm!(include_str!("exception.s"));
 
 pub fn 初始化() {
     extern "C" {
-        fn __trap_entry();
+        fn __exception_entry();
     }
-    // 设置异常处理入口地址为__trap_entry
-    stvec::write(__trap_entry as usize);
+    // 设置异常处理入口地址为__exception_entry
+    stvec::write(__exception_entry as usize);
 }
 
 
 #[no_mangle] 
 /// 处理中断、异常或系统调用
-pub fn trap_handler(上下文: &mut Context) -> &mut Context {
+pub fn exception_handler(上下文: &mut Context) -> &mut Context {
     match scause::read() {
         Exception::UserEnvCall => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
