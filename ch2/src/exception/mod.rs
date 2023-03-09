@@ -14,7 +14,10 @@ extern "C" {
 }
 
 pub fn restore_context() {
+    use core::arch::asm;
     unsafe {
+        let cx = &*(CONTEXT_START_ADDR as *const Context);
+        asm!("csrw sepc, {}", in(reg) cx.sepc);
         __restore();
     }
 }

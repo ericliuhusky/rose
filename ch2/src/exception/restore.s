@@ -7,10 +7,6 @@
 __restore:
     ld sp, CONTEXT_START_ADDR
 
-    # 恢复控制和状态寄存器
-    ld t0, 32*8(sp)
-    csrw sepc, t0
-
     # 从上下文恢复除sp(x2)外的所有通用寄存器
     ld x1, 1*8(sp)
     .set n, 3
