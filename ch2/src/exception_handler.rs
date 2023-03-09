@@ -4,14 +4,6 @@ use riscv_register::{scause::{self, Exception}, stvec};
 pub use exception::context::Context;
 pub use exception::restore::restore_context;
 
-pub fn 初始化() {
-    extern "C" {
-        fn __save();
-    }    
-    // 设置异常处理入口地址为__save
-    stvec::write(__save as usize);
-}
-
 #[no_mangle]
 /// 处理中断、异常或系统调用
 pub fn exception_handler() {

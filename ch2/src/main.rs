@@ -17,7 +17,7 @@ global_asm!(include_str!("link_app.s"));
 #[no_mangle]
 fn main() {
     heap_allocator::init();
-    exception_handler::初始化();
+    exception::init();
     segment::init();
     batch::应用管理器::初始化();
     batch::应用管理器::运行下一个应用();
