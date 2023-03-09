@@ -1,13 +1,13 @@
 use super::context::Context;
 use super::restore::restore_context;
 use core::arch::global_asm;
-use super::exception_handler;
 
 global_asm!(include_str!("save.s"));
 
 extern "C" {
     fn __save();
     fn CONTEXT_START_ADDR();
+    fn exception_handler();
 }
 
 #[no_mangle]

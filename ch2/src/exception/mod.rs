@@ -15,7 +15,7 @@ pub fn 初始化() {
     stvec::write(__save as usize);
 }
 
-
+#[no_mangle]
 /// 处理中断、异常或系统调用
 pub fn exception_handler() {
     let 上下文 = unsafe { &mut *(CONTEXT_START_ADDR as *mut Context) };
