@@ -15,6 +15,7 @@ __restore:
         .set n, n+1
     .endr
 
+    # 栈指针指向用户栈
     ld sp, 2*8(sp)
 
     # 返回sepc指向的地址继续执行
