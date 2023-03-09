@@ -14,9 +14,7 @@ fn save_context() {
     use core::arch::asm;
     unsafe {
         let cx = &mut *(CONTEXT_START_ADDR as *mut Context);
-        let mut t: usize;
-        asm!("csrr {}, sepc", out(reg) t);
-        cx.sepc = t;
+        cx.sepc = riscv_register::sepc::read();
         let mut t2: usize;
         asm!("csrr {}, sscratch", out(reg) t2);
         cx.x[2] = t2;
