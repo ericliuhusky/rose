@@ -6,7 +6,8 @@ use riscv_register::{scause::{self, Exception, Interrupt}, stvec};
 use crate::timer::为下一次时钟中断定时;
 use crate::task::任务管理器;
 
-global_asm!(include_str!("trap.s"));
+global_asm!(include_str!("restore.s"));
+global_asm!(include_str!("save.s"));
 
 pub fn 初始化() {
     extern "C" {
