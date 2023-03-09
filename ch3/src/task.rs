@@ -24,7 +24,6 @@ enum 任务状态 {
 }
 
 pub struct 任务管理器 {
-    任务数目: usize,
     ready_queue: VecDeque<任务>,
     current: Option<任务>,
 }
@@ -62,7 +61,6 @@ impl 任务管理器 {
         }
         unsafe {
             任务管理器 = 任务管理器 {
-                任务数目,
                 ready_queue: 任务列表,
                 current: None
             };
@@ -109,7 +107,6 @@ impl 任务管理器 {
 }
 
 static mut 任务管理器: 任务管理器 = 任务管理器 {
-    任务数目: 0,
     ready_queue: VecDeque::new(),
     current: None
 };
