@@ -7,6 +7,7 @@ static mut KERNEL_STACK_TOP: usize = 0;
 static mut CONTEXT_START_ADDRS: Vec<usize> = Vec::new();
 #[no_mangle]
 static mut CONTEXT_START_ADDR: usize = 0;
+static mut APP_START_ADDR: usize = 0;
 
 struct 任务 {
     状态: 任务状态,
@@ -37,12 +38,14 @@ impl 任务管理器 {
             for i in 0..n {
                 CONTEXT_START_ADDRS.push(KERNEL_STACK_TOP +  i * core::mem::size_of::<Context>());
             }
+            APP_START_ADDR = CONTEXT_START_ADDRS[n-1] + core::mem::size_of::<Context>();
         }
 
         let 任务数目 = loader::read_app_num();
         let mut 任务列表 = Vec::new();
         for i in 0..任务数目 {
             let (entry_address, user_stack_top) = 加载应用到应用内存区(i);
+            assert!(entry_address > unsafe { APP_START_ADDR });
             unsafe {
                 let cx_ptr = CONTEXT_START_ADDRS[i] as *mut Context;
                 *cx_ptr = Context::app_init(
