@@ -1,11 +1,19 @@
 use alloc::vec::Vec;
 use core::ops::Range;
-use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址, 陷入上下文};
+use crate::trap::{陷入上下文};
 use elf_reader::ElfFile;
 use crate::mm::frame_allocator::物理内存管理器;
 use lazy_static::lazy_static;
 
 pub const 可用物理内存结尾地址: usize = 0x80800000;
+
+#[no_mangle]
+#[link_section = ".text.trampoline"]
+static KERNEL_STACK_TOP: usize = 0xfffffffffffff000;
+#[link_section = ".text.trampoline"]
+#[no_mangle]
+static CONTEXT_START_ADDR: usize = 0xffffffffffffe000;
+
 
 extern "C" {
     fn stext();
@@ -63,7 +71,7 @@ impl 地址空间 {
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: ekernel as usize..可用物理内存结尾地址 });
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: 0x100000..0x102000 }); // MMIO VIRT_TEST/RTC  in virt machine
         // 内核栈
-        地址空间.映射(逻辑段 { 虚拟地址范围: 内核栈栈顶() - 0x2000..内核栈栈顶() });
+        地址空间.映射(逻辑段 { 虚拟地址范围: KERNEL_STACK_TOP - 0x2000..KERNEL_STACK_TOP });
         地址空间
     }
     
@@ -86,7 +94,7 @@ impl 地址空间 {
         let 用户栈栈顶 = 用户栈栈底 + 0x2000;
         地址空间.用户可见映射(逻辑段 { 虚拟地址范围: 用户栈栈底..用户栈栈顶 });
 
-        地址空间.映射(逻辑段 { 虚拟地址范围: 应用陷入上下文存放地址()..0xfffffffffffff000 });
+        地址空间.映射(逻辑段 { 虚拟地址范围: CONTEXT_START_ADDR..0xfffffffffffff000 });
         
         (
             地址空间,
@@ -98,7 +106,7 @@ impl 地址空间 {
 
 impl 地址空间 {
     pub fn 陷入上下文(&self) -> &'static mut 陷入上下文 {
-        let pa_ranges = self.page_table.translate_addr(VA::new(应用陷入上下文存放地址()), VA::new(0xfffffffffffff000));
+        let pa_ranges = self.page_table.translate_addr(VA::new(CONTEXT_START_ADDR), VA::new(0xfffffffffffff000));
         unsafe {
             &mut *(pa_ranges[0].0.0 as *mut 陷入上下文)
         }
