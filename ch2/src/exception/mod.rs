@@ -5,14 +5,15 @@ use core::arch::global_asm;
 pub use context::Context;
 use riscv_register::{scause::{self, Exception}, stvec};
 
-global_asm!(include_str!("exception.s"));
+global_asm!(include_str!("save.s"));
+global_asm!(include_str!("restore.s"));
 
 pub fn 初始化() {
     extern "C" {
-        fn __exception_entry();
+        fn __save();
     }
     // 设置异常处理入口地址为__exception_entry
-    stvec::write(__exception_entry as usize);
+    stvec::write(__save as usize);
 }
 
 
@@ -44,5 +45,11 @@ pub fn exception_handler() {
         _ => {
             
         }
+    }
+    extern "C" {
+        fn __restore();
+    }
+    unsafe {
+        __restore();
     }
 }
