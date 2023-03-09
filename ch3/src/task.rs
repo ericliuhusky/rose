@@ -4,13 +4,11 @@ use sbi_call::shutdown;
 use crate::segment::{CONTEXT_START_ADDRS, CONTEXT_START_ADDR, APP_START_ADDR};
 
 
-#[derive(Clone)]
 struct 任务 {
     状态: 任务状态,
     i: usize
 }
 
-#[derive(Clone)]
 #[derive(PartialEq)]
 enum 任务状态 {
     就绪,
@@ -53,7 +51,7 @@ impl 任务管理器 {
     pub fn 暂停并运行下一个任务() {
         unsafe {
             任务管理器.current.as_mut().unwrap().状态 = 任务状态::就绪;
-            任务管理器.ready_queue.push_back(任务管理器.current.as_ref().unwrap().clone());
+            任务管理器.ready_queue.push_back(任务管理器.current.take().unwrap());
             Self::运行下一个任务();
         }
     }
