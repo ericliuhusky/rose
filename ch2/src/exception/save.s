@@ -26,12 +26,5 @@ __save:
 
     # 在保存完所有通用寄存器后，就可以自由使用所有通用寄存器
 
-    # 保存控制和状态寄存器    
-    csrr t0, sepc
-    csrr t1, sscratch
-    sd t0, 32*8(sp)
-    # 保存用户栈
-    sd t1, 2*8(sp)
-
     ld sp, KERNEL_STACK_TOP
-    call exception_handler
+    call save_context

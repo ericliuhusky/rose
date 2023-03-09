@@ -22,19 +22,27 @@ pub fn restore_context() {
     }
 }
 
+#[no_mangle]
 fn save_context() {
+    use core::arch::asm;
     unsafe {
-        __save();
+        let cx = &mut *(CONTEXT_START_ADDR as *mut Context);
+        let mut t: usize;
+        asm!("csrr {}, sepc", out(reg) t);
+        cx.sepc = t;
+        let mut t2: usize;
+        asm!("csrr {}, sscratch", out(reg) t2);
+        cx.x[2] = t2;
+        exception_handler();
     }
 }
 
 pub fn 初始化() {
     // 设置异常处理入口地址为__save
-    stvec::write(save_context as usize);
+    stvec::write(__save as usize);
 }
 
 
-#[no_mangle] 
 /// 处理中断、异常或系统调用
 pub fn exception_handler() {
     let 上下文 = unsafe { &mut *(CONTEXT_START_ADDR as *mut Context) };
