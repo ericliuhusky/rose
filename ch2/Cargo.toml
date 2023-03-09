@@ -12,3 +12,4 @@ elf_reader = { path = "../crates/elf_reader" }
 heap_allocator = { path = "../crates/heap_allocator" }
 entry = { path = "../crates/entry" }
 loader = { path = "../crates/loader" }
+exception = { path = "../crates/exception" }
