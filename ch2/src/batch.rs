@@ -1,12 +1,6 @@
 use crate::exception::Context;
 use sbi_call::shutdown;
-
-#[no_mangle]
-static mut KERNEL_STACK_TOP: usize = 0;
-#[no_mangle]
-static mut CONTEXT_START_ADDR: usize = 0;
-static mut APP_START_ADDR: usize = 0;
-static mut APP_END_ADDR: usize = 0;
+use crate::segment::{CONTEXT_START_ADDR, APP_START_ADDR, APP_END_ADDR};
 
 
 pub struct 应用管理器 {
@@ -47,13 +41,7 @@ impl 应用管理器 {
     }
 
     pub fn 初始化() {
-        extern "C" {
-            fn ekernel();
-        }
         unsafe {
-            KERNEL_STACK_TOP = ekernel as usize + 0x2000;
-            CONTEXT_START_ADDR = KERNEL_STACK_TOP;
-            APP_START_ADDR = CONTEXT_START_ADDR + core::mem::size_of::<Context>();
             let 应用数目 = loader::read_app_num();
             应用管理器 = Self {
                 应用数目,
