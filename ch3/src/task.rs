@@ -1,4 +1,4 @@
-use crate::exception::Context;
+use exception::{context::Context, restore::restore_context};
 use alloc::collections::VecDeque;
 use sbi_call::shutdown;
 use crate::segment::{CONTEXT_START_ADDRS, CONTEXT_START_ADDR, APP_START_ADDR};
@@ -41,12 +41,7 @@ impl TaskManager {
                 CONTEXT_START_ADDR = CONTEXT_START_ADDRS[*&next.i];
             }
             self.current = Some(next);
-            extern "C" {
-                fn __restore();
-            }
-            unsafe {
-                __restore();
-            }
+            restore_context();
         } else {
             println!("[Kernel] All applications completed!");
             shutdown();

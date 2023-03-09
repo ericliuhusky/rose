@@ -1,21 +1,10 @@
-mod context;
 use crate::task;
 use crate::syscall::sys_func;
 use core::arch::global_asm;
-pub use context::Context;
 use riscv_register::{scause::{self, Exception, Interrupt}, stvec};
 use crate::timer::为下一次时钟中断定时;
+use exception::context::Context;
 use crate::segment::CONTEXT_START_ADDR;
-
-global_asm!(include_str!("exception.s"));
-
-pub fn 初始化() {
-    extern "C" {
-        fn __exception_entry();
-    }
-    // 设置异常处理入口地址为__exception_entry
-    stvec::write(__exception_entry as usize);
-}
 
 
 #[no_mangle] 

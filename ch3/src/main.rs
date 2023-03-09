@@ -6,10 +6,10 @@ extern crate alloc;
 extern crate print;
 
 mod syscall;
-mod exception;
 mod task;
 mod timer;
 mod segment;
+mod exception_handler;
 use core::arch::global_asm;
 extern crate panic;
 extern crate entry;
@@ -20,7 +20,7 @@ global_asm!(include_str!("link_app.s"));
 fn main() {
     println!("[kernel] Hello, world!");
     heap_allocator::init();
-    exception::初始化();
+    exception::init();
     segment::init();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
