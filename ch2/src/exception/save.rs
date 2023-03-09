@@ -11,7 +11,6 @@ extern "C" {
 
 #[no_mangle]
 fn save_context() {
-    use core::arch::asm;
     unsafe {
         let cx = &mut *(CONTEXT_START_ADDR as *mut Context);
         cx.sepc = riscv_register::sepc::read();

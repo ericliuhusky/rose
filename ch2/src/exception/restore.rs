@@ -9,7 +9,6 @@ extern "C" {
 }
 
 pub fn restore_context() {
-    use core::arch::asm;
     unsafe {
         let cx = &*(CONTEXT_START_ADDR as *const Context);
         riscv_register::sepc::write(cx.sepc);
