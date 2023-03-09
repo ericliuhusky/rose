@@ -1,4 +1,4 @@
-use crate::exception::Context;
+use crate::exception::{Context, restore_context};
 use sbi_call::shutdown;
 use crate::segment::{CONTEXT_START_ADDR, APP_START_ADDR, APP_END_ADDR};
 
@@ -58,10 +58,7 @@ impl 应用管理器 {
 
             let cx_ptr = CONTEXT_START_ADDR as *mut Context;
             *cx_ptr = Context::app_init(entry_address, user_stack_top);
-            extern "C" {
-                fn __restore();
-            }
-            __restore();
+            restore_context();
         }
     }
 

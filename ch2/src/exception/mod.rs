@@ -8,10 +8,18 @@ use riscv_register::{scause::{self, Exception}, stvec};
 global_asm!(include_str!("save.s"));
 global_asm!(include_str!("restore.s"));
 
-pub fn 初始化() {
-    extern "C" {
-        fn __save();
+extern "C" {
+    fn __save();
+    fn __restore();
+}
+
+pub fn restore_context() {
+    unsafe {
+        __restore();
     }
+}
+
+pub fn 初始化() {
     // 设置异常处理入口地址为__save
     stvec::write(__save as usize);
 }
@@ -46,10 +54,5 @@ pub fn exception_handler() {
             
         }
     }
-    extern "C" {
-        fn __restore();
-    }
-    unsafe {
-        __restore();
-    }
+    restore_context();
 }
