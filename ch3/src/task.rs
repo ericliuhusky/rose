@@ -4,7 +4,7 @@ use sbi_call::shutdown;
 
 #[no_mangle]
 static mut KERNEL_STACK_TOP: usize = 0;
-static mut CONTEXT_START_ADDRS: [usize; 4] = [0; 4];
+static mut CONTEXT_START_ADDRS: Vec<usize> = Vec::new();
 #[no_mangle]
 static mut CONTEXT_START_ADDR: usize = 0;
 
@@ -34,12 +34,9 @@ impl 任务管理器 {
         let n = loader::read_app_num();
         unsafe {
             KERNEL_STACK_TOP = ekernel as usize + 0x2000;
-            CONTEXT_START_ADDRS = [
-                KERNEL_STACK_TOP +  0 * core::mem::size_of::<Context>(),
-                KERNEL_STACK_TOP +  1 * core::mem::size_of::<Context>(),
-                KERNEL_STACK_TOP +  2 * core::mem::size_of::<Context>(),
-                KERNEL_STACK_TOP +  3 * core::mem::size_of::<Context>(),
-            ];
+            for i in 0..n {
+                CONTEXT_START_ADDRS.push(KERNEL_STACK_TOP +  i * core::mem::size_of::<Context>());
+            }
         }
 
         let 任务数目 = loader::read_app_num();
