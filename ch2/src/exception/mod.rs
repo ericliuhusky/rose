@@ -12,7 +12,7 @@ pub fn 初始化() {
     extern "C" {
         fn __save();
     }
-    // 设置异常处理入口地址为__exception_entry
+    // 设置异常处理入口地址为__save
     stvec::write(__save as usize);
 }
 
