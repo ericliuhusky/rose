@@ -24,6 +24,6 @@ fn main() {
     segment::init();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
-    task::TaskManager::init();
-    task::TaskManager::run_next();
+    task::init();
+    task::run_next();
 }

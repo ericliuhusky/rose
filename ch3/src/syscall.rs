@@ -17,10 +17,10 @@ fn putchar(c: usize) -> isize {
     c as isize
 }
 
-use crate::task::TaskManager;
+use crate::task;
 
 fn exit(exit_code: isize) -> isize {
     println!("[kernel] Application exited with code {}", exit_code);
-    TaskManager::exit_and_run_next();
+    task::exit_and_run_next();
     -1
 }
