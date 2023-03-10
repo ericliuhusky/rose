@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 use core::ops::Range;
-use crate::trap::{陷入上下文};
+use crate::trap::{Context};
 use elf_reader::ElfFile;
 use crate::mm::frame_allocator::物理内存管理器;
 use lazy_static::lazy_static;
@@ -105,10 +105,10 @@ impl 地址空间 {
 }
 
 impl 地址空间 {
-    pub fn 陷入上下文(&self) -> &'static mut 陷入上下文 {
+    pub fn 陷入上下文(&self) -> &'static mut Context {
         let pa_ranges = self.page_table.translate_addr(VA::new(CONTEXT_START_ADDR), VA::new(0xfffffffffffff000));
         unsafe {
-            &mut *(pa_ranges[0].0.0 as *mut 陷入上下文)
+            &mut *(pa_ranges[0].0.0 as *mut Context)
         }
     }
 
