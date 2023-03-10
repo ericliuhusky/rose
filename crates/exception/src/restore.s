@@ -3,6 +3,7 @@
     ld x\n, \n*8(sp)
 .endm
 
+    .section .text.trampoline
     .globl __restore
 __restore:
     ld sp, CONTEXT_START_ADDR

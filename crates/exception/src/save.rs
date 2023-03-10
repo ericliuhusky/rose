@@ -10,6 +10,7 @@ extern "C" {
     fn exception_handler();
 }
 
+#[link_section = ".text.trampoline"]
 #[no_mangle]
 fn save_context() {
     unsafe {
@@ -17,6 +18,8 @@ fn save_context() {
         let cx = &mut *(addr as *mut Context);
         cx.sepc = riscv_register::sepc::read();
         cx.x[2] = riscv_register::sscratch::read();
+        #[cfg(feature = "memory_set")]
+        super::memory_set::switch_kernel();
         exception_handler();
         restore_context();
     }

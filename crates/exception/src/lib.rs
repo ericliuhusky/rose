@@ -3,6 +3,8 @@
 pub mod context;
 pub mod restore;
 mod save;
+#[cfg(feature = "memory_set")]
+mod memory_set;
 
 use riscv_register::stvec;
 

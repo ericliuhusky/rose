@@ -1,7 +1,9 @@
 use alloc::vec::Vec;
 use sbi_call::shutdown;
+use crate::mm::USER_SATP;
 use crate::mm::memory_set::{地址空间, 内核地址空间};
-use crate::trap::Context;
+use exception::context::Context;
+use exception::restore::restore_context;
 
 pub struct 任务 {
     状态: 任务状态,
@@ -90,10 +92,8 @@ impl 任务管理器 {
         unsafe {
             if let Some(下一个任务) = 任务管理器.查找下一个就绪任务() {
                 下一个任务.状态 = 任务状态::运行;
-                extern "C" {
-                    fn __restore(user_satp: usize);
-                }
-                __restore(下一个任务.地址空间.token());
+                USER_SATP = 下一个任务.地址空间.token();
+                restore_context();
             } else {
                 println!("[Kernel] All applications completed!");
                 shutdown();

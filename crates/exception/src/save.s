@@ -3,6 +3,7 @@
     sd x\n, \n*8(sp)
 .endm
 
+    .section .text.trampoline
     .globl __save
 __save:
     # 将用户栈指针暂存在sscratch
