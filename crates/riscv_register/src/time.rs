@@ -1,5 +1,6 @@
 use core::arch::asm;
 
+#[inline(always)]
 pub fn read() -> usize {
     let bits;
     unsafe {
