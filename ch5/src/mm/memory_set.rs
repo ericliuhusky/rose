@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 use core::ops::Range;
-use crate::trap::Context;
+use exception::context::Context;
 use super::address::{逻辑段, 连续地址虚拟内存};
 use crate::mm::frame_allocator::物理内存管理器;
 use elf_reader::ElfFile;

@@ -7,7 +7,7 @@ extern crate print;
 
 
 mod syscall;
-mod trap;
+mod exception_handler;
 mod task;
 mod timer;
 mod mm;
@@ -22,7 +22,7 @@ global_asm!(include_str!("link_app.s"));
 fn main() {
     println!("[kernel] Hello, world!");
     mm::初始化();
-    trap::初始化();
+    exception::init();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
     task::任务管理器::添加初始进程();
