@@ -1,0 +1,9 @@
+[package]
+name = "fs_test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = "2.33.3"
+fs = { path = "../fs" }
+rand = "0.8.0"
