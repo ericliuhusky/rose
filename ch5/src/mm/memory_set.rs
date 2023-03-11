@@ -1,12 +1,19 @@
 use alloc::vec::Vec;
 use core::ops::Range;
-use crate::trap::{内核栈栈顶, 应用陷入上下文存放地址, Context};
+use crate::trap::Context;
 use super::address::{逻辑段, 连续地址虚拟内存};
 use crate::mm::frame_allocator::物理内存管理器;
 use elf_reader::ElfFile;
 use lazy_static::lazy_static;
 
 pub const 可用物理内存结尾地址: usize = 0x80800000;
+
+#[no_mangle]
+#[link_section = ".text.trampoline"]
+static KERNEL_STACK_TOP: usize = 0xfffffffffffff000;
+#[link_section = ".text.trampoline"]
+#[no_mangle]
+static CONTEXT_START_ADDR: usize = 0xffffffffffffe000;
 
 extern "C" {
     fn stext();
@@ -18,8 +25,8 @@ extern "C" {
     fn sbss_with_stack();
     fn ebss();
     fn ekernel();
-    fn __trap_entry();
-    fn __trap_end();
+    fn strampoline();
+    fn etrampoline();
 }
 
 use page_table::SV39PageTable;
@@ -88,7 +95,7 @@ impl 地址空间 {
          }); // MMIO VIRT_TEST/RTC  in virt machine
         // 内核栈
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 内核栈栈顶() - 0x2000..内核栈栈顶() },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: KERNEL_STACK_TOP - 0x2000..KERNEL_STACK_TOP },
             恒等映射: false,
             用户可见: false,
         });
@@ -100,7 +107,7 @@ impl 地址空间 {
 
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: __trap_entry as usize..__trap_end as usize },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: strampoline as usize..etrampoline as usize },
             恒等映射: true,
             用户可见: false,
          });
@@ -127,7 +134,7 @@ impl 地址空间 {
          });
 
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 应用陷入上下文存放地址()..0xfffffffffffff000 },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: CONTEXT_START_ADDR..0xfffffffffffff000 },
             恒等映射: false,
             用户可见: false,
          });
@@ -170,7 +177,7 @@ impl 地址空间 {
 
 impl 地址空间 {
     pub fn 陷入上下文(&self) -> &'static mut Context {
-        let pa_ranges = self.page_table.translate_addr(VA::new(应用陷入上下文存放地址()), VA::new(0xfffffffffffff000));
+        let pa_ranges = self.page_table.translate_addr(VA::new(CONTEXT_START_ADDR), VA::new(0xfffffffffffff000));
         unsafe {
             &mut *(pa_ranges[0].0.0 as *mut Context)
         }

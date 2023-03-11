@@ -63,20 +63,3 @@ pub fn trap_return() {
         __restore(user_satp);
     }
 }
-
-extern "C" {
-    fn __KERNEL_STACK_TOP();
-    fn __TRAP_CONTEXT_START();
-}
-
-pub fn 内核栈栈顶() -> usize {
-    unsafe {
-        *(__KERNEL_STACK_TOP as usize as *const usize) 
-    }
-}
-
-pub fn 应用陷入上下文存放地址() -> usize {
-    unsafe {
-        *(__TRAP_CONTEXT_START as usize as *const usize) 
-    }
-}
