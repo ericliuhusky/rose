@@ -52,7 +52,8 @@ __trap_entry:
 
 __restore:
     # 切换到用户地址空间
-    csrw satp, a0
+    ld t0, USER_SATP
+    csrw satp, t0
     sfence.vma
 
     # a0指向用户地址空间中的TrapContext地址

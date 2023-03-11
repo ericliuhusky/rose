@@ -8,6 +8,9 @@ use riscv_register::satp;
 #[no_mangle]
 #[link_section = ".text.trampoline"]
 static mut KERNEL_SATP: usize = 0;
+#[no_mangle]
+#[link_section = ".text.trampoline"]
+pub static mut USER_SATP: usize = 0;
 
 pub fn 初始化() {
     heap_allocator::init();
