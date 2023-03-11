@@ -12,17 +12,22 @@ struct MemoryBlockDevice;
 
 impl MemoryBlockDevice {
     fn show() {
-        let blocks = unsafe { BLOCKS };
+        let blocks = unsafe { &BLOCKS };
         for i in 0..blocks.len() {
-            let block = blocks[i];
-            println!("[{}]", i);
-            for j in 0..0x20 {
-                print!("{:03x}:  ", j * 0x10);
-                for k in 0..0x10 {
-                    let byte = block[j * 0x10 + k];
-                    print!("{:02x} ", byte);
-                }
-                println!();
+            Self::show_block(i);
+            println!();
+        }
+    }
+
+    fn show_block(i: usize) {
+        let blocks = unsafe { &BLOCKS };
+        let block = blocks[i];
+        println!("[{}]", i);
+        for j in 0..0x20 {
+            print!("{:03x}:  ", j * 0x10);
+            for k in 0..0x10 {
+                let byte = block[j * 0x10 + k];
+                print!("{:02x} ", byte);
             }
             println!();
         }
