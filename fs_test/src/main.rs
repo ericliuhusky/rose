@@ -1,27 +1,47 @@
 use clap::{App, Arg};
 use fs::{BlockDevice, EasyFileSystem};
-use std::fs::{read_dir, File, OpenOptions};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::fs::{read_dir, File};
+use std::io::Read;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 const BLOCK_SZ: usize = 512;
 
-struct BlockFile(Mutex<File>);
+static mut BLOCKS: [[u8; 0x200]; 0x2000] = [[0; 0x200]; 0x2000];
 
-impl BlockDevice for BlockFile {
+struct MemoryBlockDevice;
+
+impl MemoryBlockDevice {
+    fn show() {
+        let blocks = unsafe { BLOCKS };
+        for i in 0..blocks.len() {
+            let block = blocks[i];
+            println!("[{}]", i);
+            for j in 0..0x20 {
+                print!("{:03x}:  ", j * 0x10);
+                for k in 0..0x10 {
+                    let byte = block[j * 0x10 + k];
+                    print!("{:02x} ", byte);
+                }
+                println!();
+            }
+            println!();
+        }
+    }
+}
+
+impl BlockDevice for MemoryBlockDevice {
     fn read_block(&self, block_id: usize, buf: &mut [u8]) {
-        let mut file = self.0.lock().unwrap();
-        file.seek(SeekFrom::Start((block_id * BLOCK_SZ) as u64))
-            .expect("Error when seeking!");
-        assert_eq!(file.read(buf).unwrap(), BLOCK_SZ, "Not a complete block!");
+        let block = unsafe { BLOCKS[block_id] };
+        for i in 0..buf.len() {
+            buf[i] = block[i];
+        }
     }
 
     fn write_block(&self, block_id: usize, buf: &[u8]) {
-        let mut file = self.0.lock().unwrap();
-        file.seek(SeekFrom::Start((block_id * BLOCK_SZ) as u64))
-            .expect("Error when seeking!");
-        assert_eq!(file.write(buf).unwrap(), BLOCK_SZ, "Not a complete block!");
+        let block = unsafe { &mut BLOCKS[block_id] };
+        for i in 0..buf.len() {
+            block[i] = buf[i];
+        }
     }
 }
 
@@ -49,15 +69,7 @@ fn easy_fs_pack() -> std::io::Result<()> {
     let src_path = matches.value_of("source").unwrap();
     let target_path = matches.value_of("target").unwrap();
     println!("src_path = {}\ntarget_path = {}", src_path, target_path);
-    let block_file = Arc::new(BlockFile(Mutex::new({
-        let f = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(format!("{}{}", target_path, "fs.img"))?;
-        f.set_len(16 * 2048 * 512).unwrap();
-        f
-    })));
+    let block_file = Arc::new(MemoryBlockDevice);
     // 16MiB, at most 4095 files
     let efs = EasyFileSystem::create(block_file, 16 * 2048, 1);
     let root_inode = Arc::new(EasyFileSystem::root_inode(&efs));
@@ -89,15 +101,7 @@ fn easy_fs_pack() -> std::io::Result<()> {
 
 #[test]
 fn efs_test() -> std::io::Result<()> {
-    let block_file = Arc::new(BlockFile(Mutex::new({
-        let f = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open("target/fs.img")?;
-        f.set_len(8192 * 512).unwrap();
-        f
-    })));
+    let block_file = Arc::new(MemoryBlockDevice);
     EasyFileSystem::create(block_file.clone(), 4096, 1);
     let efs = EasyFileSystem::open(block_file.clone());
     let root_inode = EasyFileSystem::root_inode(&efs);
