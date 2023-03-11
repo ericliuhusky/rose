@@ -1,4 +1,5 @@
 use super::{BlockDevice, BLOCK_SZ};
+use alloc::rc::Rc;
 use alloc::vec::Vec;
 use alloc::sync::Arc;
 use spin::Mutex;
@@ -55,7 +56,7 @@ impl Drop for BlockCache {
 const BLOCK_CACHE_SIZE: usize = 16;
 
 pub struct BlockCacheManager {
-    queue: Vec<(usize, Arc<Mutex<BlockCache>>)>,
+    queue: Vec<(usize, Rc<Mutex<BlockCache>>)>,
 }
 
 impl BlockCacheManager {
@@ -63,9 +64,9 @@ impl BlockCacheManager {
         &mut self,
         block_id: usize,
         block_device: Arc<dyn BlockDevice>,
-    ) -> Arc<Mutex<BlockCache>> {
+    ) -> Rc<Mutex<BlockCache>> {
         if let Some(pair) = self.queue.iter().find(|pair| pair.0 == block_id) {
-            Arc::clone(&pair.1)
+            Rc::clone(&pair.1)
         } else {
             // substitute
             if self.queue.len() == BLOCK_CACHE_SIZE {
@@ -74,7 +75,7 @@ impl BlockCacheManager {
                     .queue
                     .iter()
                     .enumerate()
-                    .find(|(_, pair)| Arc::strong_count(&pair.1) == 1)
+                    .find(|(_, pair)| Rc::strong_count(&pair.1) == 1)
                 {
                     self.queue.remove(idx);
                 } else {
@@ -82,11 +83,11 @@ impl BlockCacheManager {
                 }
             }
             // load block into mem and push back
-            let block_cache = Arc::new(Mutex::new(BlockCache::new(
+            let block_cache = Rc::new(Mutex::new(BlockCache::new(
                 block_id,
                 Arc::clone(&block_device),
             )));
-            self.queue.push((block_id, Arc::clone(&block_cache)));
+            self.queue.push((block_id, Rc::clone(&block_cache)));
             block_cache
         }
     }
@@ -99,7 +100,7 @@ static mut BLOCK_CACHE_MANAGER: BlockCacheManager = BlockCacheManager {
 pub fn get_block_cache(
     block_id: usize,
     block_device: Arc<dyn BlockDevice>,
-) -> Arc<Mutex<BlockCache>> {
+) -> Rc<Mutex<BlockCache>> {
     unsafe {
         BLOCK_CACHE_MANAGER.get_block_cache(block_id, block_device)
     }
