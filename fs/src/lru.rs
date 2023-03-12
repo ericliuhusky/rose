@@ -40,7 +40,7 @@ impl LinkedHashList {
                 .list
                 .iter()
                 .enumerate()
-                .find(|(_, t)| t.borrow().v == n.borrow().v)
+                .find(|(_, t)| Rc::ptr_eq(t, n))
             {
                 self.list.remove(i);
             }
