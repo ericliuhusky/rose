@@ -1,18 +1,13 @@
-use core::cell::RefCell;
-use alloc::rc::Rc;
 use alloc::collections::{BTreeMap, VecDeque};
+use alloc::rc::Rc;
+use core::cell::RefCell;
 
-struct Node {
-    k: usize,
-    v: usize,
+struct LinkedHashList<K: Ord + Clone, V> {
+    list: VecDeque<Rc<RefCell<V>>>,
+    dict: BTreeMap<K, Rc<RefCell<V>>>,
 }
 
-struct LinkedHashList {
-    list: VecDeque<Rc<RefCell<Node>>>,
-    dict: BTreeMap<usize, Rc<RefCell<Node>>>,
-}
-
-impl LinkedHashList {
+impl<K: Ord + Clone, V> LinkedHashList<K, V> {
     fn new() -> Self {
         Self {
             list: VecDeque::new(),
@@ -20,28 +15,23 @@ impl LinkedHashList {
         }
     }
 
-    fn set(&mut self, k: usize, v: usize) {
+    fn set(&mut self, k: K, v: V) {
         if let Some(n) = self.dict.get(&k) {
-            n.borrow_mut().v = v;
+            *n.borrow_mut() = v;
         } else {
-            let n = Rc::new(RefCell::new(Node { k, v }));
+            let n = Rc::new(RefCell::new(v));
             self.dict.insert(k, Rc::clone(&n));
             self.list.push_front(Rc::clone(&n));
         }
     }
 
-    fn get(&self, k: usize) -> Option<usize> {
-        self.dict.get(&k).map(|n| n.borrow().v)
+    fn get(&self, k: &K) -> Option<&Rc<RefCell<V>>> {
+        self.dict.get(k)
     }
 
-    fn move_to_fisrt(&mut self, k: usize) {
-        if let Some(n) = self.dict.get(&k) {
-            if let Some((i, _)) = self
-                .list
-                .iter()
-                .enumerate()
-                .find(|(_, t)| Rc::ptr_eq(t, n))
-            {
+    fn move_to_fisrt(&mut self, k: &K) {
+        if let Some(n) = self.dict.get(k) {
+            if let Some((i, _)) = self.list.iter().enumerate().find(|(_, t)| Rc::ptr_eq(t, n)) {
                 self.list.remove(i);
             }
             self.list.push_front(Rc::clone(n));
@@ -50,17 +40,24 @@ impl LinkedHashList {
 
     fn remove_last(&mut self) {
         if let Some(last) = self.list.pop_back() {
-            self.dict.remove(&last.borrow().k);
+            if let Some(k) = self
+                .dict
+                .iter()
+                .find(|(_, t)| Rc::ptr_eq(t, &last))
+                .map(|(k, _)| k.clone())
+            {
+                self.dict.remove(&k);
+            }
         }
     }
 }
 
-struct LRUCache {
-    l: LinkedHashList,
+struct LRUCache<K: Ord + Clone, V> {
+    l: LinkedHashList<K, V>,
     capacity: usize,
 }
 
-impl LRUCache {
+impl<K: Ord + Clone, V> LRUCache<K, V> {
     fn new(capacity: usize) -> Self {
         Self {
             l: LinkedHashList::new(),
@@ -68,8 +65,8 @@ impl LRUCache {
         }
     }
 
-    fn set(&mut self, k: usize, v: usize) {
-        self.refresh_used(k);
+    fn set(&mut self, k: K, v: V) {
+        self.refresh_used(&k);
         self.l.set(k, v);
 
         if self.l.list.len() > self.capacity {
@@ -77,13 +74,13 @@ impl LRUCache {
         }
     }
 
-    fn get(&mut self, k: usize) -> Option<usize> {
+    fn get(&mut self, k: &K) -> Option<&Rc<RefCell<V>>> {
         self.refresh_used(k);
         self.l.get(k)
     }
 
-    fn refresh_used(&mut self, k: usize) {
-        if self.l.dict.contains_key(&k) {
+    fn refresh_used(&mut self, k: &K) {
+        if self.l.dict.contains_key(k) {
             self.l.move_to_fisrt(k);
         }
     }
