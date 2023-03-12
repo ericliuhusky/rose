@@ -15,13 +15,12 @@ impl<K: Ord + Clone, V> LinkedHashList<K, V> {
         }
     }
 
-    fn set(&mut self, k: K, v: V) {
-        if let Some(n) = self.dict.get(&k) {
-            *n.borrow_mut() = v;
+    fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
+        if let Some(r) = self.dict.get_mut(&k) {
+            *r = v;
         } else {
-            let n = Rc::new(RefCell::new(v));
-            self.dict.insert(k, Rc::clone(&n));
-            self.list.push_front(Rc::clone(&n));
+            self.dict.insert(k, Rc::clone(&v));
+            self.list.push_front(Rc::clone(&v));
         }
     }
 
@@ -30,11 +29,11 @@ impl<K: Ord + Clone, V> LinkedHashList<K, V> {
     }
 
     fn move_to_fisrt(&mut self, k: &K) {
-        if let Some(n) = self.dict.get(k) {
-            if let Some((i, _)) = self.list.iter().enumerate().find(|(_, t)| Rc::ptr_eq(t, n)) {
+        if let Some(r) = self.dict.get(k) {
+            if let Some((i, _)) = self.list.iter().enumerate().find(|(_, t)| Rc::ptr_eq(t, r)) {
                 self.list.remove(i);
             }
-            self.list.push_front(Rc::clone(n));
+            self.list.push_front(Rc::clone(r));
         }
     }
 
@@ -65,7 +64,7 @@ impl<K: Ord + Clone, V> LRUCache<K, V> {
         }
     }
 
-    fn set(&mut self, k: K, v: V) {
+    fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
         self.refresh_used(&k);
         self.l.set(k, v);
 
