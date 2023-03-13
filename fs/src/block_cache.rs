@@ -1,8 +1,9 @@
+use super::lru::LRUCache;
 use super::{BlockDevice, BLOCK_SZ};
 use alloc::rc::Rc;
-use alloc::vec::Vec;
 use alloc::sync::Arc;
-use spin::Mutex;
+use core::cell::RefCell;
+
 /// Cached block inside memory
 pub struct BlockCache {
     /// cached block data
@@ -56,60 +57,46 @@ impl Drop for BlockCache {
 const BLOCK_CACHE_SIZE: usize = 16;
 
 pub struct BlockCacheManager {
-    queue: Vec<(usize, Rc<Mutex<BlockCache>>)>,
+    lru: LRUCache<usize, BlockCache>,
 }
 
 impl BlockCacheManager {
+    fn new() -> Self {
+        Self { lru: LRUCache::new(BLOCK_CACHE_SIZE) }
+    }
+
     pub fn get_block_cache(
         &mut self,
         block_id: usize,
         block_device: Arc<dyn BlockDevice>,
-    ) -> Rc<Mutex<BlockCache>> {
-        if let Some(pair) = self.queue.iter().find(|pair| pair.0 == block_id) {
-            Rc::clone(&pair.1)
+    ) -> Rc<RefCell<BlockCache>> {
+        if let Some(v) = self.lru.get(&block_id) {
+            Rc::clone(v)
         } else {
-            // substitute
-            if self.queue.len() == BLOCK_CACHE_SIZE {
-                // from front to tail
-                if let Some((idx, _)) = self
-                    .queue
-                    .iter()
-                    .enumerate()
-                    .find(|(_, pair)| Rc::strong_count(&pair.1) == 1)
-                {
-                    self.queue.remove(idx);
-                } else {
-                    panic!("Run out of BlockCache!");
-                }
-            }
-            // load block into mem and push back
-            let block_cache = Rc::new(Mutex::new(BlockCache::new(
+            let block_cache = Rc::new(RefCell::new(BlockCache::new(
                 block_id,
                 Arc::clone(&block_device),
             )));
-            self.queue.push((block_id, Rc::clone(&block_cache)));
+            self.lru.set(block_id, Rc::clone(&block_cache));
             block_cache
         }
     }
 }
 
-static mut BLOCK_CACHE_MANAGER: BlockCacheManager = BlockCacheManager {
-    queue: Vec::new(),
-};
+lazy_static::lazy_static! {
+    pub static BLOCK_CACHE_MANAGER: RefCell<BlockCacheManager> = RefCell::new(BlockCacheManager::new());
+}
+
 /// Get the block cache corresponding to the given block id and block device
 pub fn get_block_cache(
     block_id: usize,
     block_device: Arc<dyn BlockDevice>,
-) -> Rc<Mutex<BlockCache>> {
-    unsafe {
-        BLOCK_CACHE_MANAGER.get_block_cache(block_id, block_device)
-    }
+) -> Rc<RefCell<BlockCache>> {
+    BLOCK_CACHE_MANAGER.borrow_mut().get_block_cache(block_id, block_device)
 }
 /// Sync all block cache to block device
 pub fn block_cache_sync_all() {
-    unsafe {
-        for (_, cache) in BLOCK_CACHE_MANAGER.queue.iter() {
-            cache.lock().sync();
-        }
+    for cache in BLOCK_CACHE_MANAGER.borrow().lru.list().iter() {
+        cache.borrow_mut().sync();
     }
 }

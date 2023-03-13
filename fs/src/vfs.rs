@@ -32,13 +32,13 @@ impl Inode {
     /// Call a function over a disk inode to read it
     fn read_disk_inode<V>(&self, f: impl FnOnce(&DiskInode) -> V) -> V {
         get_block_cache(self.block_id, Arc::clone(&self.block_device))
-            .lock()
+            .borrow()
             .read(self.block_offset, f)
     }
     /// Call a function over a disk inode to modify it
     fn modify_disk_inode<V>(&self, f: impl FnOnce(&mut DiskInode) -> V) -> V {
         get_block_cache(self.block_id, Arc::clone(&self.block_device))
-            .lock()
+            .borrow_mut()
             .modify(self.block_offset, f)
     }
     /// Find inode under a disk inode by name
@@ -108,7 +108,7 @@ impl Inode {
         // initialize inode
         let (new_inode_block_id, new_inode_block_offset) = fs.get_disk_inode_pos(new_inode_id);
         get_block_cache(new_inode_block_id as usize, Arc::clone(&self.block_device))
-            .lock()
+            .borrow_mut()
             .modify(new_inode_block_offset, |new_inode: &mut DiskInode| {
                 new_inode.initialize(DiskInodeType::File);
             });

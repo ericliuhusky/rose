@@ -51,20 +51,20 @@ impl<K: Ord + Clone, V> LinkedHashList<K, V> {
     }
 }
 
-struct LRUCache<K: Ord + Clone, V> {
+pub struct LRUCache<K: Ord + Clone, V> {
     l: LinkedHashList<K, V>,
     capacity: usize,
 }
 
 impl<K: Ord + Clone, V> LRUCache<K, V> {
-    fn new(capacity: usize) -> Self {
+    pub fn new(capacity: usize) -> Self {
         Self {
             l: LinkedHashList::new(),
             capacity,
         }
     }
 
-    fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
+    pub fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
         self.refresh_used(&k);
         self.l.set(k, v);
 
@@ -73,7 +73,7 @@ impl<K: Ord + Clone, V> LRUCache<K, V> {
         }
     }
 
-    fn get(&mut self, k: &K) -> Option<&Rc<RefCell<V>>> {
+    pub fn get(&mut self, k: &K) -> Option<&Rc<RefCell<V>>> {
         self.refresh_used(k);
         self.l.get(k)
     }
@@ -82,5 +82,9 @@ impl<K: Ord + Clone, V> LRUCache<K, V> {
         if self.l.dict.contains_key(k) {
             self.l.move_to_fisrt(k);
         }
+    }
+
+    pub fn list(&self) -> &VecDeque<Rc<RefCell<V>>> {
+        &self.l.list
     }
 }
