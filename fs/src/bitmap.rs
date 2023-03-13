@@ -26,26 +26,28 @@ impl Bitmap {
         }
     }
     /// Allocate a new block from a block device
-    pub fn alloc(&self, block_device: &Arc<dyn BlockDevice>) -> Option<usize> {
+    pub fn alloc(&self, block_device: Arc<dyn BlockDevice>) -> Option<usize> {
         for block_id in 0..self.blocks {
             let pos = get_block_cache(
                 block_id + self.start_block_id as usize,
-                Arc::clone(block_device),
+                Arc::clone(&block_device),
             )
             .borrow_mut()
-            .modify(0, |bitmap_block: &mut BitmapBlock| {
-                if let Some((bits64_pos, inner_pos)) = bitmap_block
-                    .iter()
-                    .enumerate()
-                    .find(|(_, bits64)| **bits64 != u64::MAX)
-                    .map(|(bits64_pos, bits64)| (bits64_pos, bits64.trailing_ones() as usize))
-                {
-                    // modify cache
-                    bitmap_block[bits64_pos] |= 1u64 << inner_pos;
-                    Some(block_id * BLOCK_BITS + bits64_pos * 64 + inner_pos as usize)
-                } else {
-                    None
+            .modify(0, |bitmap_block: &mut BitmapBlock| { 
+                for (i, bits64) in bitmap_block.iter().enumerate() {
+                    if *bits64 == u64::MAX {
+                        continue;
+                    }
+                    let mut j = 0;
+                    let mut bits64 = *bits64;
+                    while bits64 & 1 != 0 {
+                        j += 1;
+                        bits64 >>= 1;
+                    }
+                    bitmap_block[i] |= 1 << j;
+                    return Some(block_id * BLOCK_SZ + i * 64 + j)
                 }
+                None
             });
             if pos.is_some() {
                 return pos;
