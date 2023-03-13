@@ -5,8 +5,8 @@ pub mod once;
 #[macro_export]
 macro_rules! lazy_static {
     (pub static $N:ident : $T:ty = $e:expr;) => {
-        struct $N {}
-        static $N: $N = $N {};
+        pub struct $N {}
+        pub static $N: $N = $N {};
         impl core::ops::Deref for $N {
             type Target = $T;
             fn deref(&self) -> &$T {
