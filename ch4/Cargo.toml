@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 page_table = { path = "../crates/page_table" }
 elf_reader = { path = "../crates/elf_reader" }
 sbi_call = { path = "../crates/sbi_call" }
@@ -15,3 +14,4 @@ heap_allocator = { path = "../crates/heap_allocator" }
 entry = { path = "../crates/entry" }
 loader = { path = "../crates/loader" }
 exception = { path = "../crates/exception", features = ["memory_set"] }
+lazy_static = { version = "0.1.0", path = "../crates/lazy_static" }
