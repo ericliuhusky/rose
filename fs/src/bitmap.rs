@@ -54,8 +54,7 @@ impl Bitmap {
         get_block_cache(block_pos + self.start_block_id, Arc::clone(block_device))
             .borrow_mut()
             .modify(0, |bitmap_block: &mut BitmapBlock| {
-                assert!(bitmap_block[bits64_pos] & (1u64 << inner_pos) > 0);
-                bitmap_block[bits64_pos] -= 1u64 << inner_pos;
+                bitmap_block[bits64_pos] &= !(1 << inner_pos);
             });
     }
     /// Get the max number of allocatable blocks
