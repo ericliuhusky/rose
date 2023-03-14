@@ -37,7 +37,7 @@ impl Bitmap {
                 if let Some(i) = (0..bitmap_block.len()).find(|i| bitmap_block[*i] != u64::MAX) {
                     let j = (0..64).find(|j| (bitmap_block[i] >> j) & 1 == 0).unwrap();
                     bitmap_block[i] |= 1 << j;
-                    Some(block_id * BLOCK_SZ + i * 64 + j)
+                    Some(block_id * BLOCK_BITS + i * 64 + j)
                 } else {
                     None
                 }
