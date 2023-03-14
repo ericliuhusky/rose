@@ -33,21 +33,14 @@ impl Bitmap {
                 Arc::clone(&block_device),
             )
             .borrow_mut()
-            .modify(0, |bitmap_block: &mut BitmapBlock| { 
-                for (i, bits64) in bitmap_block.iter().enumerate() {
-                    if *bits64 == u64::MAX {
-                        continue;
-                    }
-                    let mut j = 0;
-                    let mut bits64 = *bits64;
-                    while bits64 & 1 != 0 {
-                        j += 1;
-                        bits64 >>= 1;
-                    }
+            .modify(0, |bitmap_block: &mut BitmapBlock| {
+                if let Some(i) = (0..bitmap_block.len()).find(|i| bitmap_block[*i] != u64::MAX) {
+                    let j = (0..64).find(|j| (bitmap_block[i] >> j) & 1 == 0).unwrap();
                     bitmap_block[i] |= 1 << j;
-                    return Some(block_id * BLOCK_SZ + i * 64 + j)
+                    Some(block_id * BLOCK_SZ + i * 64 + j)
+                } else {
+                    None
                 }
-                None
             });
             if pos.is_some() {
                 return pos;
