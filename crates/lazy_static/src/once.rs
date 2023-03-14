@@ -20,7 +20,7 @@ impl<T> Once<T> {
         if self.first_flag {
             self.first_flag = false;
             unsafe {
-                *(&mut self.data as *mut MaybeUninit<T> as *mut T) = f();
+                (&mut self.data as *mut MaybeUninit<T> as *mut T).write(f());
             }
         }
 
