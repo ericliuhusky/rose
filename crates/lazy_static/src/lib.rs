@@ -4,10 +4,10 @@ pub mod once;
 
 #[macro_export(local_inner_macros)]
 macro_rules! lazy_static {
-    (pub static $N:ident : $T:ty = $e:expr;) => {
+    (pub static ref $N:ident : $T:ty = $e:expr;) => {
         __lazy_static!((pub) static $N : $T = $e;);
     };
-    (static $N:ident : $T:ty = $e:expr;) => {
+    (static ref $N:ident : $T:ty = $e:expr;) => {
         __lazy_static!(() static $N : $T = $e;);
     }
 }

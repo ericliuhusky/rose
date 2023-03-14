@@ -84,7 +84,7 @@ impl BlockCacheManager {
 }
 
 lazy_static::lazy_static! {
-    pub static BLOCK_CACHE_MANAGER: RefCell<BlockCacheManager> = RefCell::new(BlockCacheManager::new());
+    pub static ref BLOCK_CACHE_MANAGER: RefCell<BlockCacheManager> = RefCell::new(BlockCacheManager::new());
 }
 
 /// Get the block cache corresponding to the given block id and block device
