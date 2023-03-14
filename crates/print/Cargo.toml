@@ -4,3 +4,7 @@ version = "0.1.0"
 
 [dependencies]
 sbi_call = { path = "../sbi_call" }
+sys_call = { path = "../sys_call" }
+
+[features]
+user = []

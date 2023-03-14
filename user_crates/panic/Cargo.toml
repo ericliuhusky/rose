@@ -1,7 +1,0 @@
-[package]
-name = "panic"
-version = "0.1.0"
-
-[dependencies]
-sys_call = { path = "../sys_call" }
-print = { path = "../print" }

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sys_call = { path = "../user_crates/sys_call" }
-print = { path = "../user_crates/print" }
-panic = { path = "../user_crates/panic" }
+sys_call = { path = "../crates/sys_call" }
+print = { path = "../crates/print", features = ["user"] }
+panic = { path = "../crates/panic", features = ["user"] }
 heap_allocator = { path = "../crates/heap_allocator" }

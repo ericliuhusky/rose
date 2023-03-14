@@ -1,11 +1,9 @@
 #![no_std]
 #![feature(panic_info_message)]
 
-extern crate sbi_call;
 extern crate print;
 
 use core::panic::PanicInfo;
-use sbi_call::shutdown;
 use print::println;
 
 #[panic_handler]
@@ -20,5 +18,8 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         println!("[kernel] Panicked: {}", info.message().unwrap());
     }
-    shutdown()
+    #[cfg(feature = "user")]
+    sys_call::exit(-1);
+    #[cfg(not(feature = "user"))]
+    sbi_call::shutdown()
 }
