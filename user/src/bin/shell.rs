@@ -27,7 +27,6 @@ pub fn main() -> i32 {
             LF | CR => {
                 println!("");
                 if !line.is_empty() {
-                    line.push('\0');
                     let pid = fork();
                     if pid == 0 {
                         // child process

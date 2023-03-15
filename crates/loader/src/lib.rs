@@ -39,7 +39,7 @@ pub fn read_app_data_by_name(name: &str) -> Option<&'static [u8]> {
             while *end_address_ptr != b'\0' {
                 end_address_ptr = end_address_ptr.add(1);
             }
-            let bytes = core::slice::from_raw_parts(start_address_ptr, (end_address_ptr as usize + 1) - start_address_ptr as usize);
+            let bytes = core::slice::from_raw_parts(start_address_ptr, end_address_ptr as usize - start_address_ptr as usize);
             let s = core::str::from_utf8(bytes).unwrap();
             names.push(s);
             start_address_ptr = end_address_ptr.add(1);

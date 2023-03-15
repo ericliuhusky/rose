@@ -9,7 +9,7 @@ use lib::{exec, fork, wait, yield_};
 #[no_mangle]
 fn main() -> i32 {
     if fork() == 0 {
-        exec("shell\0");
+        exec("shell");
     } else {
         loop {
             let mut exit_code: i32 = 0;

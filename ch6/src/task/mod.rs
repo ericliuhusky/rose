@@ -87,7 +87,7 @@ impl 任务管理器 {
 
     pub fn 添加初始进程() {
         Self::添加任务(Rc::new(RefCell::new(
-            任务::新建(loader::read_app_data_by_name("initproc\0").unwrap())
+            任务::新建(loader::read_app_data_by_name("initproc").unwrap())
         )));
     }
 }
