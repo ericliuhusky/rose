@@ -126,7 +126,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
             .collect()
     }
 
-    fn translate_buffer(&self, start_va: VA, end_va: VA) -> Vec<&'static mut [u8]> {
+    pub fn translate_buffer(&self, start_va: VA, end_va: VA) -> Vec<&'static mut [u8]> {
         self.translate_addr(start_va, end_va)
             .iter()
             .map(|(start_pa, end_pa)| {
