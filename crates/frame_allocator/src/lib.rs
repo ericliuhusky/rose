@@ -63,6 +63,14 @@ impl FrameAlloc for FrameAllocator {
     }
 }
 
+pub fn alloc() -> usize {
+    FrameAllocator::alloc().0
+}
+
+pub fn dealloc(frame: usize) {
+    FrameAllocator::dealloc(PPN::new(frame));
+}
+
 static mut FRAME_ALLOCATOR: StackFrameAllocator = StackFrameAllocator {
     current: 0,
     end: 0,
