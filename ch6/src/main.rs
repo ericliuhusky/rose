@@ -11,6 +11,8 @@ mod exception_handler;
 mod task;
 mod timer;
 mod mm;
+mod drivers;
+mod fs;
 
 use core::arch::global_asm;
 extern crate panic;

@@ -1,3 +1,5 @@
+use core::borrow::Borrow;
+
 use 系统调用_输出::{系统调用_输出, sys_putchar};
 use 系统调用_终止::系统调用_终止;
 use 系统调用_读取::{系统调用_读取, sys_getchar};
@@ -122,6 +124,8 @@ mod 系统调用_进程 {
         })
     }
 
+    use crate::fs::open_file;
+
     pub fn exec(path: *const u8, len: usize) -> isize {
         let 虚拟地址范围 = path as usize..path as usize + len;
         let 应用名称: String = 任务管理器::当前任务().地址空间
@@ -129,9 +133,10 @@ mod 系统调用_进程 {
             .iter()
             .map(|字节| *字节 as char)
             .collect();
-        if let Some(elf文件数据) = loader::read_app_data_by_name(&应用名称) {
+        if let Some(elf_inode) = open_file(&应用名称, false) {
+            let elf_data = elf_inode.read_all();
             任务管理器::可变当前任务(|mut 任务| {
-                任务.exec(elf文件数据);
+                任务.exec(&elf_data);
             });
             0
         } else {
@@ -166,4 +171,39 @@ mod 系统调用_进程 {
             }
         })
     }
+}
+
+use page_table::VA;
+use crate::task::{任务管理器, task::任务};
+use alloc::string::String;
+use crate::fs::open_file;
+
+pub fn sys_open(path: *const u8, len: usize, create: u32) -> isize {
+    let task = 任务管理器::当前任务();
+    let path = task.地址空间.page_table.read(VA::new(path as usize), VA::new(path as usize + len));
+    let path: String = path.iter().map(|c| *c as char).collect();
+    let create = if create == 1 { true } else { false }; 
+    if let Some(inode) = open_file(path.as_str(), create) {
+        任务管理器::可变当前任务(|mut task| {
+            let fd = task.alloc_fd();
+            task.fd_table[fd] = Some(inode);
+            fd as isize
+        })
+    } else {
+        -1
+    }
+}
+
+pub fn sys_close(fd: usize) -> isize {
+    let task = 任务管理器::当前任务();
+    if fd >= task.fd_table.len() {
+        return -1;
+    }
+    if task.fd_table[fd].is_none() {
+        return -1;
+    }
+    任务管理器::可变当前任务(|mut task| {
+        task.fd_table[fd].take();
+    });
+    0
 }

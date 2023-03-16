@@ -35,7 +35,7 @@ use page_table::PageTableEntryFlags;
 
 
 pub struct 地址空间 {
-    page_table: SV39PageTable<FrameAllocator>,
+    pub page_table: SV39PageTable<FrameAllocator>,
     逻辑段列表: Vec<逻辑段>,
 }
 
@@ -92,7 +92,13 @@ impl 地址空间 {
             连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0x100000..0x102000 },
             恒等映射: true,
             用户可见: false,
-         }); // MMIO VIRT_TEST/RTC  in virt machine
+        }); // MMIO VIRT_TEST/RTC  in virt machine
+        地址空间.映射(逻辑段 { 
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0x10001000..0x10002000 },
+            恒等映射: true,
+            用户可见: false,
+        }); // MMIO VIRT_TEST/RTC  in virt machine
+        
         // 内核栈
         地址空间.映射(逻辑段 { 
             连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: KERNEL_STACK_TOP - 0x2000..KERNEL_STACK_TOP },

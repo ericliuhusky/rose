@@ -86,8 +86,11 @@ impl 任务管理器 {
     }
 
     pub fn 添加初始进程() {
+        use crate::fs::open_file;
+        let inode = open_file("initproc", false).unwrap();
+        let elf_data = inode.read_all();
         Self::添加任务(Rc::new(RefCell::new(
-            任务::新建(loader::read_app_data_by_name("initproc").unwrap())
+            任务::新建(&elf_data)
         )));
     }
 }
