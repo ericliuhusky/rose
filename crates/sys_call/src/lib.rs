@@ -28,9 +28,20 @@ const SYS_EXEC: usize = 7;
 const SYS_WAITPID: usize = 8;
 const SYS_PUTCHAR: usize = 9;
 const SYS_GETCHAR: usize = 10;
+const SYS_OPEN: usize = 11;
+const SYS_CLOSE: usize = 12;
 
-pub fn read(buffer: &mut [u8]) -> isize {
-    sys_call(SYS_READ, [buffer as *mut [u8] as *mut u8 as usize, buffer.len(), 0])
+pub fn read(fd: usize, buffer: &mut [u8]) -> isize {
+    sys_call(SYS_READ, [fd, buffer as *mut [u8] as *mut u8 as usize, buffer.len()])
+}
+pub fn write(fd: usize, buf: &[u8]) -> isize {
+    sys_call(SYS_WRITE, [fd, buf as *const [u8] as *const u8 as usize, buf.len()])
+}
+pub fn open(path: &str, create: usize) -> isize {
+    sys_call(SYS_OPEN, [path.as_ptr() as usize, path.len(), create])
+}
+pub fn close(fd: usize) -> isize {
+    sys_call(SYS_CLOSE, [fd, 0, 0])
 }
 
 pub fn putchar(c: usize) {

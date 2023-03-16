@@ -2,7 +2,7 @@
 #![feature(alloc_error_handler)]
 
 use print::{println, print};
-pub use sys_call::{exit, read, yield_, get_time, getpid, fork, exec};
+pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec};
 extern crate panic;
 
 #[no_mangle]
@@ -14,6 +14,11 @@ fn _start() {
     heap_allocator::init();
     unsafe { main(); }
     exit(0);
+}
+
+pub fn open(path: &str, create: bool) -> isize {
+    let create = if create { 1 } else { 0 }; 
+    sys_call::open(path, create)
 }
 
 pub fn getchar() -> u8 {
