@@ -7,4 +7,4 @@ edition = "2021"
 sys_call = { path = "../crates/sys_call" }
 print = { path = "../crates/print", features = ["user"] }
 panic = { path = "../crates/panic", features = ["user"] }
-heap_allocator = { path = "../crates/heap_allocator" }
+heap_allocator = { path = "../crates/heap_allocator", features = ["user"] }

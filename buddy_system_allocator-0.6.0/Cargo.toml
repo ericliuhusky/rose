@@ -1,0 +1,7 @@
+[package]
+edition = "2018"
+name = "buddy_system_allocator"
+version = "0.6.0"
+
+[dependencies]
+print = { version = "0.1.0", path = "../crates/print" }
