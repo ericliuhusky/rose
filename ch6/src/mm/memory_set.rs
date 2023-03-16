@@ -2,11 +2,11 @@ use alloc::vec::Vec;
 use core::ops::Range;
 use exception::context::Context;
 use super::address::{逻辑段, 连续地址虚拟内存};
-use crate::mm::frame_allocator::物理内存管理器;
+use frame_allocator::FrameAllocator;
 use elf_reader::ElfFile;
 use lazy_static::lazy_static;
 
-pub const 可用物理内存结尾地址: usize = 0x80800000;
+pub const MEMORY_END: usize = 0x80800000;
 
 #[no_mangle]
 #[link_section = ".text.trampoline"]
@@ -35,7 +35,7 @@ use page_table::PageTableEntryFlags;
 
 
 pub struct 地址空间 {
-    page_table: SV39PageTable<物理内存管理器>,
+    page_table: SV39PageTable<FrameAllocator>,
     逻辑段列表: Vec<逻辑段>,
 }
 
@@ -55,7 +55,7 @@ impl 地址空间 {
 
     fn 新建空地址空间() -> Self {
         Self { 
-            page_table: SV39PageTable::<物理内存管理器>::new(),
+            page_table: SV39PageTable::<FrameAllocator>::new(),
             逻辑段列表: Vec::new(),
         }
     }
@@ -84,7 +84,7 @@ impl 地址空间 {
             用户可见: false,
          });
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: ekernel as usize..可用物理内存结尾地址 },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: ekernel as usize..MEMORY_END },
             恒等映射: true,
             用户可见: false,
         });
