@@ -6,7 +6,7 @@ use frame_allocator::FrameAllocator;
 use elf_reader::ElfFile;
 use lazy_static::lazy_static;
 
-pub const MEMORY_END: usize = 0x80800000;
+pub const MEMORY_END: usize = 0x88000000;
 
 #[no_mangle]
 #[link_section = ".text.trampoline"]
@@ -83,6 +83,7 @@ impl 地址空间 {
             恒等映射: true,
             用户可见: false,
          });
+         println!("{:#x}", ekernel as usize);
         地址空间.映射(逻辑段 { 
             连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: ekernel as usize..MEMORY_END },
             恒等映射: true,

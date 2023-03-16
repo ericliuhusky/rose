@@ -6,7 +6,7 @@ use frame_allocator::FrameAllocator;
 use elf_reader::ElfFile;
 use lazy_static::lazy_static;
 
-pub const MEMORY_END: usize = 0x80800000;
+pub const MEMORY_END: usize = 0x88000000;
 
 #[no_mangle]
 #[link_section = ".text.trampoline"]
