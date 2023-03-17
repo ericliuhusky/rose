@@ -1,26 +1,20 @@
 #![no_std]
 #![feature(alloc_error_handler)]
 
-use buddy_system_allocator::LockedHeap;
+extern crate alloc;
 
-#[cfg(feature = "user")]
-const HEAP_SIZE: usize = 0x4000;
-#[cfg(not(feature = "user"))]
-const HEAP_SIZE: usize = 0x200_0000;
+mod heap;
+mod linked_list;
+use heap::HeapAllocator;
 
-static mut HEAP: [u8; HEAP_SIZE] = [0; HEAP_SIZE];
-
-#[global_allocator]
-static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
-
-pub fn init() {
+pub fn init(start: usize, size: usize) {
     unsafe {
-        HEAP_ALLOCATOR
-            .0
-            .borrow_mut()
-            .init(&HEAP as *const [u8] as *const u8 as usize, HEAP_SIZE);
+        HEAP_ALLOCATOR.init(start, size);
     }
 }
+
+#[global_allocator]
+static mut HEAP_ALLOCATOR: HeapAllocator = HeapAllocator::new();
 
 #[alloc_error_handler]
 fn alloc_error(layout: core::alloc::Layout) -> ! {

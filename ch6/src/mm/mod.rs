@@ -14,7 +14,11 @@ static mut KERNEL_SATP: usize = 0;
 pub static mut USER_SATP: usize = 0;
 
 pub fn 初始化() {
-    heap_allocator::init();
+    static mut HEAP: [u8; 0x800000] = [0; 0x800000];
+    heap_allocator::init(
+        unsafe { &HEAP } as *const [u8] as *const u8 as usize,
+        0x800000,
+    );
     frame_allocator::init(MEMORY_END);
     unsafe {
         // 切换到内核地址空间

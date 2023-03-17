@@ -11,7 +11,11 @@ fn _start() {
     extern "C" {
         fn main();
     }
-    heap_allocator::init();
+    static mut HEAP: [u8; 0x4000] = [0; 0x4000];
+    heap_allocator::init(
+        unsafe { &HEAP } as *const [u8] as *const u8 as usize,
+        0x4000,
+    );
     unsafe { main(); }
     exit(0);
 }
