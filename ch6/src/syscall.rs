@@ -200,7 +200,7 @@ pub fn sys_open(path: *const u8, len: usize, create: u32) -> isize {
     let task = 任务管理器::当前任务();
     let path = task.地址空间.page_table.read(VA::new(path as usize), VA::new(path as usize + len));
     let path: String = path.iter().map(|c| *c as char).collect();
-    let create = if create == 1 { true } else { false }; 
+    let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {
         drop(task);
         任务管理器::可变当前任务(|mut task| {

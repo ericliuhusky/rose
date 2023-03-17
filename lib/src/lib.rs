@@ -21,8 +21,7 @@ fn _start() {
 }
 
 pub fn open(path: &str, create: bool) -> isize {
-    let create = if create { 1 } else { 0 }; 
-    sys_call::open(path, create)
+    sys_call::open(path, create as usize)
 }
 
 pub fn getchar() -> u8 {
