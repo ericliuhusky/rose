@@ -18,6 +18,8 @@ const 系统调用标识_进程_EXEC: usize = 7;
 const 系统调用标识_进程_WAITPID: usize = 8;
 const SYS_PUTCHAR: usize = 9;
 const SYS_GETCHAR: usize = 10;
+const SYS_OPEN: usize = 11;
+const SYS_CLOSE: usize = 12;
 
 pub fn 系统调用(系统调用标识: usize, 参数: [usize; 3]) -> isize {
     match 系统调用标识 {
@@ -36,6 +38,8 @@ pub fn 系统调用(系统调用标识: usize, 参数: [usize; 3]) -> isize {
         系统调用标识_进程_WAITPID => waitpid(参数[0] as isize, 参数[1] as *mut i32),
         SYS_PUTCHAR => sys_putchar(参数[0]),
         SYS_GETCHAR => sys_getchar(),
+        SYS_OPEN => sys_open(参数[0] as *const u8, 参数[1], 参数[2] as u32),
+        SYS_CLOSE => sys_close(参数[0]),
         _ => {
             println!("[kernel] Unsupported syscall_id: {}", 系统调用标识);
             -1
@@ -198,6 +202,7 @@ pub fn sys_open(path: *const u8, len: usize, create: u32) -> isize {
     let path: String = path.iter().map(|c| *c as char).collect();
     let create = if create == 1 { true } else { false }; 
     if let Some(inode) = open_file(path.as_str(), create) {
+        drop(task);
         任务管理器::可变当前任务(|mut task| {
             let fd = task.alloc_fd();
             task.fd_table[fd] = Some(inode);
@@ -216,6 +221,7 @@ pub fn sys_close(fd: usize) -> isize {
     if task.fd_table[fd].is_none() {
         return -1;
     }
+    drop(task);
     任务管理器::可变当前任务(|mut task| {
         task.fd_table[fd].take();
     });
