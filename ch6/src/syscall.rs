@@ -1,12 +1,10 @@
-use core::borrow::Borrow;
-
-use 系统调用_输出::{write, putchar};
-use 系统调用_终止::exit;
-use 系统调用_读取::{read, getchar};
-use 系统调用_让出时间片::yield_;
+use sys_func::SysFunc;
 use 系统调用_时钟计数器::get_time;
-use 系统调用_进程::{getpid, fork, exec, waitpid};
-pub use sys_func::{sys_func, SysFunc};
+use 系统调用_终止::exit;
+use 系统调用_让出时间片::yield_;
+use 系统调用_读取::{getchar, read};
+use 系统调用_输出::{putchar, write};
+use 系统调用_进程::{exec, fork, getpid, waitpid};
 
 pub struct SysFuncImpl;
 
@@ -63,7 +61,10 @@ mod 系统调用_输出 {
         }
         if let Some(file) = &task.fd_table[fd] {
             let file = file.clone();
-            let buf = 任务管理器::当前任务().地址空间.page_table.translate_buffer(VA::new(buf as usize), VA::new(buf as usize + len));
+            let buf = 任务管理器::当前任务()
+                .地址空间
+                .page_table
+                .translate_buffer(VA::new(buf as usize), VA::new(buf as usize + len));
             file.write(buf) as isize
         } else {
             -1
@@ -97,7 +98,10 @@ mod 系统调用_读取 {
         }
         if let Some(file) = &task.fd_table[fd] {
             let file = file.clone();
-            let buf = task.地址空间.page_table.translate_buffer(VA::new(buf as usize), VA::new(buf as usize + len));
+            let buf = task
+                .地址空间
+                .page_table
+                .translate_buffer(VA::new(buf as usize), VA::new(buf as usize + len));
             file.read(buf) as isize
         } else {
             -1
@@ -127,9 +131,9 @@ mod 系统调用_时钟计数器 {
 }
 
 mod 系统调用_进程 {
-    use alloc::string::String;
-    use crate::task::任务管理器;
     use crate::task::task::任务状态;
+    use crate::task::任务管理器;
+    use alloc::string::String;
 
     pub fn getpid() -> isize {
         任务管理器::当前任务().进程标识符.0 as isize
@@ -150,7 +154,8 @@ mod 系统调用_进程 {
 
     pub fn exec(path: *const u8, len: usize) -> isize {
         let 虚拟地址范围 = path as usize..path as usize + len;
-        let 应用名称: String = 任务管理器::当前任务().地址空间
+        let 应用名称: String = 任务管理器::当前任务()
+            .地址空间
             .读取字节数组(虚拟地址范围)
             .iter()
             .map(|字节| *字节 as char)
@@ -175,7 +180,7 @@ mod 系统调用_进程 {
             {
                 return -1;
             }
-            
+
             let pair = task.子进程列表.iter().enumerate().find(|(_, p)| {
                 let p = p.borrow();
                 p.状态 == 任务状态::终止 && (pid == -1 || pid as usize == p.进程标识符.0)
@@ -195,14 +200,17 @@ mod 系统调用_进程 {
     }
 }
 
-use page_table::VA;
-use crate::task::{任务管理器, task::任务};
-use alloc::string::String;
 use crate::fs::open_file;
+use crate::task::{task::任务, 任务管理器};
+use alloc::string::String;
+use page_table::VA;
 
 pub fn open(path: *const u8, len: usize, create: u32) -> isize {
     let task = 任务管理器::当前任务();
-    let path = task.地址空间.page_table.read(VA::new(path as usize), VA::new(path as usize + len));
+    let path = task
+        .地址空间
+        .page_table
+        .read(VA::new(path as usize), VA::new(path as usize + len));
     let path: String = path.iter().map(|c| *c as char).collect();
     let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {

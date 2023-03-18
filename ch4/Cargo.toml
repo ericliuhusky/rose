@@ -15,3 +15,4 @@ entry = { path = "../crates/entry" }
 loader = { path = "../crates/loader" }
 exception = { path = "../crates/exception", features = ["memory_set"] }
 lazy_static = { version = "0.1.0", path = "../crates/lazy_static" }
+sys_func = { version = "0.1.0", path = "../crates/sys_func" }

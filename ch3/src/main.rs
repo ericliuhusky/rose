@@ -19,7 +19,11 @@ global_asm!(include_str!("link_app.s"));
 #[no_mangle]
 fn main() {
     println!("[kernel] Hello, world!");
-    heap_allocator::init();
+    static mut HEAP: [u8; 0x4000] = [0; 0x4000];
+    heap_allocator::init(
+        unsafe { &HEAP } as *const [u8] as *const u8 as usize,
+        0x4000,
+    );
     exception::init();
     segment::init();
     timer::开启时钟中断();

@@ -1,4 +1,4 @@
-use crate::syscall::{sys_func, SysFuncImpl};
+use crate::syscall::SysFuncImpl;
 use crate::task::任务管理器;
 use crate::timer::为下一次时钟中断定时;
 use core::arch::global_asm;
@@ -6,6 +6,7 @@ use riscv_register::{
     scause::{self, Exception, Interrupt},
     stvec,
 };
+use sys_func::sys_func;
 
 #[no_mangle]
 /// 处理中断、异常或系统调用
