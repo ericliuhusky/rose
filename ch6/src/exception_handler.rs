@@ -1,10 +1,13 @@
-use crate::syscall::sys_func;
-use core::arch::global_asm;
-use riscv_register::{scause::{self, Exception, Interrupt}, stvec};
-use crate::timer::为下一次时钟中断定时;
+use crate::syscall::{sys_func, SysFuncImpl};
 use crate::task::任务管理器;
+use crate::timer::为下一次时钟中断定时;
+use core::arch::global_asm;
+use riscv_register::{
+    scause::{self, Exception, Interrupt},
+    stvec,
+};
 
-#[no_mangle] 
+#[no_mangle]
 /// 处理中断、异常或系统调用
 pub fn exception_handler() {
     // let 当前任务的地址空间 = 任务管理器::当前任务().borrow().地址空间;
@@ -13,14 +16,14 @@ pub fn exception_handler() {
         Exception::UserEnvCall => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
             上下文.sepc += 4;
-            上下文.x[10] = sys_func(
-                上下文.x[17],
-                [
-                    上下文.x[10],
-                    上下文.x[11], 
-                    上下文.x[12]
-                ]
-            ) as usize;
+            let result =
+                sys_func::<SysFuncImpl>(上下文.x[17], [上下文.x[10], 上下文.x[11], 上下文.x[12]]);
+            match result {
+                Ok(ret) => 上下文.x[10] = ret as usize,
+                Err(id) => {
+                    println!("[kernel] Unsupported syscall_id: {}", id);
+                }
+            }
         }
         Exception::StoreFault | Exception::StorePageFault => {
             println!("[kernel] PageFault in application, kernel killed it.");
@@ -34,8 +37,6 @@ pub fn exception_handler() {
             为下一次时钟中断定时();
             任务管理器::暂停并运行下一个任务();
         }
-        _ => {
-            
-        }
+        _ => {}
     }
 }

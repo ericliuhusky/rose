@@ -1,49 +1,54 @@
 use core::borrow::Borrow;
 
-use 系统调用_输出::{write, sys_putchar};
+use 系统调用_输出::{write, putchar};
 use 系统调用_终止::exit;
-use 系统调用_读取::{read, sys_getchar};
+use 系统调用_读取::{read, getchar};
 use 系统调用_让出时间片::yield_;
 use 系统调用_时钟计数器::get_time;
 use 系统调用_进程::{getpid, fork, exec, waitpid};
+pub use sys_func::{sys_func, SysFunc};
 
-const SYS_READ: usize = 0;
-const SYS_WRITE: usize = 1;
-const SYS_EXIT: usize = 2;
-const SYS_YIELD: usize = 3;
-const SYS_GET_TIME: usize = 4;
-const SYS_GETPID: usize = 5;
-const SYS_FORK: usize = 6;
-const SYS_EXEC: usize = 7;
-const SYS_WAITPID: usize = 8;
-const SYS_PUTCHAR: usize = 9;
-const SYS_GETCHAR: usize = 10;
-const SYS_OPEN: usize = 11;
-const SYS_CLOSE: usize = 12;
+pub struct SysFuncImpl;
 
-pub fn sys_func(id: usize, args: [usize; 3]) -> isize {
-    match id {
-        SYS_READ => {
-            read(args[0], args[1] as *const u8, args[2])
-        },
-        SYS_WRITE => {
-            write(args[0], args[1] as *const u8, args[2])
-        },
-        SYS_EXIT => exit(args[0] as i32),
-        SYS_YIELD => yield_(),
-        SYS_GET_TIME => get_time(),
-        SYS_GETPID => getpid(),
-        SYS_FORK => fork(),
-        SYS_EXEC => exec(args[0] as *const u8, args[1]),
-        SYS_WAITPID => waitpid(args[0] as isize, args[1] as *mut i32),
-        SYS_PUTCHAR => sys_putchar(args[0]),
-        SYS_GETCHAR => sys_getchar(),
-        SYS_OPEN => sys_open(args[0] as *const u8, args[1], args[2] as u32),
-        SYS_CLOSE => sys_close(args[0]),
-        _ => {
-            println!("[kernel] Unsupported syscall_id: {}", id);
-            -1
-        }
+impl SysFunc for SysFuncImpl {
+    fn read(fd: usize, buf: *const u8, len: usize) -> isize {
+        read(fd, buf, len)
+    }
+    fn write(fd: usize, buf: *const u8, len: usize) -> isize {
+        write(fd, buf, len)
+    }
+    fn exit(exit_code: i32) -> isize {
+        exit(exit_code)
+    }
+    fn yield_() -> isize {
+        yield_()
+    }
+    fn get_time() -> isize {
+        get_time()
+    }
+    fn getpid() -> isize {
+        getpid()
+    }
+    fn fork() -> isize {
+        fork()
+    }
+    fn exec(path: *const u8, len: usize) -> isize {
+        exec(path, len)
+    }
+    fn waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
+        waitpid(pid, exit_code_ptr)
+    }
+    fn putchar(c: usize) -> isize {
+        putchar(c)
+    }
+    fn getchar() -> isize {
+        getchar()
+    }
+    fn open(path: *const u8, len: usize, create: u32) -> isize {
+        open(path, len, create)
+    }
+    fn close(fd: usize) -> isize {
+        close(fd)
     }
 }
 
@@ -65,7 +70,7 @@ mod 系统调用_输出 {
         }
     }
 
-    pub fn sys_putchar(c: usize) -> isize {
+    pub fn putchar(c: usize) -> isize {
         sbi_call::putchar(c);
         c as isize
     }
@@ -74,16 +79,15 @@ mod 系统调用_输出 {
 mod 系统调用_终止 {
     use crate::task::任务管理器;
 
-    pub fn exit(代码: i32) -> isize {
-        println!("[kernel] Application exited with code {}", 代码);
-        任务管理器::终止并运行下一个任务(代码);
+    pub fn exit(exit_code: i32) -> isize {
+        println!("[kernel] Application exited with code {}", exit_code);
+        任务管理器::终止并运行下一个任务(exit_code);
         -1
     }
 }
 
 mod 系统调用_读取 {
     use crate::task::任务管理器;
-    use sbi_call::getchar;
     use page_table::VA;
 
     pub fn read(fd: usize, buf: *const u8, len: usize) -> isize {
@@ -100,7 +104,7 @@ mod 系统调用_读取 {
         }
     }
 
-    pub fn sys_getchar() -> isize {
+    pub fn getchar() -> isize {
         sbi_call::getchar() as isize
     }
 }
@@ -196,7 +200,7 @@ use crate::task::{任务管理器, task::任务};
 use alloc::string::String;
 use crate::fs::open_file;
 
-pub fn sys_open(path: *const u8, len: usize, create: u32) -> isize {
+pub fn open(path: *const u8, len: usize, create: u32) -> isize {
     let task = 任务管理器::当前任务();
     let path = task.地址空间.page_table.read(VA::new(path as usize), VA::new(path as usize + len));
     let path: String = path.iter().map(|c| *c as char).collect();
@@ -213,7 +217,7 @@ pub fn sys_open(path: *const u8, len: usize, create: u32) -> isize {
     }
 }
 
-pub fn sys_close(fd: usize) -> isize {
+pub fn close(fd: usize) -> isize {
     let task = 任务管理器::当前任务();
     if fd >= task.fd_table.len() {
         return -1;
