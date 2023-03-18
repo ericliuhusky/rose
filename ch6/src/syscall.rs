@@ -1,47 +1,47 @@
 use core::borrow::Borrow;
 
-use 系统调用_输出::{系统调用_输出, sys_putchar};
-use 系统调用_终止::系统调用_终止;
-use 系统调用_读取::{系统调用_读取, sys_getchar};
-use 系统调用_让出时间片::系统调用_让出时间片;
-use 系统调用_时钟计数器::系统调用_读取时钟计数器的毫秒值;
+use 系统调用_输出::{write, sys_putchar};
+use 系统调用_终止::exit;
+use 系统调用_读取::{read, sys_getchar};
+use 系统调用_让出时间片::yield_;
+use 系统调用_时钟计数器::get_time;
 use 系统调用_进程::{getpid, fork, exec, waitpid};
 
-const 系统调用标识_读取: usize = 0;
-const 系统调用标识_输出: usize = 1;
-const 系统调用标识_终止: usize = 2;
-const 系统调用标识_让出时间片: usize = 3;
-const 系统调用标识_读取时钟计数器的毫秒值: usize = 4;
-const 系统调用标识_进程_GETPID: usize = 5;
-const 系统调用标识_进程_FORK: usize = 6;
-const 系统调用标识_进程_EXEC: usize = 7;
-const 系统调用标识_进程_WAITPID: usize = 8;
+const SYS_READ: usize = 0;
+const SYS_WRITE: usize = 1;
+const SYS_EXIT: usize = 2;
+const SYS_YIELD: usize = 3;
+const SYS_GET_TIME: usize = 4;
+const SYS_GETPID: usize = 5;
+const SYS_FORK: usize = 6;
+const SYS_EXEC: usize = 7;
+const SYS_WAITPID: usize = 8;
 const SYS_PUTCHAR: usize = 9;
 const SYS_GETCHAR: usize = 10;
 const SYS_OPEN: usize = 11;
 const SYS_CLOSE: usize = 12;
 
-pub fn 系统调用(系统调用标识: usize, 参数: [usize; 3]) -> isize {
-    match 系统调用标识 {
-        系统调用标识_读取 => {
-            系统调用_读取(参数[0], 参数[1] as *const u8, 参数[2])
+pub fn sys_func(id: usize, args: [usize; 3]) -> isize {
+    match id {
+        SYS_READ => {
+            read(args[0], args[1] as *const u8, args[2])
         },
-        系统调用标识_输出 => {
-            系统调用_输出(参数[0], 参数[1] as *const u8, 参数[2])
+        SYS_WRITE => {
+            write(args[0], args[1] as *const u8, args[2])
         },
-        系统调用标识_终止 => 系统调用_终止(参数[0] as i32),
-        系统调用标识_让出时间片 => 系统调用_让出时间片(),
-        系统调用标识_读取时钟计数器的毫秒值 => 系统调用_读取时钟计数器的毫秒值(),
-        系统调用标识_进程_GETPID => getpid(),
-        系统调用标识_进程_FORK => fork(),
-        系统调用标识_进程_EXEC => exec(参数[0] as *const u8, 参数[1]),
-        系统调用标识_进程_WAITPID => waitpid(参数[0] as isize, 参数[1] as *mut i32),
-        SYS_PUTCHAR => sys_putchar(参数[0]),
+        SYS_EXIT => exit(args[0] as i32),
+        SYS_YIELD => yield_(),
+        SYS_GET_TIME => get_time(),
+        SYS_GETPID => getpid(),
+        SYS_FORK => fork(),
+        SYS_EXEC => exec(args[0] as *const u8, args[1]),
+        SYS_WAITPID => waitpid(args[0] as isize, args[1] as *mut i32),
+        SYS_PUTCHAR => sys_putchar(args[0]),
         SYS_GETCHAR => sys_getchar(),
-        SYS_OPEN => sys_open(参数[0] as *const u8, 参数[1], 参数[2] as u32),
-        SYS_CLOSE => sys_close(参数[0]),
+        SYS_OPEN => sys_open(args[0] as *const u8, args[1], args[2] as u32),
+        SYS_CLOSE => sys_close(args[0]),
         _ => {
-            println!("[kernel] Unsupported syscall_id: {}", 系统调用标识);
+            println!("[kernel] Unsupported syscall_id: {}", id);
             -1
         }
     }
@@ -51,7 +51,7 @@ mod 系统调用_输出 {
     use crate::task::任务管理器;
     use page_table::VA;
 
-    pub fn 系统调用_输出(fd: usize, buf: *const u8, len: usize) -> isize {
+    pub fn write(fd: usize, buf: *const u8, len: usize) -> isize {
         let task = 任务管理器::当前任务();
         if fd >= task.fd_table.len() {
             return -1;
@@ -74,7 +74,7 @@ mod 系统调用_输出 {
 mod 系统调用_终止 {
     use crate::task::任务管理器;
 
-    pub fn 系统调用_终止(代码: i32) -> isize {
+    pub fn exit(代码: i32) -> isize {
         println!("[kernel] Application exited with code {}", 代码);
         任务管理器::终止并运行下一个任务(代码);
         -1
@@ -86,7 +86,7 @@ mod 系统调用_读取 {
     use sbi_call::getchar;
     use page_table::VA;
 
-    pub fn 系统调用_读取(fd: usize, buf: *const u8, len: usize) -> isize {
+    pub fn read(fd: usize, buf: *const u8, len: usize) -> isize {
         let task = 任务管理器::当前任务();
         if fd >= task.fd_table.len() {
             return -1;
@@ -108,7 +108,7 @@ mod 系统调用_读取 {
 mod 系统调用_让出时间片 {
     use crate::task::任务管理器;
 
-    pub fn 系统调用_让出时间片() -> isize {
+    pub fn yield_() -> isize {
         任务管理器::暂停并运行下一个任务();
         0
     }
@@ -117,7 +117,7 @@ mod 系统调用_让出时间片 {
 mod 系统调用_时钟计数器 {
     use crate::timer::读取时钟计数器的毫秒值;
 
-    pub fn 系统调用_读取时钟计数器的毫秒值() -> isize {
+    pub fn get_time() -> isize {
         读取时钟计数器的毫秒值() as isize
     }
 }

@@ -1,4 +1,4 @@
-use crate::syscall::系统调用;
+use crate::syscall::sys_func;
 use core::arch::global_asm;
 use riscv_register::{scause::{self, Exception, Interrupt}, stvec};
 use crate::timer::为下一次时钟中断定时;
@@ -13,7 +13,7 @@ pub fn exception_handler() {
         Exception::UserEnvCall => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
             上下文.sepc += 4;
-            上下文.x[10] = 系统调用(
+            上下文.x[10] = sys_func(
                 上下文.x[17],
                 [
                     上下文.x[10],
