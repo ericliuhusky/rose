@@ -1,18 +1,6 @@
 #![no_std]
 
-const SYS_READ: usize = 0;
-const SYS_WRITE: usize = 1;
-const SYS_EXIT: usize = 2;
-const SYS_YIELD: usize = 3;
-const SYS_GET_TIME: usize = 4;
-const SYS_GETPID: usize = 5;
-const SYS_FORK: usize = 6;
-const SYS_EXEC: usize = 7;
-const SYS_WAITPID: usize = 8;
-const SYS_PUTCHAR: usize = 9;
-const SYS_GETCHAR: usize = 10;
-const SYS_OPEN: usize = 11;
-const SYS_CLOSE: usize = 12;
+use sys_call_id::*;
 
 pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isize, usize> {
     match id {

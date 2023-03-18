@@ -17,19 +17,7 @@ fn sys_call(id: usize, args: [usize; 3]) -> isize {
     ret
 }
 
-const SYS_READ: usize = 0;
-const SYS_WRITE: usize = 1;
-const SYS_EXIT: usize = 2;
-const SYS_YIELD: usize = 3;
-const SYS_GET_TIME: usize = 4;
-const SYS_GETPID: usize = 5;
-const SYS_FORK: usize = 6;
-const SYS_EXEC: usize = 7;
-const SYS_WAITPID: usize = 8;
-const SYS_PUTCHAR: usize = 9;
-const SYS_GETCHAR: usize = 10;
-const SYS_OPEN: usize = 11;
-const SYS_CLOSE: usize = 12;
+use sys_call_id::*;
 
 pub fn read(fd: usize, buffer: &mut [u8]) -> isize {
     sys_call(SYS_READ, [fd, buffer as *mut [u8] as *mut u8 as usize, buffer.len()])
