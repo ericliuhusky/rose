@@ -8,32 +8,29 @@ use lazy_static::*;
 /// A wrapper around a filesystem inode
 /// to implement File trait atop
 pub struct OSInode {
-    inner: RefCell<OSInodeInner>,
-}
-/// The OS inode inner in 'UPSafeCell'
-pub struct OSInodeInner {
-    offset: usize,
     inode: Rc<Inode>,
+    offset: RefCell<usize>,
 }
 
 impl OSInode {
     /// Construct an OS inode from a inode
     pub fn new(inode: Rc<Inode>) -> Self {
         Self {
-            inner: RefCell::new(OSInodeInner { offset: 0, inode }),
+            inode,
+            offset: RefCell::new(0),
         }
     }
     /// Read all data inside a inode into vector
     pub fn read_all(&self) -> Vec<u8> {
-        let mut inner = self.inner.borrow_mut();
+        let mut offset = self.offset.borrow_mut();
         let mut buffer = [0u8; 512];
         let mut v: Vec<u8> = Vec::new();
         loop {
-            let len = inner.inode.read_at(inner.offset, &mut buffer);
+            let len = self.inode.read_at(*offset, &mut buffer);
             if len == 0 {
                 break;
             }
-            inner.offset += len;
+            *offset += len;
             v.extend_from_slice(&buffer[..len]);
         }
         v
@@ -77,25 +74,25 @@ pub fn open_file(name: &str, create: bool) -> Option<Rc<OSInode>> {
 
 impl File for OSInode {
     fn read(&self, buf: Vec<&'static mut [u8]>) -> usize {
-        let mut inner = self.inner.borrow_mut();
+        let mut offset = self.offset.borrow_mut();
         let mut total_read_size = 0usize;
         for slice in buf {
-            let read_size = inner.inode.read_at(inner.offset, slice);
+            let read_size = self.inode.read_at(*offset, slice);
             if read_size == 0 {
                 break;
             }
-            inner.offset += read_size;
+            *offset += read_size;
             total_read_size += read_size;
         }
         total_read_size
     }
     fn write(&self, buf: Vec<&'static mut [u8]>) -> usize {
-        let mut inner = self.inner.borrow_mut();
+        let mut offset = self.offset.borrow_mut();
         let mut total_write_size = 0usize;
         for slice in buf {
-            let write_size = inner.inode.write_at(inner.offset, slice);
+            let write_size = self.inode.write_at(*offset, slice);
             assert_eq!(write_size, slice.len());
-            inner.offset += write_size;
+            *offset += write_size;
             total_write_size += write_size;
         }
         total_write_size
