@@ -3,6 +3,8 @@ use fs_pack::{MemoryBlockDevice, fs_pack};
 use fs::FileSystem;
 use std::rc::Rc;
 
+use crate::fs_pack::{INODE_BITMAP_BLOCK_NUM, INODE_AREA_BLOCK_NUM, DATA_BITMAP_BLOCK_NUM, DATA_AREA_BLOCK_NUM};
+
 fn main() {
     fs_pack();
 }
@@ -10,7 +12,7 @@ fn main() {
 #[test]
 fn efs_test() -> std::io::Result<()> {
     let block_device = Rc::new(MemoryBlockDevice);
-    FileSystem::create(block_device.clone());
+    FileSystem::create(block_device.clone(), INODE_BITMAP_BLOCK_NUM, INODE_AREA_BLOCK_NUM, DATA_BITMAP_BLOCK_NUM, DATA_AREA_BLOCK_NUM);
     let efs = FileSystem::open(block_device.clone());
     let root_inode = FileSystem::root_inode(&efs);
     root_inode.create("filea");

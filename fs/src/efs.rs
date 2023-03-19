@@ -24,18 +24,23 @@ impl FileSystem {
     /// A data block of block size
     pub fn create(
         block_device: Rc<dyn BlockDevice>,
+        inode_bitmap_block_num: u32,
+        inode_area_block_num: u32,
+        data_bitmap_block_num: u32,
+        data_area_block_num: u32,
     ) -> Rc<RefCell<Self>> {
-        let inode_bitmap = Bitmap::new(1, INODE_BITMAP_BLOCK_NUM as usize);
-        let data_bitmap = Bitmap::new((1 + INODE_BITMAP_BLOCK_NUM + INODE_AREA_BLOCK_NUM) as usize, DATA_BITMAP_BLOCK_NUM as usize);
+        let inode_bitmap = Bitmap::new(1, inode_bitmap_block_num as usize);
+        let data_bitmap = Bitmap::new((1 + inode_bitmap_block_num + inode_area_block_num) as usize, data_bitmap_block_num as usize);
         let mut efs = Self {
             block_device: Rc::clone(&block_device),
             inode_bitmap,
             data_bitmap,
-            inode_area_start_block: 1 + INODE_BITMAP_BLOCK_NUM,
-            data_area_start_block: 1 + INODE_BITMAP_BLOCK_NUM + INODE_AREA_BLOCK_NUM + DATA_BITMAP_BLOCK_NUM,
+            inode_area_start_block: 1 + inode_bitmap_block_num,
+            data_area_start_block: 1 + inode_bitmap_block_num + inode_area_block_num + data_bitmap_block_num,
         };
+        let total_block_num = inode_bitmap_block_num + inode_area_block_num + data_bitmap_block_num + data_area_block_num;
         // clear all blocks
-        for i in 0..TOTAL_BLOCK_NUM {
+        for i in 0..total_block_num {
             get_block_cache(i as usize, Rc::clone(&block_device))
                 .borrow_mut()
                 .modify(0, |data_block: &mut DataBlock| {
@@ -48,10 +53,10 @@ impl FileSystem {
         get_block_cache(0, Rc::clone(&block_device)).borrow_mut()
         .set(0,
              SuperBlock::new(
-            INODE_BITMAP_BLOCK_NUM, 
-            INODE_AREA_BLOCK_NUM, 
-            DATA_BITMAP_BLOCK_NUM,
-            DATA_AREA_BLOCK_NUM));
+            inode_bitmap_block_num, 
+            inode_area_block_num, 
+            data_bitmap_block_num,
+            data_area_block_num));
 
         // write back immediately
         // create a inode for root node "/"

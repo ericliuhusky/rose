@@ -4,7 +4,20 @@ use std::{
     io::{Read, Write},
     rc::Rc,
 };
-use fs::TOTAL_BLOCK_NUM;
+
+/*
+SuperBlock          1
+InodeBitmapBlock    1
+InodeAreaBlock      64
+DataBitmapBlock     8
+DataAreaBlock       8 * 4096
+*/
+pub const INODE_BITMAP_BLOCK_NUM: u32 = 1;
+pub const INODE_AREA_BLOCK_NUM: u32 = 64;
+pub const DATA_BITMAP_BLOCK_NUM: u32 = 8;
+pub const DATA_AREA_BLOCK_NUM: u32 = DATA_BITMAP_BLOCK_NUM * 4096;
+pub const TOTAL_BLOCK_NUM: u32 = 1 + INODE_BITMAP_BLOCK_NUM + INODE_AREA_BLOCK_NUM + DATA_BITMAP_BLOCK_NUM + DATA_AREA_BLOCK_NUM;
+
 
 static mut BLOCKS: [[u8; 0x200]; TOTAL_BLOCK_NUM as usize] = [[0; 0x200]; TOTAL_BLOCK_NUM as usize];
 
@@ -44,7 +57,7 @@ impl BlockDevice for MemoryBlockDevice {
 
 pub fn fs_pack() {
     let block_device = Rc::new(MemoryBlockDevice);
-    let fs = FileSystem::create(block_device);
+    let fs = FileSystem::create(block_device, INODE_BITMAP_BLOCK_NUM, INODE_AREA_BLOCK_NUM, DATA_BITMAP_BLOCK_NUM, DATA_AREA_BLOCK_NUM);
     let root_inode = FileSystem::root_inode(&fs);
 
     let apps: Vec<String> = read_dir("../user/src/bin")
