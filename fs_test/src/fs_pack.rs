@@ -4,8 +4,9 @@ use std::{
     io::{Read, Write},
     sync::Arc,
 };
+use fs::TOTAL_BLOCK_NUM;
 
-static mut BLOCKS: [[u8; 0x200]; 0x8000] = [[0; 0x200]; 0x8000];
+static mut BLOCKS: [[u8; 0x200]; TOTAL_BLOCK_NUM as usize] = [[0; 0x200]; TOTAL_BLOCK_NUM as usize];
 
 pub struct MemoryBlockDevice;
 
@@ -43,7 +44,7 @@ impl BlockDevice for MemoryBlockDevice {
 
 pub fn fs_pack() {
     let block_device = Arc::new(MemoryBlockDevice);
-    let fs = EasyFileSystem::create(block_device, 0x8000, 1);
+    let fs = EasyFileSystem::create(block_device);
     let root_inode = EasyFileSystem::root_inode(&fs);
 
     let apps: Vec<String> = read_dir("../user/src/bin")

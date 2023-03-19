@@ -5,6 +5,7 @@ use super::{
 use crate::BLOCK_SZ;
 use alloc::sync::Arc;
 use spin::Mutex;
+use super::*;
 ///An easy file system on block
 pub struct EasyFileSystem {
     ///Real device
@@ -23,31 +24,18 @@ impl EasyFileSystem {
     /// A data block of block size
     pub fn create(
         block_device: Arc<dyn BlockDevice>,
-        total_blocks: u32,
-        inode_bitmap_blocks: u32,
     ) -> Arc<Mutex<Self>> {
-        // calculate block size of areas & create bitmaps
-        let inode_bitmap = Bitmap::new(1, inode_bitmap_blocks as usize);
-        let inode_num = inode_bitmap.maximum();
-        let inode_area_blocks =
-            ((inode_num * core::mem::size_of::<DiskInode>() + BLOCK_SZ - 1) / BLOCK_SZ) as u32;
-        let inode_total_blocks = inode_bitmap_blocks + inode_area_blocks;
-        let data_total_blocks = total_blocks - 1 - inode_total_blocks;
-        let data_bitmap_blocks = (data_total_blocks + 4096) / 4097;
-        let data_area_blocks = data_total_blocks - data_bitmap_blocks;
-        let data_bitmap = Bitmap::new(
-            (1 + inode_bitmap_blocks + inode_area_blocks) as usize,
-            data_bitmap_blocks as usize,
-        );
+        let inode_bitmap = Bitmap::new(1, INODE_BITMAP_BLOCK_NUM as usize);
+        let data_bitmap = Bitmap::new((1 + INODE_BITMAP_BLOCK_NUM + INODE_AREA_BLOCK_NUM) as usize, DATA_BITMAP_BLOCK_NUM as usize);
         let mut efs = Self {
             block_device: Arc::clone(&block_device),
             inode_bitmap,
             data_bitmap,
-            inode_area_start_block: 1 + inode_bitmap_blocks,
-            data_area_start_block: 1 + inode_total_blocks + data_bitmap_blocks,
+            inode_area_start_block: 1 + INODE_BITMAP_BLOCK_NUM,
+            data_area_start_block: 1 + INODE_BITMAP_BLOCK_NUM + INODE_AREA_BLOCK_NUM + DATA_BITMAP_BLOCK_NUM,
         };
         // clear all blocks
-        for i in 0..total_blocks {
+        for i in 0..TOTAL_BLOCK_NUM {
             get_block_cache(i as usize, Arc::clone(&block_device))
                 .borrow_mut()
                 .modify(0, |data_block: &mut DataBlock| {
@@ -61,11 +49,11 @@ impl EasyFileSystem {
             0,
             |super_block: &mut SuperBlock| {
                 super_block.initialize(
-                    total_blocks,
-                    inode_bitmap_blocks,
-                    inode_area_blocks,
-                    data_bitmap_blocks,
-                    data_area_blocks,
+                    TOTAL_BLOCK_NUM,
+                    INODE_BITMAP_BLOCK_NUM,
+                    INODE_AREA_BLOCK_NUM,
+                    DATA_BITMAP_BLOCK_NUM,
+                    DATA_AREA_BLOCK_NUM,
                 );
             },
         );

@@ -10,7 +10,7 @@ fn main() {
 #[test]
 fn efs_test() -> std::io::Result<()> {
     let block_device = Arc::new(MemoryBlockDevice);
-    EasyFileSystem::create(block_device.clone(), 0x1000, 1);
+    EasyFileSystem::create(block_device.clone());
     let efs = EasyFileSystem::open(block_device.clone());
     let root_inode = EasyFileSystem::root_inode(&efs);
     root_inode.create("filea");
