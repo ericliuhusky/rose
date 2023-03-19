@@ -57,7 +57,7 @@ type DataBlock = [u8; BLOCK_SZ];
 #[repr(C)]
 pub struct DiskInode {
     pub size: u32,
-    pub direct: [u32; INODE_DIRECT_COUNT],
+    pub direct: [u32; 28],
     pub indirect1: u32,
     pub indirect2: u32,
     type_: DiskInodeType,
