@@ -1,5 +1,5 @@
 use super::{get_block_cache, BlockDevice, BLOCK_SZ};
-use alloc::sync::Arc;
+use alloc::rc::Rc;
 /// A bitmap block
 type BitmapBlock = [u64; 64];
 /// Number of bits in a block
@@ -26,11 +26,11 @@ impl Bitmap {
         }
     }
     /// Allocate a new block from a block device
-    pub fn alloc(&self, block_device: Arc<dyn BlockDevice>) -> Option<usize> {
+    pub fn alloc(&self, block_device: Rc<dyn BlockDevice>) -> Option<usize> {
         for block_id in 0..self.blocks {
             let pos = get_block_cache(
                 block_id + self.start_block_id as usize,
-                Arc::clone(&block_device),
+                Rc::clone(&block_device),
             )
             .borrow_mut()
             .modify(0, |bitmap_block: &mut BitmapBlock| {
@@ -49,9 +49,9 @@ impl Bitmap {
         None
     }
     /// Deallocate a block
-    pub fn dealloc(&self, block_device: &Arc<dyn BlockDevice>, bit: usize) {
+    pub fn dealloc(&self, block_device: &Rc<dyn BlockDevice>, bit: usize) {
         let (block_pos, bits64_pos, inner_pos) = decomposition(bit);
-        get_block_cache(block_pos + self.start_block_id, Arc::clone(block_device))
+        get_block_cache(block_pos + self.start_block_id, Rc::clone(block_device))
             .borrow_mut()
             .modify(0, |bitmap_block: &mut BitmapBlock| {
                 bitmap_block[bits64_pos] &= !(1 << inner_pos);

@@ -1,5 +1,5 @@
 use super::{get_block_cache, BlockDevice, BLOCK_SZ};
-use alloc::sync::Arc;
+use alloc::rc::Rc;
 use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter, Result};
 
@@ -137,24 +137,24 @@ impl DiskInode {
         Self::total_blocks(new_size) - Self::total_blocks(self.size)
     }
     /// Get id of block given inner id
-    pub fn get_block_id(&self, inner_id: u32, block_device: &Arc<dyn BlockDevice>) -> u32 {
+    pub fn get_block_id(&self, inner_id: u32, block_device: &Rc<dyn BlockDevice>) -> u32 {
         let inner_id = inner_id as usize;
         if inner_id < INODE_DIRECT_COUNT {
             self.direct[inner_id]
         } else if inner_id < INDIRECT1_BOUND {
-            get_block_cache(self.indirect1 as usize, Arc::clone(block_device))
+            get_block_cache(self.indirect1 as usize, Rc::clone(block_device))
                 .borrow()
                 .read(0, |indirect_block: &IndirectBlock| {
                     indirect_block[inner_id - INODE_DIRECT_COUNT]
                 })
         } else {
             let last = inner_id - INDIRECT1_BOUND;
-            let indirect1 = get_block_cache(self.indirect2 as usize, Arc::clone(block_device))
+            let indirect1 = get_block_cache(self.indirect2 as usize, Rc::clone(block_device))
                 .borrow()
                 .read(0, |indirect2: &IndirectBlock| {
                     indirect2[last / INODE_INDIRECT1_COUNT]
                 });
-            get_block_cache(indirect1 as usize, Arc::clone(block_device))
+            get_block_cache(indirect1 as usize, Rc::clone(block_device))
                 .borrow()
                 .read(0, |indirect1: &IndirectBlock| {
                     indirect1[last % INODE_INDIRECT1_COUNT]
@@ -166,7 +166,7 @@ impl DiskInode {
         &mut self,
         new_size: u32,
         new_blocks: Vec<u32>,
-        block_device: &Arc<dyn BlockDevice>,
+        block_device: &Rc<dyn BlockDevice>,
     ) {
         let mut current_blocks = self.data_blocks();
         self.size = new_size;
@@ -188,7 +188,7 @@ impl DiskInode {
             return;
         }
         // fill indirect1
-        get_block_cache(self.indirect1 as usize, Arc::clone(block_device))
+        get_block_cache(self.indirect1 as usize, Rc::clone(block_device))
             .borrow_mut()
             .modify(0, |indirect1: &mut IndirectBlock| {
                 while current_blocks < total_blocks.min(INODE_INDIRECT1_COUNT as u32) {
@@ -212,7 +212,7 @@ impl DiskInode {
         let a1 = total_blocks as usize / INODE_INDIRECT1_COUNT;
         let b1 = total_blocks as usize % INODE_INDIRECT1_COUNT;
         // alloc low-level indirect1
-        get_block_cache(self.indirect2 as usize, Arc::clone(block_device))
+        get_block_cache(self.indirect2 as usize, Rc::clone(block_device))
             . borrow_mut()
             .modify(0, |indirect2: &mut IndirectBlock| {
                 while (a0 < a1) || (a0 == a1 && b0 < b1) {
@@ -220,7 +220,7 @@ impl DiskInode {
                         indirect2[a0] = new_blocks.next().unwrap();
                     }
                     // fill current
-                    get_block_cache(indirect2[a0] as usize, Arc::clone(block_device))
+                    get_block_cache(indirect2[a0] as usize, Rc::clone(block_device))
                         .borrow_mut()
                         .modify(0, |indirect1: &mut IndirectBlock| {
                             indirect1[b0] = new_blocks.next().unwrap();
@@ -237,7 +237,7 @@ impl DiskInode {
 
     /// Clear size to zero and return blocks that should be deallocated.
     /// We will clear the block contents to zero later.
-    pub fn clear_size(&mut self, block_device: &Arc<dyn BlockDevice>) -> Vec<u32> {
+    pub fn clear_size(&mut self, block_device: &Rc<dyn BlockDevice>) -> Vec<u32> {
         let mut v: Vec<u32> = Vec::new();
         let mut data_blocks = self.data_blocks() as usize;
         self.size = 0;
@@ -257,7 +257,7 @@ impl DiskInode {
             return v;
         }
         // indirect1
-        get_block_cache(self.indirect1 as usize, Arc::clone(block_device))
+        get_block_cache(self.indirect1 as usize, Rc::clone(block_device))
             .borrow_mut()
             .modify(0, |indirect1: &mut IndirectBlock| {
                 while current_blocks < data_blocks.min(INODE_INDIRECT1_COUNT) {
@@ -278,13 +278,13 @@ impl DiskInode {
         assert!(data_blocks <= INODE_INDIRECT2_COUNT);
         let a1 = data_blocks / INODE_INDIRECT1_COUNT;
         let b1 = data_blocks % INODE_INDIRECT1_COUNT;
-        get_block_cache(self.indirect2 as usize, Arc::clone(block_device))
+        get_block_cache(self.indirect2 as usize, Rc::clone(block_device))
             .borrow_mut()
             .modify(0, |indirect2: &mut IndirectBlock| {
                 // full indirect1 blocks
                 for entry in indirect2.iter_mut().take(a1) {
                     v.push(*entry);
-                    get_block_cache(*entry as usize, Arc::clone(block_device))
+                    get_block_cache(*entry as usize, Rc::clone(block_device))
                         .borrow_mut()
                         .modify(0, |indirect1: &mut IndirectBlock| {
                             for entry in indirect1.iter() {
@@ -295,7 +295,7 @@ impl DiskInode {
                 // last indirect1 block
                 if b1 > 0 {
                     v.push(indirect2[a1]);
-                    get_block_cache(indirect2[a1] as usize, Arc::clone(block_device))
+                    get_block_cache(indirect2[a1] as usize, Rc::clone(block_device))
                         .borrow_mut()
                         .modify(0, |indirect1: &mut IndirectBlock| {
                             for entry in indirect1.iter().take(b1) {
@@ -313,7 +313,7 @@ impl DiskInode {
         &self,
         offset: usize,
         buf: &mut [u8],
-        block_device: &Arc<dyn BlockDevice>,
+        block_device: &Rc<dyn BlockDevice>,
     ) -> usize {
         let mut start = offset;
         let end = (offset + buf.len()).min(self.size as usize);
@@ -331,7 +331,7 @@ impl DiskInode {
             let dst = &mut buf[read_size..read_size + block_read_size];
             get_block_cache(
                 self.get_block_id(start_block as u32, block_device) as usize,
-                Arc::clone(block_device),
+                Rc::clone(block_device),
             )
             .borrow()
             .read(0, |data_block: &DataBlock| {
@@ -354,7 +354,7 @@ impl DiskInode {
         &mut self,
         offset: usize,
         buf: &[u8],
-        block_device: &Arc<dyn BlockDevice>,
+        block_device: &Rc<dyn BlockDevice>,
     ) -> usize {
         let mut start = offset;
         let end = (offset + buf.len()).min(self.size as usize);
@@ -369,7 +369,7 @@ impl DiskInode {
             let block_write_size = end_current_block - start;
             get_block_cache(
                 self.get_block_id(start_block as u32, block_device) as usize,
-                Arc::clone(block_device),
+                Rc::clone(block_device),
             )
             .borrow_mut()
             .modify(0, |data_block: &mut DataBlock| {

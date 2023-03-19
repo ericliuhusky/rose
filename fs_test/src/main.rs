@@ -1,7 +1,7 @@
 mod fs_pack;
 use fs_pack::{MemoryBlockDevice, fs_pack};
 use fs::EasyFileSystem;
-use std::sync::Arc;
+use std::rc::Rc;
 
 fn main() {
     fs_pack();
@@ -9,7 +9,7 @@ fn main() {
 
 #[test]
 fn efs_test() -> std::io::Result<()> {
-    let block_device = Arc::new(MemoryBlockDevice);
+    let block_device = Rc::new(MemoryBlockDevice);
     EasyFileSystem::create(block_device.clone());
     let efs = EasyFileSystem::open(block_device.clone());
     let root_inode = EasyFileSystem::root_inode(&efs);

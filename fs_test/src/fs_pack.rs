@@ -2,7 +2,7 @@ use fs::{BlockDevice, EasyFileSystem};
 use std::{
     fs::{read_dir, File},
     io::{Read, Write},
-    sync::Arc,
+    rc::Rc,
 };
 use fs::TOTAL_BLOCK_NUM;
 
@@ -43,7 +43,7 @@ impl BlockDevice for MemoryBlockDevice {
 }
 
 pub fn fs_pack() {
-    let block_device = Arc::new(MemoryBlockDevice);
+    let block_device = Rc::new(MemoryBlockDevice);
     let fs = EasyFileSystem::create(block_device);
     let root_inode = EasyFileSystem::root_inode(&fs);
 

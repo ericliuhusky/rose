@@ -1,4 +1,4 @@
-use alloc::sync::Arc;
+use alloc::rc::Rc;
 use fs::BlockDevice;
 use lazy_static::*;
 use core::cell::RefCell;
@@ -10,7 +10,7 @@ use page_table::{PA, PPN, VA};
 use virtio_drivers::{Hal, VirtIOBlk, VirtIOHeader};
 
 lazy_static! {
-    pub static ref BLOCK_DEVICE: Arc<dyn BlockDevice> = Arc::new(VirtIOBlock::new());
+    pub static ref BLOCK_DEVICE: Rc<dyn BlockDevice> = Rc::new(VirtIOBlock::new());
 }
 
 #[allow(unused)]

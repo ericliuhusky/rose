@@ -1,7 +1,6 @@
 use super::lru::LRUCache;
 use super::{BlockDevice, BLOCK_SZ};
 use alloc::rc::Rc;
-use alloc::sync::Arc;
 use core::cell::RefCell;
 
 /// Cached block inside memory
@@ -11,14 +10,14 @@ pub struct BlockCache {
     /// underlying block id
     block_id: usize,
     /// underlying block device
-    block_device: Arc<dyn BlockDevice>,
+    block_device: Rc<dyn BlockDevice>,
     /// whether the block is dirty
     modified: bool,
 }
 
 impl BlockCache {
     /// Load a new BlockCache from disk.
-    pub fn new(block_id: usize, block_device: Arc<dyn BlockDevice>) -> Self {
+    pub fn new(block_id: usize, block_device: Rc<dyn BlockDevice>) -> Self {
         let mut cache = [0u8; BLOCK_SZ];
         block_device.read_block(block_id, &mut cache);
         Self {
@@ -68,14 +67,14 @@ impl BlockCacheManager {
     pub fn get_block_cache(
         &mut self,
         block_id: usize,
-        block_device: Arc<dyn BlockDevice>,
+        block_device: Rc<dyn BlockDevice>,
     ) -> Rc<RefCell<BlockCache>> {
         if let Some(v) = self.lru.get(&block_id) {
             Rc::clone(v)
         } else {
             let block_cache = Rc::new(RefCell::new(BlockCache::new(
                 block_id,
-                Arc::clone(&block_device),
+                Rc::clone(&block_device),
             )));
             self.lru.set(block_id, Rc::clone(&block_cache));
             block_cache
@@ -90,7 +89,7 @@ lazy_static::lazy_static! {
 /// Get the block cache corresponding to the given block id and block device
 pub fn get_block_cache(
     block_id: usize,
-    block_device: Arc<dyn BlockDevice>,
+    block_device: Rc<dyn BlockDevice>,
 ) -> Rc<RefCell<BlockCache>> {
     BLOCK_CACHE_MANAGER.borrow_mut().get_block_cache(block_id, block_device)
 }
