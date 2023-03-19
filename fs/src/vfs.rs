@@ -5,12 +5,12 @@ use super::{
 use alloc::string::String;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
-use spin::{Mutex, MutexGuard};
+use core::cell::{RefCell, RefMut};
 /// Virtual filesystem layer over easy-fs
 pub struct Inode {
     block_id: usize,
     block_offset: usize,
-    fs: Rc<Mutex<EasyFileSystem>>,
+    fs: Rc<RefCell<EasyFileSystem>>,
     block_device: Rc<dyn BlockDevice>,
 }
 
@@ -19,7 +19,7 @@ impl Inode {
     pub fn new(
         block_id: u32,
         block_offset: usize,
-        fs: Rc<Mutex<EasyFileSystem>>,
+        fs: Rc<RefCell<EasyFileSystem>>,
         block_device: Rc<dyn BlockDevice>,
     ) -> Self {
         Self {
@@ -60,7 +60,7 @@ impl Inode {
     }
     /// Find inode under current inode by name
     pub fn find(&self, name: &str) -> Option<Rc<Inode>> {
-        let fs = self.fs.lock();
+        let fs = self.fs.borrow();
         self.read_disk_inode(|disk_inode| {
             self.find_inode_id(name, disk_inode).map(|inode_id| {
                 let (block_id, block_offset) = fs.get_disk_inode_pos(inode_id);
@@ -78,7 +78,7 @@ impl Inode {
         &self,
         new_size: u32,
         disk_inode: &mut DiskInode,
-        fs: &mut MutexGuard<EasyFileSystem>,
+        fs: &mut RefMut<EasyFileSystem>,
     ) {
         if new_size < disk_inode.size {
             return;
@@ -92,7 +92,7 @@ impl Inode {
     }
     /// Create inode under current inode by name
     pub fn create(&self, name: &str) -> Option<Rc<Inode>> {
-        let mut fs = self.fs.lock();
+        let mut fs = self.fs.borrow_mut();
         let op = |root_inode: &DiskInode| {
             // assert it is a directory
             assert!(root_inode.is_dir());
@@ -140,7 +140,7 @@ impl Inode {
     }
     /// List inodes under current inode
     pub fn ls(&self) -> Vec<String> {
-        let _fs = self.fs.lock();
+        let _fs = self.fs.borrow();
         self.read_disk_inode(|disk_inode| {
             let file_count = (disk_inode.size as usize) / DIRENT_SZ;
             let mut v: Vec<String> = Vec::new();
@@ -157,12 +157,12 @@ impl Inode {
     }
     /// Read data from current inode
     pub fn read_at(&self, offset: usize, buf: &mut [u8]) -> usize {
-        let _fs = self.fs.lock();
+        let _fs = self.fs.borrow();
         self.read_disk_inode(|disk_inode| disk_inode.read_at(offset, buf, &self.block_device))
     }
     /// Write data to current inode
     pub fn write_at(&self, offset: usize, buf: &[u8]) -> usize {
-        let mut fs = self.fs.lock();
+        let mut fs = self.fs.borrow_mut();
         let size = self.modify_disk_inode(|disk_inode| {
             self.increase_size((offset + buf.len()) as u32, disk_inode, &mut fs);
             disk_inode.write_at(offset, buf, &self.block_device)
@@ -172,7 +172,7 @@ impl Inode {
     }
     /// Clear the data in current inode
     pub fn clear(&self) {
-        let mut fs = self.fs.lock();
+        let mut fs = self.fs.borrow_mut();
         self.modify_disk_inode(|disk_inode| {
             let size = disk_inode.size;
             let data_blocks_dealloc = disk_inode.clear_size(&self.block_device);

@@ -4,7 +4,7 @@ use super::{
 };
 use crate::BLOCK_SZ;
 use alloc::rc::Rc;
-use spin::Mutex;
+use core::cell::RefCell;
 use super::*;
 ///An easy file system on block
 pub struct EasyFileSystem {
@@ -24,7 +24,7 @@ impl EasyFileSystem {
     /// A data block of block size
     pub fn create(
         block_device: Rc<dyn BlockDevice>,
-    ) -> Rc<Mutex<Self>> {
+    ) -> Rc<RefCell<Self>> {
         let inode_bitmap = Bitmap::new(1, INODE_BITMAP_BLOCK_NUM as usize);
         let data_bitmap = Bitmap::new((1 + INODE_BITMAP_BLOCK_NUM + INODE_AREA_BLOCK_NUM) as usize, DATA_BITMAP_BLOCK_NUM as usize);
         let mut efs = Self {
@@ -67,10 +67,10 @@ impl EasyFileSystem {
                 disk_inode.initialize(DiskInodeType::Directory);
             });
         block_cache_sync_all();
-        Rc::new(Mutex::new(efs))
+        Rc::new(RefCell::new(efs))
     }
     /// Open a block device as a filesystem
-    pub fn open(block_device: Rc<dyn BlockDevice>) -> Rc<Mutex<Self>> {
+    pub fn open(block_device: Rc<dyn BlockDevice>) -> Rc<RefCell<Self>> {
         // read SuperBlock
         get_block_cache(0, Rc::clone(&block_device))
             .borrow()
@@ -88,14 +88,14 @@ impl EasyFileSystem {
                     inode_area_start_block: 1 + super_block.inode_bitmap_blocks,
                     data_area_start_block: 1 + inode_total_blocks + super_block.data_bitmap_blocks,
                 };
-                Rc::new(Mutex::new(efs))
+                Rc::new(RefCell::new(efs))
             })
     }
     /// Get the root inode of the filesystem
-    pub fn root_inode(efs: &Rc<Mutex<Self>>) -> Inode {
-        let block_device = Rc::clone(&efs.lock().block_device);
+    pub fn root_inode(efs: &Rc<RefCell<Self>>) -> Inode {
+        let block_device = Rc::clone(&efs.borrow().block_device);
         // acquire efs lock temporarily
-        let (block_id, block_offset) = efs.lock().get_disk_inode_pos(0);
+        let (block_id, block_offset) = efs.borrow().get_disk_inode_pos(0);
         // release efs lock
         Inode::new(block_id, block_offset, Rc::clone(efs), block_device)
     }
