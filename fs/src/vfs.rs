@@ -9,7 +9,6 @@ use core::cell::{RefCell, RefMut};
 /// Virtual filesystem layer over fs
 pub struct Inode {
     block_id: usize,
-    block_offset: usize,
     fs: Rc<RefCell<FileSystem>>,
     block_device: Rc<dyn BlockDevice>,
 }
@@ -18,13 +17,11 @@ impl Inode {
     /// Create a vfs inode
     pub fn new(
         block_id: u32,
-        block_offset: usize,
         fs: Rc<RefCell<FileSystem>>,
         block_device: Rc<dyn BlockDevice>,
     ) -> Self {
         Self {
             block_id: block_id as usize,
-            block_offset,
             fs,
             block_device,
         }
@@ -33,13 +30,13 @@ impl Inode {
     fn read_disk_inode<V>(&self, f: impl FnOnce(&DiskInode) -> V) -> V {
         get_block_cache(self.block_id, Rc::clone(&self.block_device))
             .borrow()
-            .read(self.block_offset, f)
+            .read(0, f)
     }
     /// Call a function over a disk inode to modify it
     fn modify_disk_inode<V>(&self, f: impl FnOnce(&mut DiskInode) -> V) -> V {
         get_block_cache(self.block_id, Rc::clone(&self.block_device))
             .borrow_mut()
-            .modify(self.block_offset, f)
+            .modify(0, f)
     }
     /// Find inode under a disk inode by name
     fn find_inode_id(&self, name: &str, disk_inode: &DiskInode) -> Option<u32> {
@@ -63,10 +60,9 @@ impl Inode {
         let fs = self.fs.borrow();
         self.read_disk_inode(|disk_inode| {
             self.find_inode_id(name, disk_inode).map(|inode_id| {
-                let (block_id, block_offset) = fs.get_disk_inode_pos(inode_id);
+                let block_id = fs.get_inode_block_id(inode_id);
                 Rc::new(Self::new(
                     block_id,
-                    block_offset,
                     self.fs.clone(),
                     self.block_device.clone(),
                 ))
@@ -105,10 +101,10 @@ impl Inode {
         // create a new file
         // alloc a inode with an indirect block
         let new_inode_id = fs.alloc_inode();
-        let (new_inode_block_id, new_inode_block_offset) = fs.get_disk_inode_pos(new_inode_id);
+        let new_inode_block_id = fs.get_inode_block_id(new_inode_id);
         get_block_cache(new_inode_block_id as usize, Rc::clone(&self.block_device))
             .borrow_mut()
-            .set(new_inode_block_offset, DiskInode::new(DiskInodeType::File));
+            .set(0, DiskInode::new(DiskInodeType::File));
         
         self.modify_disk_inode(|root_inode| {
             // append file in the dirent
@@ -125,12 +121,11 @@ impl Inode {
             );
         });
 
-        let (block_id, block_offset) = fs.get_disk_inode_pos(new_inode_id);
+        let block_id = fs.get_inode_block_id(new_inode_id);
         block_cache_sync_all();
         // return inode
         Some(Rc::new(Self::new(
             block_id,
-            block_offset,
             self.fs.clone(),
             self.block_device.clone(),
         )))

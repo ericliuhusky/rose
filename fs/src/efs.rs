@@ -60,10 +60,10 @@ impl FileSystem {
         // write back immediately
         // create a inode for root node "/"
         assert_eq!(efs.alloc_inode(), 0);
-        let (root_inode_block_id, root_inode_offset) = efs.get_disk_inode_pos(0);
+        let root_inode_block_id = efs.get_inode_block_id(0);
         get_block_cache(root_inode_block_id as usize, Rc::clone(&block_device))
             .borrow_mut()
-            .set(root_inode_offset, DiskInode::new(DiskInodeType::Directory));
+            .set(0, DiskInode::new(DiskInodeType::Directory));
         
         block_cache_sync_all();
         Rc::new(RefCell::new(efs))
@@ -92,19 +92,13 @@ impl FileSystem {
     pub fn root_inode(efs: &Rc<RefCell<Self>>) -> Inode {
         let block_device = Rc::clone(&efs.borrow().block_device);
         // acquire efs lock temporarily
-        let (block_id, block_offset) = efs.borrow().get_disk_inode_pos(0);
+        let block_id = efs.borrow().get_inode_block_id(0);
         // release efs lock
-        Inode::new(block_id, block_offset, Rc::clone(efs), block_device)
+        Inode::new(block_id, Rc::clone(efs), block_device)
     }
-    /// Get inode by id
-    pub fn get_disk_inode_pos(&self, inode_id: u32) -> (u32, usize) {
-        let inode_size = core::mem::size_of::<DiskInode>();
-        let inodes_per_block = (BLOCK_SZ / inode_size) as u32;
-        let block_id = self.inode_area_start_block + inode_id / inodes_per_block;
-        (
-            block_id,
-            (inode_id % inodes_per_block) as usize * inode_size,
-        )
+
+    pub fn get_inode_block_id(&self, inode_id: u32) -> u32 {
+        self.inode_area_start_block + inode_id
     }
     
     /// Allocate a new inode
