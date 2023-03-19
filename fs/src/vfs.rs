@@ -105,13 +105,11 @@ impl Inode {
         // create a new file
         // alloc a inode with an indirect block
         let new_inode_id = fs.alloc_inode();
-        // initialize inode
         let (new_inode_block_id, new_inode_block_offset) = fs.get_disk_inode_pos(new_inode_id);
         get_block_cache(new_inode_block_id as usize, Rc::clone(&self.block_device))
             .borrow_mut()
-            .modify(new_inode_block_offset, |new_inode: &mut DiskInode| {
-                new_inode.initialize(DiskInodeType::File);
-            });
+            .set(new_inode_block_offset, DiskInode::new(DiskInodeType::File));
+        
         self.modify_disk_inode(|root_inode| {
             // append file in the dirent
             let file_count = (root_inode.size as usize) / DIRENT_SZ;

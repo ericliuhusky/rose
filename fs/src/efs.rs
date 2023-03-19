@@ -49,7 +49,6 @@ impl FileSystem {
                     }
                 });
         }
-        // initialize SuperBlock
         get_block_cache(0, Rc::clone(&block_device)).borrow_mut()
         .set(0,
              SuperBlock::new(
@@ -64,9 +63,8 @@ impl FileSystem {
         let (root_inode_block_id, root_inode_offset) = efs.get_disk_inode_pos(0);
         get_block_cache(root_inode_block_id as usize, Rc::clone(&block_device))
             .borrow_mut()
-            .modify(root_inode_offset, |disk_inode: &mut DiskInode| {
-                disk_inode.initialize(DiskInodeType::Directory);
-            });
+            .set(root_inode_offset, DiskInode::new(DiskInodeType::Directory));
+        
         block_cache_sync_all();
         Rc::new(RefCell::new(efs))
     }
