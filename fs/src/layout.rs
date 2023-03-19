@@ -21,41 +21,24 @@ const INDIRECT2_BOUND: usize = INDIRECT1_BOUND + INODE_INDIRECT2_COUNT;
 /// Super block of a filesystem
 #[repr(C)]
 pub struct SuperBlock {
-    pub total_blocks: u32,
-    pub inode_bitmap_blocks: u32,
-    pub inode_area_blocks: u32,
-    pub data_bitmap_blocks: u32,
-    pub data_area_blocks: u32,
-}
-
-impl Debug for SuperBlock {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        f.debug_struct("SuperBlock")
-            .field("total_blocks", &self.total_blocks)
-            .field("inode_bitmap_blocks", &self.inode_bitmap_blocks)
-            .field("inode_area_blocks", &self.inode_area_blocks)
-            .field("data_bitmap_blocks", &self.data_bitmap_blocks)
-            .field("data_area_blocks", &self.data_area_blocks)
-            .finish()
-    }
+    pub inode_bitmap_block_num: u32,
+    pub inode_area_block_num: u32,
+    pub data_bitmap_block_num: u32,
+    pub data_area_block_num: u32,
 }
 
 impl SuperBlock {
-    /// Initialize a super block
-    pub fn initialize(
-        &mut self,
-        total_blocks: u32,
-        inode_bitmap_blocks: u32,
-        inode_area_blocks: u32,
-        data_bitmap_blocks: u32,
-        data_area_blocks: u32,
-    ) {
-        *self = Self {
-            total_blocks,
-            inode_bitmap_blocks,
-            inode_area_blocks,
-            data_bitmap_blocks,
-            data_area_blocks,
+    pub fn new(
+        inode_bitmap_block_num: u32,
+        inode_area_block_num: u32,
+        data_bitmap_block_num: u32,
+        data_area_block_num: u32,
+    ) -> Self {
+        Self {
+            inode_bitmap_block_num,
+            inode_area_block_num,
+            data_bitmap_block_num,
+            data_area_block_num,
         }
     }
 }
