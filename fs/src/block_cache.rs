@@ -39,6 +39,11 @@ impl BlockCache {
         f(unsafe { &mut *(addr as *mut T) })
     }
 
+    pub fn get<V>(&self, offset: usize) -> &V {
+        let addr = &self.cache[offset] as *const u8 as usize;
+        unsafe { &*(addr as *const V) }
+    }
+
     pub fn set<V>(&mut self, offset: usize, value: V) {
         self.modified = true;
         let addr = &self.cache[offset] as *const u8 as usize;

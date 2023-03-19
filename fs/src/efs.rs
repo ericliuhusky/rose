@@ -73,23 +73,22 @@ impl FileSystem {
     /// Open a block device as a filesystem
     pub fn open(block_device: Rc<dyn BlockDevice>) -> Rc<RefCell<Self>> {
         // read SuperBlock
-        get_block_cache(0, Rc::clone(&block_device))
-            .borrow()
-            .read(0, |super_block: &SuperBlock| {
-                let inode_total_blocks =
-                    super_block.inode_bitmap_block_num + super_block.inode_area_block_num;
-                let efs = Self {
-                    block_device,
-                    inode_bitmap: Bitmap::new(1, super_block.inode_bitmap_block_num as usize),
-                    data_bitmap: Bitmap::new(
-                        (1 + inode_total_blocks) as usize,
-                        super_block.data_bitmap_block_num as usize,
-                    ),
-                    inode_area_start_block: 1 + super_block.inode_bitmap_block_num,
-                    data_area_start_block: 1 + inode_total_blocks + super_block.data_bitmap_block_num,
-                };
-                Rc::new(RefCell::new(efs))
-            })
+        let cache = get_block_cache(0, Rc::clone(&block_device));
+        let cache = cache.borrow();
+        let super_block = cache.get::<SuperBlock>(0);
+        
+        let inode_total_blocks = super_block.inode_bitmap_block_num + super_block.inode_area_block_num;
+        let fs = Self {
+            block_device,
+            inode_bitmap: Bitmap::new(1, super_block.inode_bitmap_block_num as usize),
+            data_bitmap: Bitmap::new(
+                (1 + inode_total_blocks) as usize,
+                super_block.data_bitmap_block_num as usize,
+            ),
+            inode_area_start_block: 1 + super_block.inode_bitmap_block_num,
+            data_area_start_block: 1 + inode_total_blocks + super_block.data_bitmap_block_num,
+        };
+        Rc::new(RefCell::new(fs))
     }
     /// Get the root inode of the filesystem
     pub fn root_inode(efs: &Rc<RefCell<Self>>) -> Inode {
