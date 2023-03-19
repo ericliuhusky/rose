@@ -6,8 +6,8 @@ use crate::BLOCK_SZ;
 use alloc::rc::Rc;
 use core::cell::RefCell;
 use super::*;
-///An easy file system on block
-pub struct EasyFileSystem {
+///An file system on block
+pub struct FileSystem {
     ///Real device
     pub block_device: Rc<dyn BlockDevice>,
     ///Inode bitmap
@@ -19,8 +19,8 @@ pub struct EasyFileSystem {
 }
 
 type DataBlock = [u8; BLOCK_SZ];
-/// An easy fs over a block device
-impl EasyFileSystem {
+/// An fs over a block device
+impl FileSystem {
     /// A data block of block size
     pub fn create(
         block_device: Rc<dyn BlockDevice>,

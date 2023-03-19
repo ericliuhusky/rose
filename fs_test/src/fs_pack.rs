@@ -1,4 +1,4 @@
-use fs::{BlockDevice, EasyFileSystem};
+use fs::{BlockDevice, FileSystem};
 use std::{
     fs::{read_dir, File},
     io::{Read, Write},
@@ -44,8 +44,8 @@ impl BlockDevice for MemoryBlockDevice {
 
 pub fn fs_pack() {
     let block_device = Rc::new(MemoryBlockDevice);
-    let fs = EasyFileSystem::create(block_device);
-    let root_inode = EasyFileSystem::root_inode(&fs);
+    let fs = FileSystem::create(block_device);
+    let root_inode = FileSystem::root_inode(&fs);
 
     let apps: Vec<String> = read_dir("../user/src/bin")
         .unwrap()

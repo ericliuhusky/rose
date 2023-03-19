@@ -1,6 +1,6 @@
 mod fs_pack;
 use fs_pack::{MemoryBlockDevice, fs_pack};
-use fs::EasyFileSystem;
+use fs::FileSystem;
 use std::rc::Rc;
 
 fn main() {
@@ -10,9 +10,9 @@ fn main() {
 #[test]
 fn efs_test() -> std::io::Result<()> {
     let block_device = Rc::new(MemoryBlockDevice);
-    EasyFileSystem::create(block_device.clone());
-    let efs = EasyFileSystem::open(block_device.clone());
-    let root_inode = EasyFileSystem::root_inode(&efs);
+    FileSystem::create(block_device.clone());
+    let efs = FileSystem::open(block_device.clone());
+    let root_inode = FileSystem::root_inode(&efs);
     root_inode.create("filea");
     root_inode.create("fileb");
     for name in root_inode.ls() {

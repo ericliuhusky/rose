@@ -1,4 +1,4 @@
-//!An easy file system isolated from the kernel
+//!An file system isolated from the kernel
 #![no_std]
 extern crate alloc;
 mod bitmap;
@@ -12,7 +12,7 @@ pub const BLOCK_SZ: usize = 512;
 use bitmap::Bitmap;
 use block_cache::{block_cache_sync_all, get_block_cache};
 pub use block_dev::BlockDevice;
-pub use efs::EasyFileSystem;
+pub use efs::FileSystem;
 use layout::*;
 pub use vfs::Inode;
 pub mod lru;

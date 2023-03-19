@@ -1,16 +1,16 @@
 use super::{
     block_cache_sync_all, get_block_cache, BlockDevice, DirEntry, DiskInode, DiskInodeType,
-    EasyFileSystem, DIRENT_SZ,
+    FileSystem, DIRENT_SZ,
 };
 use alloc::string::String;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
 use core::cell::{RefCell, RefMut};
-/// Virtual filesystem layer over easy-fs
+/// Virtual filesystem layer over fs
 pub struct Inode {
     block_id: usize,
     block_offset: usize,
-    fs: Rc<RefCell<EasyFileSystem>>,
+    fs: Rc<RefCell<FileSystem>>,
     block_device: Rc<dyn BlockDevice>,
 }
 
@@ -19,7 +19,7 @@ impl Inode {
     pub fn new(
         block_id: u32,
         block_offset: usize,
-        fs: Rc<RefCell<EasyFileSystem>>,
+        fs: Rc<RefCell<FileSystem>>,
         block_device: Rc<dyn BlockDevice>,
     ) -> Self {
         Self {
@@ -78,7 +78,7 @@ impl Inode {
         &self,
         new_size: u32,
         disk_inode: &mut DiskInode,
-        fs: &mut RefMut<EasyFileSystem>,
+        fs: &mut RefMut<FileSystem>,
     ) {
         if new_size < disk_inode.size {
             return;

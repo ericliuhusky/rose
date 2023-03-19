@@ -3,7 +3,7 @@ use crate::drivers::BLOCK_DEVICE;
 use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
-use fs::{EasyFileSystem, Inode};
+use fs::{FileSystem, Inode};
 use lazy_static::*;
 /// A wrapper around a filesystem inode
 /// to implement File trait atop
@@ -39,8 +39,8 @@ impl OSInode {
 
 lazy_static! {
     pub static ref ROOT_INODE: Rc<Inode> = {
-        let efs = EasyFileSystem::open(BLOCK_DEVICE.clone());
-        Rc::new(EasyFileSystem::root_inode(&efs))
+        let efs = FileSystem::open(BLOCK_DEVICE.clone());
+        Rc::new(FileSystem::root_inode(&efs))
     };
 }
 /// List all files in the filesystems
