@@ -75,7 +75,6 @@ impl EasyFileSystem {
         get_block_cache(0, Rc::clone(&block_device))
             .borrow()
             .read(0, |super_block: &SuperBlock| {
-                assert!(super_block.is_valid(), "Error loading EFS!");
                 let inode_total_blocks =
                     super_block.inode_bitmap_blocks + super_block.inode_area_blocks;
                 let efs = Self {

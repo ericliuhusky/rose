@@ -3,8 +3,6 @@ use alloc::rc::Rc;
 use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter, Result};
 
-/// Magic number for sanity check
-const EFS_MAGIC: u32 = 0x3b800001;
 /// The max number of direct inodes
 const INODE_DIRECT_COUNT: usize = 28;
 /// The max length of inode name
@@ -23,7 +21,6 @@ const INDIRECT2_BOUND: usize = INDIRECT1_BOUND + INODE_INDIRECT2_COUNT;
 /// Super block of a filesystem
 #[repr(C)]
 pub struct SuperBlock {
-    magic: u32,
     pub total_blocks: u32,
     pub inode_bitmap_blocks: u32,
     pub inode_area_blocks: u32,
@@ -54,17 +51,12 @@ impl SuperBlock {
         data_area_blocks: u32,
     ) {
         *self = Self {
-            magic: EFS_MAGIC,
             total_blocks,
             inode_bitmap_blocks,
             inode_area_blocks,
             data_bitmap_blocks,
             data_area_blocks,
         }
-    }
-    /// Check if a super block is valid using efs magic
-    pub fn is_valid(&self) -> bool {
-        self.magic == EFS_MAGIC
     }
 }
 /// Type of a disk inode
