@@ -26,18 +26,6 @@ impl Inode {
             block_device,
         }
     }
-    /// Call a function over a disk inode to read it
-    fn read_disk_inode<V>(&self, f: impl FnOnce(&DiskInode) -> V) -> V {
-        get_block_cache(self.block_id, Rc::clone(&self.block_device))
-            .borrow()
-            .read(0, f)
-    }
-    /// Call a function over a disk inode to modify it
-    fn modify_disk_inode<V>(&self, f: impl FnOnce(&mut DiskInode) -> V) -> V {
-        get_block_cache(self.block_id, Rc::clone(&self.block_device))
-            .borrow_mut()
-            .modify(0, f)
-    }
     /// Find inode under a disk inode by name
     fn find_inode_id(&self, name: &str, disk_inode: &DiskInode) -> Option<u32> {
         // assert it is a directory
@@ -58,16 +46,18 @@ impl Inode {
     /// Find inode under current inode by name
     pub fn find(&self, name: &str) -> Option<Rc<Inode>> {
         let fs = self.fs.borrow();
-        self.read_disk_inode(|disk_inode| {
-            self.find_inode_id(name, disk_inode).map(|inode_id| {
-                let block_id = fs.get_inode_block_id(inode_id);
-                Rc::new(Self::new(
-                    block_id,
-                    self.fs.clone(),
-                    self.block_device.clone(),
-                ))
+        get_block_cache(self.block_id, Rc::clone(&self.block_device))
+            .borrow()
+            .read(0, |disk_inode| {
+                self.find_inode_id(name, disk_inode).map(|inode_id| {
+                    let block_id = fs.get_inode_block_id(inode_id);
+                    Rc::new(Self::new(
+                        block_id,
+                        self.fs.clone(),
+                        self.block_device.clone(),
+                    ))
+                })
             })
-        })
     }
     /// Increase the size of a disk inode
     fn increase_size(
@@ -95,7 +85,7 @@ impl Inode {
             // has the file been created?
             self.find_inode_id(name, root_inode)
         };
-        if self.read_disk_inode(op).is_some() {
+        if get_block_cache(self.block_id, Rc::clone(&self.block_device)).borrow().read(0, op).is_some() {
             return None;
         }
         // create a new file
@@ -106,7 +96,9 @@ impl Inode {
             .borrow_mut()
             .set(0, DiskInode::new(DiskInodeType::File));
         
-        self.modify_disk_inode(|root_inode| {
+        get_block_cache(self.block_id, Rc::clone(&self.block_device))
+            .borrow_mut()
+            .modify(0, |root_inode: &mut DiskInode| {
             // append file in the dirent
             let file_count = (root_inode.size as usize) / DIRENT_SZ;
             let new_size = (file_count + 1) * DIRENT_SZ;
@@ -134,7 +126,8 @@ impl Inode {
     /// List inodes under current inode
     pub fn ls(&self) -> Vec<String> {
         let _fs = self.fs.borrow();
-        self.read_disk_inode(|disk_inode| {
+        get_block_cache(self.block_id, Rc::clone(&self.block_device))
+            .borrow().read(0, |disk_inode: &DiskInode| {
             let file_count = (disk_inode.size as usize) / DIRENT_SZ;
             let mut v: Vec<String> = Vec::new();
             for i in 0..file_count {
@@ -151,12 +144,15 @@ impl Inode {
     /// Read data from current inode
     pub fn read_at(&self, offset: usize, buf: &mut [u8]) -> usize {
         let _fs = self.fs.borrow();
-        self.read_disk_inode(|disk_inode| disk_inode.read_at(offset, buf, &self.block_device))
+        get_block_cache(self.block_id, Rc::clone(&self.block_device))
+            .borrow().read(0, |disk_inode: &DiskInode| disk_inode.read_at(offset, buf, &self.block_device))
     }
     /// Write data to current inode
     pub fn write_at(&self, offset: usize, buf: &[u8]) -> usize {
         let mut fs = self.fs.borrow_mut();
-        let size = self.modify_disk_inode(|disk_inode| {
+        let size = get_block_cache(self.block_id, Rc::clone(&self.block_device))
+            .borrow_mut()
+            .modify(0, |disk_inode| {
             self.increase_size((offset + buf.len()) as u32, disk_inode, &mut fs);
             disk_inode.write_at(offset, buf, &self.block_device)
         });
@@ -166,7 +162,9 @@ impl Inode {
     /// Clear the data in current inode
     pub fn clear(&self) {
         let mut fs = self.fs.borrow_mut();
-        self.modify_disk_inode(|disk_inode| {
+        get_block_cache(self.block_id, Rc::clone(&self.block_device))
+            .borrow_mut()
+            .modify(0, |disk_inode: &mut DiskInode| {
             let size = disk_inode.size;
             let data_blocks_dealloc = disk_inode.clear_size(&self.block_device);
             assert!(data_blocks_dealloc.len() == DiskInode::total_blocks(size) as usize);
