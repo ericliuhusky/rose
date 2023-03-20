@@ -29,7 +29,7 @@ impl SuperBlock {
 /// A directory entry
 #[repr(C)]
 pub struct DirEntry {
-    name: [u8; NAME_LENGTH_LIMIT + 1],
+    name: [u8; 28],
     inode_number: u32,
 }
 /// Size of a directory entry
