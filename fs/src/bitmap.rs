@@ -1,60 +1,99 @@
 use super::{get_block_cache, BlockDevice, BLOCK_SZ};
 use alloc::rc::Rc;
-/// A bitmap block
-type BitmapBlock = [u64; 64];
-/// Number of bits in a block
+use core::mem::size_of;
+
 const BLOCK_BITS: usize = BLOCK_SZ * 8;
-/// A bitmap
-pub struct Bitmap {
-    start_block_id: usize,
-    blocks: usize,
+
+struct Dimension(u128);
+
+impl Dimension {
+    fn is_full(&self) -> bool {
+        self.0 == u128::MAX
+    }
+
+    fn allocated(&self) -> (usize, Self) {
+        let first_zero_bit_index = self.0.trailing_ones() as usize;
+        (
+            first_zero_bit_index,
+            Self(self.0 | 1 << first_zero_bit_index),
+        )
+    }
+
+    fn deallocated(&self, bit_index: usize) -> Self {
+        Self(self.0 & !(1 << bit_index))
+    }
+
+    fn bit_size() -> usize {
+        size_of::<Self>() * 8
+    }
 }
 
-/// Decompose bits into (block_pos, bits64_pos, inner_pos)
-fn decomposition(mut bit: usize) -> (usize, usize, usize) {
-    let block_pos = bit / BLOCK_BITS;
-    bit %= BLOCK_BITS;
-    (block_pos, bit / 64, bit % 64)
+struct BitmapIndex(usize);
+
+impl BitmapIndex {
+    fn new(block_index: usize, dimension_index: usize, bit_index: usize) -> Self {
+        Self(block_index * BLOCK_BITS + dimension_index * Dimension::bit_size() + bit_index)
+    }
+
+    fn decompose(&self) -> (usize, usize, usize) {
+        let block_index = self.0 / BLOCK_BITS;
+        let remain_index = self.0 % BLOCK_BITS;
+        let dimension_index = remain_index / Dimension::bit_size();
+        let bit_index = remain_index % Dimension::bit_size();
+        (block_index, dimension_index, bit_index)
+    }
+}
+
+pub struct Bitmap {
+    start_block_index: usize,
+    block_num: usize,
 }
 
 impl Bitmap {
-    /// A new bitmap from start block id and number of blocks
-    pub fn new(start_block_id: usize, blocks: usize) -> Self {
+    pub fn new(start_block_index: usize, block_num: usize) -> Self {
         Self {
-            start_block_id,
-            blocks,
+            start_block_index,
+            block_num,
         }
     }
-    /// Allocate a new block from a block device
+
     pub fn alloc(&self, block_device: Rc<dyn BlockDevice>) -> Option<usize> {
-        for block_id in 0..self.blocks {
-            let pos = get_block_cache(
-                block_id + self.start_block_id as usize,
+        for inner_block_index in 0..self.block_num {
+            let bit_map_index = get_block_cache(
+                inner_block_index + self.start_block_index as usize,
                 Rc::clone(&block_device),
             )
             .borrow_mut()
-            .modify(0, |bitmap_block: &mut BitmapBlock| {
-                if let Some(i) = (0..bitmap_block.len()).find(|i| bitmap_block[*i] != u64::MAX) {
-                    let j = bitmap_block[i].trailing_ones() as usize;
-                    bitmap_block[i] |= 1 << j;
-                    Some(block_id * BLOCK_BITS + i * 64 + j)
+            .modify(0, |bitmap_block: &mut [Dimension; 32]| {
+                if let Some((dimension_index, dimension)) = bitmap_block
+                    .iter()
+                    .enumerate()
+                    .find(|(_, dimension)| !dimension.is_full())
+                {
+                    let (bit_index, dimension) = dimension.allocated();
+                    bitmap_block[dimension_index] = dimension;
+                    Some(BitmapIndex::new(inner_block_index, dimension_index, bit_index).0)
                 } else {
                     None
                 }
             });
-            if pos.is_some() {
-                return pos;
+            if bit_map_index.is_some() {
+                return bit_map_index;
             }
         }
         None
     }
-    /// Deallocate a block
+
     pub fn dealloc(&self, block_device: &Rc<dyn BlockDevice>, bit: usize) {
-        let (block_pos, bits64_pos, inner_pos) = decomposition(bit);
-        get_block_cache(block_pos + self.start_block_id, Rc::clone(block_device))
-            .borrow_mut()
-            .modify(0, |bitmap_block: &mut BitmapBlock| {
-                bitmap_block[bits64_pos] &= !(1 << inner_pos);
-            });
+        let (inner_block_index, dimension_index, bit_index) = BitmapIndex(bit).decompose();
+        get_block_cache(
+            inner_block_index + self.start_block_index,
+            Rc::clone(block_device),
+        )
+        .borrow_mut()
+        .modify(0, |bitmap_block: &mut [Dimension; 32]| {
+            let dimension = bitmap_block[dimension_index].deallocated(bit_index);
+            bitmap_block[dimension_index] = dimension;
+        });
     }
 }
