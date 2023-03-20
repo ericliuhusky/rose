@@ -57,8 +57,7 @@ impl BlockDevice for MemoryBlockDevice {
 
 pub fn fs_pack() {
     let block_device = Rc::new(MemoryBlockDevice);
-    let fs = FileSystem::create(block_device, INODE_BITMAP_BLOCK_NUM, INODE_AREA_BLOCK_NUM, DATA_BITMAP_BLOCK_NUM, DATA_AREA_BLOCK_NUM);
-    let root_inode = FileSystem::root_inode(&fs);
+    let mut fs = FileSystem::create(block_device, INODE_BITMAP_BLOCK_NUM, INODE_AREA_BLOCK_NUM, DATA_BITMAP_BLOCK_NUM, DATA_AREA_BLOCK_NUM);
 
     let apps: Vec<String> = read_dir("../user/src/bin")
         .unwrap()
@@ -77,8 +76,8 @@ pub fn fs_pack() {
         .unwrap();
         let mut all_data = Vec::<u8>::new();
         f.read_to_end(&mut all_data).unwrap();
-        let inode = root_inode.create(&app).unwrap();
-        inode.write_at(0, &all_data);
+        let inode = fs.create_inode(&app).unwrap();
+        fs.write_at(inode, 0, &all_data);
     }
 
     let mut f = File::create(format!(

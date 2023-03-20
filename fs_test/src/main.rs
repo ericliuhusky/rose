@@ -13,21 +13,20 @@ fn main() {
 fn efs_test() -> std::io::Result<()> {
     let block_device = Rc::new(MemoryBlockDevice);
     FileSystem::create(block_device.clone(), INODE_BITMAP_BLOCK_NUM, INODE_AREA_BLOCK_NUM, DATA_BITMAP_BLOCK_NUM, DATA_AREA_BLOCK_NUM);
-    let efs = FileSystem::open(block_device.clone());
-    let root_inode = FileSystem::root_inode(&efs);
-    root_inode.create("filea");
-    root_inode.create("fileb");
-    for name in root_inode.ls() {
+    let mut efs = FileSystem::open(block_device.clone());
+    efs.create_inode("filea");
+    efs.create_inode("fileb");
+    for name in efs.ls() {
         println!("{}", name);
     }
-    let filea = root_inode.find("filea").unwrap();
+    let filea = efs.find("filea").unwrap();
     let greet_str = "Hello, world!";
-    filea.write_at(0, greet_str.as_bytes());
+    efs.write_at(filea, 0, greet_str.as_bytes());
     let mut buffer = [0u8; 233];
-    let len = filea.read_at(0, &mut buffer);
+    let len = efs.read_at(filea, 0, &mut buffer);
     assert_eq!(greet_str, core::str::from_utf8(&buffer[..len]).unwrap(),);
 
-    filea.clear();
-    assert_eq!(filea.read_at(0, &mut buffer), 0);
+    efs.clear(filea);
+    assert_eq!(efs.read_at(filea, 0, &mut buffer), 0);
     Ok(())
 }
