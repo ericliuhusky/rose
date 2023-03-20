@@ -35,7 +35,7 @@ impl Bitmap {
             .borrow_mut()
             .modify(0, |bitmap_block: &mut BitmapBlock| {
                 if let Some(i) = (0..bitmap_block.len()).find(|i| bitmap_block[*i] != u64::MAX) {
-                    let j = (0..64).find(|j| (bitmap_block[i] >> j) & 1 == 0).unwrap();
+                    let j = bitmap_block[i].trailing_ones() as usize;
                     bitmap_block[i] |= 1 << j;
                     Some(block_id * BLOCK_BITS + i * 64 + j)
                 } else {
