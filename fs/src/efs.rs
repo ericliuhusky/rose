@@ -1,7 +1,8 @@
 use super::{
-    block_cache_sync_all, get_block_cache, Bitmap, BlockDevice, DiskInode, DiskInodeType,
+    block_cache_sync_all, get_block_cache, Bitmap, BlockDevice,
     SuperBlock,
 };
+use inode::{DiskInode, DiskInodeType};
 use crate::BLOCK_SZ;
 use alloc::rc::Rc;
 use super::*;

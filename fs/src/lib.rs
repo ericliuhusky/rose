@@ -14,3 +14,4 @@ pub use block_dev::BlockDevice;
 pub use efs::FileSystem;
 use layout::*;
 pub mod lru;
+mod inode;
