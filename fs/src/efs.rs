@@ -2,7 +2,7 @@ use super::{
     block_cache_sync_all, get_block_cache, Bitmap, BlockDevice,
     SuperBlock,
 };
-use inode::{DiskInode, DiskInodeType};
+use inode::DiskInode;
 use crate::BLOCK_SZ;
 use alloc::rc::Rc;
 use super::*;
@@ -63,7 +63,7 @@ impl FileSystem {
         let root_inode_block_id = efs.get_inode_block_id(0);
         get_block_cache(root_inode_block_id as usize, Rc::clone(&block_device))
             .borrow_mut()
-            .set(0, DiskInode::new(DiskInodeType::Directory));
+            .set(0, DiskInode::new());
         
         block_cache_sync_all();
         efs
@@ -125,8 +125,6 @@ use alloc::vec::Vec;
 impl FileSystem {
     /// Find inode under a disk inode by name
     fn find_inode_id(&self, name: &str, disk_inode: &DiskInode) -> Option<u32> {
-        // assert it is a directory
-        assert!(disk_inode.is_dir());
         let file_count = (disk_inode.size as usize) / DIRENT_SZ;
         let mut dirent = DirEntry::empty();
         for i in 0..file_count {
@@ -172,8 +170,6 @@ impl FileSystem {
     pub fn create_inode(&mut self, name: &str) -> Option<usize> {
         let root_inode_block_id = self.get_inode_block_id(0) as usize;
         let op = |root_inode: &DiskInode| {
-            // assert it is a directory
-            assert!(root_inode.is_dir());
             // has the file been created?
             self.find_inode_id(name, root_inode)
         };
@@ -186,7 +182,7 @@ impl FileSystem {
         let new_inode_block_id = self.get_inode_block_id(new_inode_id);
         get_block_cache(new_inode_block_id as usize, Rc::clone(&self.block_device))
             .borrow_mut()
-            .set(0, DiskInode::new(DiskInodeType::File));
+            .set(0, DiskInode::new());
         
         get_block_cache(root_inode_block_id, Rc::clone(&self.block_device))
             .borrow_mut()

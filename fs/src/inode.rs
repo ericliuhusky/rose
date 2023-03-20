@@ -3,7 +3,7 @@ use alloc::rc::Rc;
 use alloc::vec::Vec;
 
 /// The max number of direct inodes
-const INODE_DIRECT_COUNT: usize = 62;
+const INODE_DIRECT_COUNT: usize = 63;
 /// The max number of indirect inodes
 const INODE_INDIRECT_COUNT: usize = BLOCK_SZ / 4;
 /// A indirect block
@@ -11,39 +11,21 @@ type IndirectBlock = [u32; BLOCK_SZ / 4];
 /// A data block
 type DataBlock = [u8; BLOCK_SZ];
 
-/// Type of a disk inode
-#[derive(PartialEq)]
-pub enum DiskInodeType {
-    File,
-    Directory,
-}
-
 /// A disk inode
 #[repr(C)]
 pub struct DiskInode {
     pub size: u32,
-    pub direct: [u32; 62],
+    pub direct: [u32; 63],
     pub indirect: [u32; 64],
-    type_: DiskInodeType,
 }
 
 impl DiskInode {
-    pub fn new(type_: DiskInodeType) -> Self {
+    pub fn new() -> Self {
         Self { 
             size: 0,
             direct: [0; INODE_DIRECT_COUNT],
             indirect: [0; 64],
-            type_,
         }
-    }
-    /// Whether this inode is a directory
-    pub fn is_dir(&self) -> bool {
-        self.type_ == DiskInodeType::Directory
-    }
-    /// Whether this inode is a file
-    #[allow(unused)]
-    pub fn is_file(&self) -> bool {
-        self.type_ == DiskInodeType::File
     }
     /// Return block number correspond to size.
     pub fn data_blocks(&self) -> u32 {
