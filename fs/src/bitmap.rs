@@ -57,7 +57,7 @@ impl Bitmap {
         }
     }
 
-    pub fn alloc(&self, block_device: Rc<dyn BlockDevice>) -> Option<usize> {
+    pub fn alloc(&self, block_device: Rc<dyn BlockDevice>) -> usize {
         for inner_block_index in 0..self.block_num {
             let bit_map_index = get_block_cache(
                 inner_block_index + self.start_block_index as usize,
@@ -78,10 +78,10 @@ impl Bitmap {
                 }
             });
             if bit_map_index.is_some() {
-                return bit_map_index;
+                return bit_map_index.unwrap();
             }
         }
-        None
+        panic!()
     }
 
     pub fn dealloc(&self, block_device: &Rc<dyn BlockDevice>, bit: usize) {
