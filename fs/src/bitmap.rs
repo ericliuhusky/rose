@@ -57,8 +57,4 @@ impl Bitmap {
                 bitmap_block[bits64_pos] &= !(1 << inner_pos);
             });
     }
-    /// Get the max number of allocatable blocks
-    pub fn maximum(&self) -> usize {
-        self.blocks * BLOCK_BITS
-    }
 }
