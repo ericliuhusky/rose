@@ -1,57 +1,34 @@
 use super::File;
 use core::cell::RefCell;
+use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use alloc::rc::{Rc, Weak};
 
 use crate::task::任务管理器;
 
 pub struct Pipe {
-    readable: bool,
-    writable: bool,
-    buffer: Rc<RefCell<PipeRingBuffer>>,
+    buffer: Rc<RefCell<PipeBuffer>>,
 }
 
 impl Pipe {
-    pub fn read_end_with_buffer(buffer: Rc<RefCell<PipeRingBuffer>>) -> Self {
+    pub fn new(buffer: Rc<RefCell<PipeBuffer>>) -> Self {
         Self {
-            readable: true,
-            writable: false,
-            buffer,
-        }
-    }
-    pub fn write_end_with_buffer(buffer: Rc<RefCell<PipeRingBuffer>>) -> Self {
-        Self {
-            readable: false,
-            writable: true,
             buffer,
         }
     }
 }
 
-const RING_BUFFER_SIZE: usize = 32;
+const BUFFER_SIZE: usize = 32;
 
-#[derive(Copy, Clone, PartialEq)]
-enum RingBufferStatus {
-    Full,
-    Empty,
-    Normal,
-}
-
-pub struct PipeRingBuffer {
-    arr: [u8; RING_BUFFER_SIZE],
-    head: usize,
-    tail: usize,
-    status: RingBufferStatus,
+pub struct PipeBuffer {
+    buffer: VecDeque<u8>,
     write_end: Option<Weak<Pipe>>,
 }
 
-impl PipeRingBuffer {
+impl PipeBuffer {
     pub fn new() -> Self {
         Self {
-            arr: [0; RING_BUFFER_SIZE],
-            head: 0,
-            tail: 0,
-            status: RingBufferStatus::Empty,
+            buffer: VecDeque::new(),
             write_end: None,
         }
     }
@@ -59,37 +36,17 @@ impl PipeRingBuffer {
         self.write_end = Some(Rc::downgrade(write_end));
     }
     pub fn write_byte(&mut self, byte: u8) {
-        self.status = RingBufferStatus::Normal;
-        self.arr[self.tail] = byte;
-        self.tail = (self.tail + 1) % RING_BUFFER_SIZE;
-        if self.tail == self.head {
-            self.status = RingBufferStatus::Full;
-        }
+        self.buffer.push_back(byte);
     }
     pub fn read_byte(&mut self) -> u8 {
-        self.status = RingBufferStatus::Normal;
-        let c = self.arr[self.head];
-        self.head = (self.head + 1) % RING_BUFFER_SIZE;
-        if self.head == self.tail {
-            self.status = RingBufferStatus::Empty;
-        }
+        let c = self.buffer.pop_front().unwrap();
         c
     }
     pub fn available_read(&self) -> usize {
-        if self.status == RingBufferStatus::Empty {
-            0
-        } else if self.tail > self.head {
-            self.tail - self.head
-        } else {
-            self.tail + RING_BUFFER_SIZE - self.head
-        }
+        self.buffer.len()
     }
     pub fn available_write(&self) -> usize {
-        if self.status == RingBufferStatus::Full {
-            0
-        } else {
-            RING_BUFFER_SIZE - self.available_read()
-        }
+        BUFFER_SIZE - self.available_read()
     }
     pub fn all_write_ends_closed(&self) -> bool {
         self.write_end.as_ref().unwrap().upgrade().is_none()
@@ -98,9 +55,9 @@ impl PipeRingBuffer {
 
 /// Return (read_end, write_end)
 pub fn make_pipe() -> (Rc<Pipe>, Rc<Pipe>) {
-    let buffer = Rc::new(unsafe { RefCell::new(PipeRingBuffer::new()) });
-    let read_end = Rc::new(Pipe::read_end_with_buffer(buffer.clone()));
-    let write_end = Rc::new(Pipe::write_end_with_buffer(buffer.clone()));
+    let buffer = Rc::new(unsafe { RefCell::new(PipeBuffer::new()) });
+    let read_end = Rc::new(Pipe::new(buffer.clone()));
+    let write_end = Rc::new(Pipe::new(buffer.clone()));
     buffer.borrow_mut().set_write_end(&write_end);
     (read_end, write_end)
 }
@@ -115,13 +72,13 @@ impl File for Pipe {
         }
         let mut already_read = 0usize;
         loop {
-            let mut ring_buffer = self.buffer.borrow_mut();
-            let loop_read = ring_buffer.available_read();
+            let mut pipe_buffer = self.buffer.borrow_mut();
+            let loop_read = pipe_buffer.available_read();
             if loop_read == 0 {
-                if ring_buffer.all_write_ends_closed() {
+                if pipe_buffer.all_write_ends_closed() {
                     return already_read;
                 }
-                drop(ring_buffer);
+                drop(pipe_buffer);
                 任务管理器::暂停并运行下一个任务();
                 continue;
             }
@@ -130,7 +87,7 @@ impl File for Pipe {
                     break;
                 }
                 unsafe {
-                    *v[i] = ring_buffer.read_byte();
+                    *v[i] = pipe_buffer.read_byte();
                 }
                 already_read += 1;
             }
@@ -144,10 +101,10 @@ impl File for Pipe {
             }
         }
         loop {
-            let mut ring_buffer = self.buffer.borrow_mut();
-            let loop_write = ring_buffer.available_write();
+            let mut pipe_buffer = self.buffer.borrow_mut();
+            let loop_write = pipe_buffer.available_write();
             if loop_write == 0 {
-                drop(ring_buffer);
+                drop(pipe_buffer);
                 任务管理器::暂停并运行下一个任务();
                 continue;
             }
@@ -157,63 +114,8 @@ impl File for Pipe {
                     return  i;
                 }
                 let byte = &v[i];
-                ring_buffer.write_byte(unsafe { **byte });
+                pipe_buffer.write_byte(unsafe { **byte });
             }
-        }
-    }
-}
-
-
-
-pub struct UserBuffer {
-    pub buffers: Vec<&'static mut [u8]>,
-}
-
-impl UserBuffer {
-    pub fn new(buffers: Vec<&'static mut [u8]>) -> Self {
-        Self { buffers }
-    }
-    pub fn len(&self) -> usize {
-        let mut total: usize = 0;
-        for b in self.buffers.iter() {
-            total += b.len();
-        }
-        total
-    }
-}
-
-impl IntoIterator for UserBuffer {
-    type Item = *mut u8;
-    type IntoIter = UserBufferIterator;
-    fn into_iter(self) -> Self::IntoIter {
-        UserBufferIterator {
-            buffers: self.buffers,
-            current_buffer: 0,
-            current_idx: 0,
-        }
-    }
-}
-
-pub struct UserBufferIterator {
-    buffers: Vec<&'static mut [u8]>,
-    current_buffer: usize,
-    current_idx: usize,
-}
-
-impl Iterator for UserBufferIterator {
-    type Item = *mut u8;
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.current_buffer >= self.buffers.len() {
-            None
-        } else {
-            let r = &mut self.buffers[self.current_buffer][self.current_idx] as *mut _;
-            if self.current_idx + 1 == self.buffers[self.current_buffer].len() {
-                self.current_idx = 0;
-                self.current_buffer += 1;
-            } else {
-                self.current_idx += 1;
-            }
-            Some(r)
         }
     }
 }
