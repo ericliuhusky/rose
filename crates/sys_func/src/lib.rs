@@ -21,6 +21,7 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isi
             args[2] as u32,
         )),
         SYS_CLOSE => Ok(SysFuncImpl::close(args[0])),
+        SYS_PIPE => Ok(SysFuncImpl::pipe(args[0] as *mut usize)),
         _ => Err(id),
     }
 }
@@ -63,6 +64,9 @@ pub trait SysFunc {
         panic!()
     }
     fn close(fd: usize) -> isize {
+        panic!()
+    }
+    fn pipe(pipe_fd: *mut usize) -> isize {
         panic!()
     }
 }
