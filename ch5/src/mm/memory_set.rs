@@ -1,3 +1,4 @@
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::ops::Range;
 use exception::context::Context;
@@ -184,8 +185,8 @@ impl 地址空间 {
         8usize << 60 | self.page_table.root_ppn.0
     }
 
-    pub fn 读取字节数组(&self, 虚拟地址范围: Range<usize>) -> Vec<u8> {
-        self.page_table.read(VA::new(虚拟地址范围.start), VA::new(虚拟地址范围.end))
+    pub fn read_str(&self, va: usize, len: usize) -> String {
+        self.page_table.read_str(va, len)
     }
 
     pub fn 写入字节数组(&self, 虚拟地址范围: Range<usize>, 数据: &[u8]) {

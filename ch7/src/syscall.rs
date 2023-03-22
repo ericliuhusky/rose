@@ -156,13 +156,9 @@ mod 系统调用_进程 {
     use crate::fs::open_file;
 
     pub fn exec(path: *const u8, len: usize) -> isize {
-        let 虚拟地址范围 = path as usize..path as usize + len;
-        let 应用名称: String = 任务管理器::当前任务()
+        let 应用名称 = 任务管理器::当前任务()
             .地址空间
-            .读取字节数组(虚拟地址范围)
-            .iter()
-            .map(|字节| *字节 as char)
-            .collect();
+            .read_str(path as usize, len);
         if let Some(elf_inode) = open_file(&应用名称, false) {
             let elf_data = elf_inode.read_all();
             任务管理器::可变当前任务(|mut 任务| {
@@ -212,9 +208,7 @@ pub fn open(path: *const u8, len: usize, create: u32) -> isize {
     let task = 任务管理器::当前任务();
     let path = task
         .地址空间
-        .page_table
-        .read(VA::new(path as usize), VA::new(path as usize + len));
-    let path: String = path.iter().map(|c| *c as char).collect();
+        .read_str(path as usize, len);
     let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {
         drop(task);

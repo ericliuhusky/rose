@@ -5,6 +5,7 @@ extern crate alloc;
 mod address;
 mod page_table;
 
+use alloc::string::String;
 pub use page_table::PageTableEntryFlags;
 pub use address::{VPN, PPN, VA, PA};
 use page_table::{PageTableEntry, PageTable};
@@ -156,22 +157,17 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
         }
     }
 
-    pub fn read(&self, start_va: VA, end_va: VA) -> Vec<u8> {
+    pub fn read_str(&self, va: usize, len: usize) -> String {
+        let start_va = VA::new(va);
+        let end_va = VA::new(va + len);
         let buffer_list = self.translate_buffer(start_va, end_va);
-        // let mut i = 0;
-        // for buffer in buffer_list {
-        //     for byte in buffer {
-        //         data[i] = *byte;
-        //         i += 1;
-        //     }
-        // }
-        let mut v = Vec::new();
+        let mut s = String::new();
         for buffer in buffer_list {
             for byte in buffer {
-                v.push(byte.clone());
+                s.push(byte.clone() as char);
             }
         }
-        v
+        s
     }
 
     pub fn write(&self, start_va: VA, end_va: VA, data: &[u8]) {

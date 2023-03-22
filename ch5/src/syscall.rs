@@ -48,10 +48,8 @@ mod 系统调用_输出 {
     use crate::task::任务管理器;
 
     pub fn write(字节数组指针: *const u8, 字节数组长度: usize) -> isize {
-        let va_range = 字节数组指针 as usize..字节数组指针 as usize + 字节数组长度;
-        let 字节数组 = 任务管理器::当前任务().地址空间.读取字节数组(va_range);
-        let 字符串 = core::str::from_utf8(&字节数组).unwrap();
-        print!("{}", 字符串);
+        let s = 任务管理器::当前任务().地址空间.read_str(字节数组指针 as usize, 字节数组长度);
+        print!("{}", s);
         字节数组长度 as isize
     }
 
@@ -127,13 +125,10 @@ mod 系统调用_进程 {
     }
 
     pub fn exec(path: *const u8, len: usize) -> isize {
-        let 虚拟地址范围 = path as usize..path as usize + len;
-        let 应用名称: String = 任务管理器::当前任务()
+        let 应用名称 = 任务管理器::当前任务()
             .地址空间
-            .读取字节数组(虚拟地址范围)
-            .iter()
-            .map(|字节| *字节 as char)
-            .collect();
+            .read_str(path as usize, len);
+            
         if let Some(elf文件数据) = loader::read_app_data_by_name(&应用名称) {
             任务管理器::可变当前任务(|mut 任务| {
                 任务.exec(elf文件数据);
