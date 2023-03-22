@@ -183,10 +183,7 @@ impl 地址空间 {
 
 impl 地址空间 {
     pub fn 陷入上下文(&self) -> &'static mut Context {
-        let pa_ranges = self.page_table.translate_addr(VA::new(CONTEXT_START_ADDR), VA::new(0xfffffffffffff000));
-        unsafe {
-            &mut *(pa_ranges[0].0.0 as *mut Context)
-        }
+        self.page_table.translate_type(CONTEXT_START_ADDR)
     }
 
     pub fn token(&self) -> usize {

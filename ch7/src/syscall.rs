@@ -252,17 +252,9 @@ pub fn pipe(pipe_fd: *mut usize) -> isize {
         task.fd_table[read_fd] = Some(pipe_read);
         let write_fd = task.alloc_fd();
         task.fd_table[write_fd] = Some(pipe_write);
-        let addr0 = task.地址空间.page_table
-            .translate_addr(VA::new(pipe_fd as usize), VA::new(pipe_fd as usize))
-            [0].0.0;
-        let ptr1 = unsafe { pipe_fd.add(1) };
-        let addr1 = task.地址空间.page_table
-            .translate_addr(VA::new(ptr1 as usize), VA::new(ptr1 as usize))
-            [0].0.0;
-        unsafe { 
-            *(addr0 as *mut usize) = read_fd;
-            *(addr1 as *mut usize) = write_fd;
-        }
+        let pipe_fd = task.地址空间.page_table.translate_type::<[usize; 2]>(pipe_fd as usize);
+        pipe_fd[0] = read_fd;
+        pipe_fd[1] = write_fd;
         0
     })
 }

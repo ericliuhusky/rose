@@ -99,7 +99,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
 }
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
-    pub fn translate_addr(&self, start_va: VA, end_va: VA) -> Vec<(PA, PA)> {
+    fn translate_addr(&self, start_va: VA, end_va: VA) -> Vec<(PA, PA)> {
         let start_vpn = start_va.align_to_lower().page_number();
         let end_vpn = end_va.align_to_upper().page_number();
         (start_vpn.0..end_vpn.0)
@@ -135,6 +135,25 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
                 }
             })
             .collect()
+    }
+
+    pub fn translate_one_addr(&self, va: usize) -> usize {
+        let start_va = VA::new(va);
+        let end_va = start_va;
+        self.translate_addr(start_va, end_va)[0].0.0
+    }
+
+    pub fn translate_type<T>(&self, va: usize) -> &'static mut T {
+        let start_va = VA::new(va);
+        let len = core::mem::size_of::<T>();
+        let end_va = VA::new(va + len);
+        let pa_ranges = self.translate_addr(start_va, end_va);
+        // TODO: 不知道怎么处理类型没在一个物理页内的情况
+        assert!(pa_ranges.len() == 1);
+        let start_pa = pa_ranges[0].0;
+        unsafe {
+            &mut *(start_pa.0 as *mut T)
+        }
     }
 
     pub fn read(&self, start_va: VA, end_va: VA) -> Vec<u8> {

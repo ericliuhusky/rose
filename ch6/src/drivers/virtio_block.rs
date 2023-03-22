@@ -77,8 +77,6 @@ impl Hal for VirtioHal {
     fn virt_to_phys(vaddr: usize) -> usize {
         内核地址空间
             .page_table
-            .translate_addr(VA::new(vaddr), VA::new(vaddr))[0]
-            .0
-             .0
+            .translate_one_addr(vaddr)
     }
 }
