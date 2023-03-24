@@ -59,21 +59,23 @@ mod user_thread {
         }
 
         fn suspend_and_run_next(&mut self) {
-            let task = self.current.take().unwrap();
-            self.ready_queue.push_back(task);
-            self.run_next();
+            let previous = self.current.take().unwrap();
+            self.ready_queue.push_back(previous);
+            if let Some(next) = self.ready_queue.pop_front() {
+                let previous_cx = &mut self.ready_queue.back_mut().unwrap().cx;
+                self.current = Some(next);
+                let current_cx = &self.current.as_ref().unwrap().cx;
+                switch_task(previous_cx, current_cx);
+            }
         }
 
         fn exit_and_run_next(&mut self) {
-            self.current.take();
-            self.run_next();
-        }
-
-        fn run_next(&mut self) {
+            let mut previous = self.current.take().unwrap();
             if let Some(next) = self.ready_queue.pop_front() {
+                let previous_cx = &mut previous.cx;
                 self.current = Some(next);
-                let cx = &self.current.as_ref().unwrap().cx;
-                restore_context(cx);
+                let current_cx = &self.current.as_ref().unwrap().cx;
+                switch_task(previous_cx, current_cx);
             }
         }
 
@@ -102,23 +104,15 @@ mod user_thread {
         }
     }
 
-    static mut FUNC_ID: usize = 0;
-    const FUNC_YIELD: usize = 0;
-    const FUNC_EXIT: usize = 1;
-
     pub fn exit() {
         unsafe {
-            FUNC_ID = FUNC_EXIT;
-            let current = (*TASK_MANAGER.as_mut_ptr()).current.as_mut().unwrap();
-            save_context(&mut current.cx);
+            (*TASK_MANAGER.as_mut_ptr()).exit_and_run_next();
         }
     }
 
     pub fn yield_() {
         unsafe {
-            FUNC_ID = FUNC_YIELD;
-            let current = (*TASK_MANAGER.as_mut_ptr()).current.as_mut().unwrap();
-            save_context(&mut current.cx);
+            (*TASK_MANAGER.as_mut_ptr()).suspend_and_run_next();
         }
     }
 
@@ -134,66 +128,43 @@ mod user_thread {
         }
     }
 
-    #[no_mangle]
-    fn user_thread_handler() {
-        unsafe {
-            if FUNC_ID == FUNC_YIELD {
-                (*TASK_MANAGER.as_mut_ptr()).suspend_and_run_next();
-            } else if FUNC_ID == FUNC_EXIT {
-                (*TASK_MANAGER.as_mut_ptr()).exit_and_run_next();
-            }
-        }
-    }
-
     #[naked]
-    extern "C" fn save_context(cx: &mut TaskContext) {
+    extern "C" fn switch_task(previous_cx: &mut TaskContext, current_cx: &TaskContext) {
         unsafe {
             asm!(
                 "
-            sd ra, 0(a0)
-            sd sp, 1*8(a0)
-            sd s0, 2*8(a0)
-            sd s1, 3*8(a0)
-            sd s2, 4*8(a0)
-            sd s3, 5*8(a0)
-            sd s4, 6*8(a0)
-            sd s5, 7*8(a0)
-            sd s6, 8*8(a0)
-            sd s7, 9*8(a0)
-            sd s8, 10*8(a0)
-            sd s9, 11*8(a0)
-            sd s10, 12*8(a0)
-            sd s11, 13*8(a0)
+                sd ra, 0(a0)
+                sd sp, 1*8(a0)
+                sd s0, 2*8(a0)
+                sd s1, 3*8(a0)
+                sd s2, 4*8(a0)
+                sd s3, 5*8(a0)
+                sd s4, 6*8(a0)
+                sd s5, 7*8(a0)
+                sd s6, 8*8(a0)
+                sd s7, 9*8(a0)
+                sd s8, 10*8(a0)
+                sd s9, 11*8(a0)
+                sd s10, 12*8(a0)
+                sd s11, 13*8(a0)
 
-            call user_thread_handler
-        ",
-                options(noreturn)
-            );
-        }
-    }
+                ld ra, 0(a1)
+                ld sp, 1*8(a1)
+                ld s0, 2*8(a1)
+                ld s1, 3*8(a1)
+                ld s2, 4*8(a1)
+                ld s3, 5*8(a1)
+                ld s4, 6*8(a1)
+                ld s5, 7*8(a1)
+                ld s6, 8*8(a1)
+                ld s7, 9*8(a1)
+                ld s8, 10*8(a1)
+                ld s9, 11*8(a1)
+                ld s10, 12*8(a1)
+                ld s11, 13*8(a1)
 
-    #[naked]
-    extern "C" fn restore_context(cx: &TaskContext) {
-        unsafe {
-            asm!(
-                "
-            ld ra, 0(a0)
-            ld sp, 1*8(a0)
-            ld s0, 2*8(a0)
-            ld s1, 3*8(a0)
-            ld s2, 4*8(a0)
-            ld s3, 5*8(a0)
-            ld s4, 6*8(a0)
-            ld s5, 7*8(a0)
-            ld s6, 8*8(a0)
-            ld s7, 9*8(a0)
-            ld s8, 10*8(a0)
-            ld s9, 11*8(a0)
-            ld s10, 12*8(a0)
-            ld s11, 13*8(a0)
-
-            ret
-        ",
+                ret
+            ",
                 options(noreturn)
             );
         }
