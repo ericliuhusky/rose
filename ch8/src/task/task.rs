@@ -5,13 +5,13 @@ use alloc::vec::Vec;
 use crate::mm::USER_SATP;
 use crate::mm::memory_set::{地址空间, 内核地址空间};
 use exception::context::Context;
-use super::pid::{进程标识符, 进程标识符管理器};
+use super::id::{Pid, pid_alloc};
 use crate::fs::{File, Stdin, Stdout};
 
 pub struct 任务 {
     pub 状态: 任务状态,
     pub 地址空间: 地址空间,
-    pub 进程标识符: 进程标识符,
+    pub 进程标识符: Pid,
     pub 子进程列表: Vec<Rc<RefCell<任务>>>,
     pub 终止代码: i32,
     pub fd_table: Vec<Option<Rc<dyn File>>>,
@@ -39,7 +39,7 @@ impl 任务 {
         Self {
             状态: 任务状态::就绪,
             地址空间,
-            进程标识符: 进程标识符管理器::分配进程标识符(),
+            进程标识符: pid_alloc(),
             子进程列表: Vec::new(),
             终止代码: 0,
             fd_table: vec![
@@ -80,7 +80,7 @@ impl 任务 {
             Self {
                 状态: 任务状态::就绪,
                 地址空间,
-                进程标识符: 进程标识符管理器::分配进程标识符(),
+                进程标识符: pid_alloc(),
                 子进程列表: Vec::new(),
                 终止代码: 0,
                 fd_table: new_fd_table,
