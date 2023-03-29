@@ -127,7 +127,9 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
             .collect()
     }
 
-    pub fn translate_buffer(&self, start_va: VA, end_va: VA) -> Vec<&'static mut [u8]> {
+    pub fn translate_buffer(&self, va: usize, len: usize) -> Vec<&'static mut [u8]> {
+        let start_va = VA::new(va);
+        let end_va = VA::new(va + len);
         self.translate_addr(start_va, end_va)
             .iter()
             .map(|(start_pa, end_pa)| {
@@ -158,9 +160,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
     }
 
     pub fn read_str(&self, va: usize, len: usize) -> String {
-        let start_va = VA::new(va);
-        let end_va = VA::new(va + len);
-        let buffer_list = self.translate_buffer(start_va, end_va);
+        let buffer_list = self.translate_buffer(va, len);
         let mut s = String::new();
         for buffer in buffer_list {
             for byte in buffer {
@@ -170,8 +170,8 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
         s
     }
 
-    pub fn write(&self, start_va: VA, end_va: VA, data: &[u8]) {
-        let buffer_list = self.translate_buffer(start_va, end_va);
+    pub fn write(&self, va: usize, len: usize, data: &[u8]) {
+        let buffer_list = self.translate_buffer(va, len);
         let mut i = 0;
         let mut remain_len = data.len();
         for buffer in buffer_list {

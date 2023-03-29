@@ -85,7 +85,7 @@ impl 地址空间 {
         let 程序段列表 = elf文件.programs();
         for 程序段 in &程序段列表 {
             地址空间.用户可见映射(逻辑段 { 虚拟地址范围: 程序段.start_va()..程序段.end_va() });
-            地址空间.page_table.write(VA::new(程序段.start_va()), VA::new(程序段.end_va()), 程序段.data)
+            地址空间.page_table.write(程序段.start_va(), 程序段.memory_size(), 程序段.data)
         }
 
         let 最后一个程序段的虚拟地址范围 = 程序段列表.last().unwrap().start_va()..程序段列表.last().unwrap().end_va();

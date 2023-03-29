@@ -73,6 +73,10 @@ impl<'a> ProgromSection<'_> {
         self.header.start_virtual_address + self.header.memory_size
     }
 
+    pub fn memory_size(&self) -> usize {
+        self.header.memory_size
+    }
+
     fn is_load(&self) -> bool {
         self.header._type == 1
     }

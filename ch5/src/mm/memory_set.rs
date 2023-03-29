@@ -121,7 +121,7 @@ impl 地址空间 {
                 恒等映射: false,
                 用户可见: true,
              });
-            地址空间.page_table.write(VA::new(程序段.start_va()), VA::new(程序段.end_va()), 程序段.data);
+            地址空间.page_table.write(程序段.start_va(), 程序段.memory_size(), 程序段.data);
         }
 
         let 最后一个程序段的虚拟地址范围 = 程序段列表.last().unwrap().start_va()..程序段列表.last().unwrap().end_va();
@@ -189,8 +189,8 @@ impl 地址空间 {
         self.page_table.read_str(va, len)
     }
 
-    pub fn 写入字节数组(&self, 虚拟地址范围: Range<usize>, 数据: &[u8]) {
-        self.page_table.write(VA::new(虚拟地址范围.start), VA::new(虚拟地址范围.end), &数据);
+    pub fn write(&self, va: usize, len: usize, data: &[u8]) {
+        self.page_table.write(va, len, &data);
     }
 }
 

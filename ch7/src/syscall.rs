@@ -67,7 +67,7 @@ mod 系统调用_输出 {
             let buf = 任务管理器::当前任务()
                 .地址空间
                 .page_table
-                .translate_buffer(VA::new(buf as usize), VA::new(buf as usize + len));
+                .translate_buffer(buf as usize, len);
             file.write(buf) as isize
         } else {
             -1
@@ -104,7 +104,7 @@ mod 系统调用_读取 {
             let buf = task
                 .地址空间
                 .page_table
-                .translate_buffer(VA::new(buf as usize), VA::new(buf as usize + len));
+                .translate_buffer(buf as usize, len);
             file.read(buf) as isize
         } else {
             -1

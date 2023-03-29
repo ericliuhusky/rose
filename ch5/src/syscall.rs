@@ -72,13 +72,12 @@ mod 系统调用_终止 {
 mod 系统调用_读取 {
     use crate::task::任务管理器;
 
-    pub fn read(字节数组指针: *const u8, 字节数组长度: usize) -> isize {
-        let 字符 = getchar();
-        let 字符数组 = [字符 as u8; 1];
-        let 虚拟地址范围 = 字节数组指针 as usize..字节数组指针 as usize + 字节数组长度;
+    pub fn read(ptr: *const u8, len: usize) -> isize {
+        let c = getchar();
+        let buf = [c as u8; 1];
         任务管理器::当前任务()
             .地址空间
-            .写入字节数组(虚拟地址范围, &字符数组);
+            .write(ptr as usize, len, &buf);
         1
     }
 
