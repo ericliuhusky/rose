@@ -1,108 +1,101 @@
-use alloc::vec::Vec;
+use core::mem::MaybeUninit;
+use alloc::collections::VecDeque;
 use sbi_call::shutdown;
 use crate::mm::USER_SATP;
 use crate::mm::memory_set::{地址空间, 内核地址空间};
 use exception::context::Context;
 use exception::restore::restore_context;
 
-pub struct 任务 {
-    状态: 任务状态,
-    pub 地址空间: 地址空间,
+pub struct Task {
+    pub memory_set: 地址空间,
 }
 
-impl 任务 {
-    fn 新建(elf文件数据: &[u8]) -> Self {
-        let (地址空间, 用户栈栈顶, 应用入口地址) = 地址空间::新建应用地址空间(elf文件数据);
-        let 上下文 = 地址空间.陷入上下文();
-        *上下文 = Context::app_init(
-            应用入口地址,
-            用户栈栈顶,
+impl Task {
+    fn new(elf_data: &[u8]) -> Self {
+        let (memory_set, user_stack_top, enrty_address) = 地址空间::新建应用地址空间(elf_data);
+        let cx = memory_set.陷入上下文();
+        *cx = Context::app_init(
+            enrty_address,
+            user_stack_top,
         );
         Self {
-            状态: 任务状态::就绪,
-            地址空间
+            memory_set
         }
     }
 }
 
-#[derive(PartialEq)]
-enum 任务状态 {
-    就绪,
-    运行,
-    终止,
+pub struct TaskManager {
+    ready_queue: VecDeque<Task>,
+    current: Option<Task>,
 }
 
-
-pub struct 任务管理器 {
-    任务列表: Vec<任务>,
-    当前任务索引: isize,
-}
-
-impl 任务管理器 {
-    pub fn 初始化() {
-        let 任务数目 = loader::read_app_num();
-        let 任务列表 = (0..任务数目)
-            .map(|应用索引| {
-                任务::新建(loader::read_app_data(应用索引))
+impl TaskManager {
+    fn new() -> Self {
+        let n = loader::read_app_num();
+        let tasks = (0..n)
+            .map(|i| {
+                Task::new(loader::read_app_data(i))
             })
             .collect();
-        unsafe {
-            任务管理器 = 任务管理器 {
-                任务列表,
-                当前任务索引: -1
-            };
+        Self {
+            ready_queue: tasks,
+            current: None,
         }
     }
 
-    pub fn 当前任务() -> &'static mut 任务 {
-        unsafe {
-            &mut 任务管理器.任务列表[任务管理器.当前任务索引 as usize]
-        }
+    fn suspend_and_run_next(&mut self) {
+        let previous = self.current.take().unwrap();
+        self.ready_queue.push_back(previous);
+        self.run_next();
     }
 
-    pub fn 暂停并运行下一个任务() {
-        Self::当前任务().状态 = 任务状态::就绪;
-        Self::运行下一个任务();
+    fn exit_and_run_next(&mut self) {
+        self.current.take().unwrap();
+        self.run_next();
     }
 
-    pub fn 终止并运行下一个任务() {
-        Self::当前任务().状态 = 任务状态::终止;
-        Self::运行下一个任务();
-    }
-
-    fn 查找下一个就绪任务(&mut self) -> Option<&mut 任务> {
-        let 下一个任务索引 = (self.当前任务索引 + 1) as usize;
-        let 任务数目 = self.任务列表.len();
-        let 下一个就绪任务索引 = (下一个任务索引..下一个任务索引 + 任务数目)
-            .map(|任务索引| {
-                任务索引 % 任务数目
-            })
-            .find(|任务索引| {
-                self.任务列表[*任务索引].状态 == 任务状态::就绪
-            });
-        if let Some(下一个就绪任务索引) = 下一个就绪任务索引 {
-            self.当前任务索引 = 下一个就绪任务索引 as isize;
-            Some(&mut self.任务列表[下一个就绪任务索引])
-        } else {
-            None
-        }
-    }
-
-    pub fn 运行下一个任务() {
-        unsafe {
-            if let Some(下一个任务) = 任务管理器.查找下一个就绪任务() {
-                下一个任务.状态 = 任务状态::运行;
-                USER_SATP = 下一个任务.地址空间.token();
-                restore_context();
-            } else {
-                println!("[Kernel] All applications completed!");
-                shutdown();
+    fn run_next(&mut self) {
+        if let Some(next) = self.ready_queue.pop_front() {
+            unsafe {
+                USER_SATP = next.memory_set.token();
             }
+            self.current = Some(next);
+            restore_context();
+        } else {
+            println!("[Kernel] All applications completed!");
+            shutdown();
         }
     }
 }
 
-static mut 任务管理器: 任务管理器 = 任务管理器 {
-    任务列表: Vec::new(),
-    当前任务索引: 0
-};
+static mut TASK_MANAGER: MaybeUninit<TaskManager> = MaybeUninit::uninit();
+
+pub fn init() {
+    unsafe {
+        TASK_MANAGER.write(TaskManager::new());
+    }
+}
+
+pub fn current_task() -> &'static Task {
+    unsafe {
+        (*TASK_MANAGER.as_mut_ptr()).current.as_ref().unwrap()
+    }
+}
+
+pub fn suspend_and_run_next() {
+    unsafe {
+        (*TASK_MANAGER.as_mut_ptr()).suspend_and_run_next();
+    }
+}
+
+pub fn exit_and_run_next() {
+    unsafe {
+        (*TASK_MANAGER.as_mut_ptr()).exit_and_run_next();
+    }
+}
+
+pub fn run_next() {
+    unsafe {
+        (*TASK_MANAGER.as_mut_ptr()).run_next();
+    }
+}

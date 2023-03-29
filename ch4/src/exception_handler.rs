@@ -1,5 +1,5 @@
-use crate::syscall::SysFuncImpl;
-use crate::task::任务管理器;
+use crate::{syscall::SysFuncImpl, task::current_task};
+use crate::task::{TaskManager, exit_and_run_next, suspend_and_run_next};
 use crate::timer::为下一次时钟中断定时;
 use core::arch::global_asm;
 use exception::context::Context;
@@ -13,7 +13,7 @@ use sys_func::sys_func;
 #[no_mangle]
 /// 处理中断、异常或系统调用
 pub fn exception_handler() {
-    let 当前任务的地址空间 = &任务管理器::当前任务().地址空间;
+    let 当前任务的地址空间 = &current_task().memory_set;
     let cx = 当前任务的地址空间.陷入上下文();
     match scause::read() {
         Exception::UserEnvCall => {
@@ -29,15 +29,15 @@ pub fn exception_handler() {
         }
         Exception::StoreFault | Exception::StorePageFault => {
             println!("[kernel] PageFault in application, kernel killed it.");
-            任务管理器::终止并运行下一个任务();
+            exit_and_run_next();
         }
         Exception::IllegalInstruction => {
             println!("[kernel] IllegalInstruction in application, kernel killed it.");
-            任务管理器::终止并运行下一个任务();
+            exit_and_run_next();
         }
         Exception::Interrupt(Interrupt::Timer) => {
             为下一次时钟中断定时();
-            任务管理器::暂停并运行下一个任务();
+            suspend_and_run_next();
         }
         _ => {}
     }
