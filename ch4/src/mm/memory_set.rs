@@ -2,7 +2,6 @@ use alloc::vec::Vec;
 use core::ops::Range;
 use exception::context::Context;
 use elf_reader::ElfFile;
-use lazy_static::lazy_static;
 use frame_allocator::FrameAllocator;
 
 pub const MEMORY_END: usize = 0x80800000;
@@ -104,10 +103,13 @@ impl 地址空间 {
     }
 }
 
-lazy_static! {
-    pub static ref 内核地址空间: 地址空间 = 地址空间::新建内核地址空间();
-}
+pub static mut KERNEL_SPACE: Option<地址空间> = None;
 
+pub fn init() {
+    unsafe {
+        KERNEL_SPACE = Some(地址空间::新建内核地址空间());
+    }
+}
 
 
 /// 一段连续地址的虚拟内存
