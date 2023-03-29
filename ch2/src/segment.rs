@@ -16,5 +16,6 @@ pub fn init() {
         KERNEL_STACK_TOP = ekernel as usize + 0x2000;
         CONTEXT_START_ADDR = KERNEL_STACK_TOP;
         APP_START_ADDR = CONTEXT_START_ADDR + core::mem::size_of::<Context>();
+        println!("{:#x}", APP_START_ADDR);
     }
 }

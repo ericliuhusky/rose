@@ -117,14 +117,14 @@ impl 地址空间 {
         let 程序段列表 = elf文件.programs();
         for 程序段 in &程序段列表 {
             地址空间.映射(逻辑段 { 
-                连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 程序段.virtual_address_range() },
+                连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 程序段.start_va()..程序段.end_va() },
                 恒等映射: false,
                 用户可见: true,
              });
-            地址空间.page_table.write(VA::new(程序段.virtual_address_range().start), VA::new(程序段.virtual_address_range().end), 程序段.data);
+            地址空间.page_table.write(VA::new(程序段.start_va()), VA::new(程序段.end_va()), 程序段.data);
         }
 
-        let 最后一个程序段的虚拟地址范围 = 程序段列表.last().unwrap().virtual_address_range();
+        let 最后一个程序段的虚拟地址范围 = 程序段列表.last().unwrap().start_va()..程序段列表.last().unwrap().end_va();
 
         let 用户栈栈底 = 连续地址虚拟内存 { 虚拟地址范围: 最后一个程序段的虚拟地址范围 }.对齐到分页的结尾地址();
         let 用户栈栈顶 = 用户栈栈底 + 0x2000;

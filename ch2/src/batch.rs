@@ -20,12 +20,12 @@ impl 应用管理器 {
             let elf = elf_reader::ElfFile::read(app_data);
             let entry_address = elf.entry_address();
             assert!(entry_address > APP_START_ADDR);
-            let last_p_va_end = elf.programs().last().unwrap().virtual_address_range().end;
+            let last_p_va_end = elf.programs().last().unwrap().end_va();
             let user_stack_top = last_p_va_end + 0x2000;
             APP_END_ADDR = user_stack_top;
             for p in elf.programs() {
-                let start_va = p.virtual_address_range().start;
-                let end_va = p.virtual_address_range().end;
+                let start_va = p.start_va();
+                let end_va = p.end_va();
                 if start_va < 0x80200000 {
                     continue;
                 }

@@ -104,9 +104,8 @@ fn 加载应用到应用内存区(应用索引: usize) -> (usize, usize) {
         let elf = elf_reader::ElfFile::read(应用数据);
         println!("{:x}", elf.entry_address());
         for p in elf.programs() {
-            let start_va = p.virtual_address_range().start;
-            let end_va = p.virtual_address_range().end;
-            println!("{:x},{:x}", start_va, end_va);
+            let start_va = p.start_va();
+            let end_va = p.end_va();
             if start_va < 0x80200000 {
                 continue;
             }
@@ -117,7 +116,7 @@ fn 加载应用到应用内存区(应用索引: usize) -> (usize, usize) {
                 dst[j] = src[j];
             }
         }
-        let last_p_va_end = elf.programs().last().unwrap().virtual_address_range().end;
+        let last_p_va_end = elf.programs().last().unwrap().end_va();
         let user_stack_top = last_p_va_end +0x2000;
         (elf.entry_address(), user_stack_top)
     }

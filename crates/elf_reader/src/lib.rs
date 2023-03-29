@@ -65,8 +65,12 @@ pub struct ProgromSection<'a> {
 }
 
 impl<'a> ProgromSection<'_> {
-    pub fn virtual_address_range(&self) -> Range<usize> {
-        self.header.start_virtual_address..self.header.start_virtual_address + self.header.memory_size
+    pub fn start_va(&self) -> usize {
+        self.header.start_virtual_address
+    }
+
+    pub fn end_va(&self) -> usize {
+        self.header.start_virtual_address + self.header.memory_size
     }
 
     fn is_load(&self) -> bool {
