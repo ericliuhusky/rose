@@ -1,4 +1,3 @@
-use core::mem::MaybeUninit;
 use alloc::collections::VecDeque;
 use sbi_call::shutdown;
 use crate::mm::USER_SATP;
@@ -68,34 +67,34 @@ impl TaskManager {
     }
 }
 
-static mut TASK_MANAGER: MaybeUninit<TaskManager> = MaybeUninit::uninit();
+static mut TASK_MANAGER: Option<TaskManager> = None;
 
 pub fn init() {
     unsafe {
-        TASK_MANAGER.write(TaskManager::new());
+        TASK_MANAGER = Some(TaskManager::new());
     }
 }
 
 pub fn current_task() -> &'static Task {
     unsafe {
-        (*TASK_MANAGER.as_mut_ptr()).current.as_ref().unwrap()
+        TASK_MANAGER.as_ref().unwrap().current.as_ref().unwrap()
     }
 }
 
 pub fn suspend_and_run_next() {
     unsafe {
-        (*TASK_MANAGER.as_mut_ptr()).suspend_and_run_next();
+        TASK_MANAGER.as_mut().unwrap().suspend_and_run_next();
     }
 }
 
 pub fn exit_and_run_next() {
     unsafe {
-        (*TASK_MANAGER.as_mut_ptr()).exit_and_run_next();
+        TASK_MANAGER.as_mut().unwrap().exit_and_run_next();
     }
 }
 
 pub fn run_next() {
     unsafe {
-        (*TASK_MANAGER.as_mut_ptr()).run_next();
+        TASK_MANAGER.as_mut().unwrap().run_next();
     }
 }
