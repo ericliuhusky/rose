@@ -1,8 +1,9 @@
-mod frame_allocator;
 pub mod memory_set;
 
 use memory_set::内核地址空间;
 use riscv_register::satp;
+
+use crate::mm::memory_set::MEMORY_END;
 
 #[no_mangle]
 #[link_section = ".text.trampoline"]
@@ -17,7 +18,7 @@ pub fn 初始化() {
         unsafe { &HEAP } as *const [u8] as *const u8 as usize,
         0x4000,
     );
-    frame_allocator::物理内存管理器::初始化();
+    frame_allocator::init(MEMORY_END);
     unsafe {
         // 切换到内核地址空间
         let satp = 内核地址空间.token();

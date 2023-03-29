@@ -2,10 +2,10 @@ use alloc::vec::Vec;
 use core::ops::Range;
 use exception::context::Context;
 use elf_reader::ElfFile;
-use crate::mm::frame_allocator::物理内存管理器;
 use lazy_static::lazy_static;
+use frame_allocator::FrameAllocator;
 
-pub const 可用物理内存结尾地址: usize = 0x80800000;
+pub const MEMORY_END: usize = 0x80800000;
 
 #[no_mangle]
 #[link_section = ".text.trampoline"]
@@ -35,7 +35,7 @@ use page_table::PageTableEntryFlags;
 
 
 pub struct 地址空间 {
-    page_table: SV39PageTable<物理内存管理器>
+    page_table: SV39PageTable<FrameAllocator>
 }
 
 impl 地址空间 {
@@ -57,7 +57,7 @@ impl 地址空间 {
 
     fn 新建空地址空间() -> Self {
         Self { 
-            page_table: SV39PageTable::<物理内存管理器>::new()
+            page_table: SV39PageTable::<FrameAllocator>::new()
         }
     }
 
@@ -68,7 +68,7 @@ impl 地址空间 {
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: srodata as usize..erodata as usize });
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: sdata as usize..edata as usize });
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: sbss_with_stack as usize..ebss as usize });
-        地址空间.恒等映射(逻辑段 { 虚拟地址范围: ekernel as usize..可用物理内存结尾地址 });
+        地址空间.恒等映射(逻辑段 { 虚拟地址范围: ekernel as usize..MEMORY_END });
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: 0x100000..0x102000 }); // MMIO VIRT_TEST/RTC  in virt machine
         // 内核栈
         地址空间.映射(逻辑段 { 虚拟地址范围: KERNEL_STACK_TOP - 0x2000..KERNEL_STACK_TOP });
