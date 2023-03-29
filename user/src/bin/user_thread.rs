@@ -12,7 +12,6 @@ mod user_thread {
     use alloc::vec;
     use alloc::vec::Vec;
     use core::arch::asm;
-    use core::mem::MaybeUninit;
 
     #[repr(C)]
     struct TaskContext {
@@ -96,35 +95,35 @@ mod user_thread {
         }
     }
 
-    static mut TASK_MANAGER: MaybeUninit<TaskManager> = MaybeUninit::uninit();
+    static mut TASK_MANAGER: Option<TaskManager> = None;
 
     pub fn init() {
         unsafe {
-            TASK_MANAGER.write(TaskManager::new());
+            TASK_MANAGER = Some(TaskManager::new());
         }
     }
 
     pub fn exit() {
         unsafe {
-            (*TASK_MANAGER.as_mut_ptr()).exit_and_run_next();
+            TASK_MANAGER.as_mut().unwrap().exit_and_run_next();
         }
     }
 
     pub fn yield_() {
         unsafe {
-            (*TASK_MANAGER.as_mut_ptr()).suspend_and_run_next();
+            TASK_MANAGER.as_mut().unwrap().suspend_and_run_next();
         }
     }
 
     pub fn spawn(f: fn()) {
         unsafe {
-            (*TASK_MANAGER.as_mut_ptr()).add_task(f);
+            TASK_MANAGER.as_mut().unwrap().add_task(f);
         }
     }
 
     pub fn run() {
         unsafe {
-            (*TASK_MANAGER.as_ptr()).run();
+            TASK_MANAGER.as_mut().unwrap().run();
         }
     }
 
