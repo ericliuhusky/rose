@@ -80,7 +80,8 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
 }
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
-    pub fn map(&mut self, vpn: VPN, identical: bool, flags: PageTableEntryFlags) {
+    pub fn map(&mut self, vpn: usize, identical: bool, flags: PageTableEntryFlags) {
+        let vpn = VPN::new(vpn);
         let ppn;
         if identical {
             ppn = PPN::new(vpn.0);
@@ -94,7 +95,8 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
         *pte = PageTableEntry::new(ppn, flags);
     }
 
-    pub fn translate(&self, vpn: VPN) -> PPN {
+    pub fn translate(&self, vpn: usize) -> PPN {
+        let vpn = VPN::new(vpn);
         self.find_pte(vpn).ppn()
     }
 }
@@ -104,7 +106,6 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
         let start_vpn = start_va.align_to_lower().page_number();
         let end_vpn = end_va.align_to_upper().page_number();
         (start_vpn.0..end_vpn.0)
-            .map(|vpn| VPN::new(vpn))
             .map(|vpn| {
                 self.translate(vpn)
             })

@@ -42,7 +42,7 @@ impl 地址空间 {
             } else {
                 flags = PageTableEntryFlags::XWR;
             }
-            self.page_table.map(VPN::new(虚拟页号), 逻辑段.恒等映射, flags);
+            self.page_table.map(虚拟页号, 逻辑段.恒等映射, flags);
         }
         self.逻辑段列表.push(逻辑段);
     }
@@ -142,8 +142,8 @@ impl 地址空间 {
             });
             // TODO: 整理页表的完全复制，为何不能读完一部分数据再写入呢
             for vpn in 逻辑段.连续地址虚拟内存.虚拟页号范围() {
-                let src_ppn = 被复制的地址空间.page_table.translate(VPN::new(vpn)).0;
-                let dst_ppn = 地址空间.page_table.translate(VPN::new(vpn)).0;
+                let src_ppn = 被复制的地址空间.page_table.translate(vpn).0;
+                let dst_ppn = 地址空间.page_table.translate(vpn).0;
                 if src_ppn == dst_ppn {
                     continue;
                 }
