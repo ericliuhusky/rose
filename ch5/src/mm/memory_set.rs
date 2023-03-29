@@ -5,7 +5,6 @@ use exception::context::Context;
 use super::address::{逻辑段, 连续地址虚拟内存};
 use frame_allocator::FrameAllocator;
 use elf_reader::ElfFile;
-use lazy_static::lazy_static;
 
 pub const MEMORY_END: usize = 0x88000000;
 
@@ -172,6 +171,10 @@ impl 地址空间 {
     }
 }
 
-lazy_static! {
-    pub static ref 内核地址空间: 地址空间 = 地址空间::新建内核地址空间();
+pub static mut KERNEL_SPACE: Option<地址空间> = None;
+
+pub fn init() {
+    unsafe {
+        KERNEL_SPACE = Some(地址空间::新建内核地址空间());
+    }
 }

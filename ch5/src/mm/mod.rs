@@ -2,7 +2,7 @@ mod address;
 pub mod memory_set;
 
 use exception::memory_set::switch_kernel;
-use memory_set::内核地址空间;
+use memory_set::KERNEL_SPACE;
 use riscv_register::satp;
 use memory_set::MEMORY_END;
 
@@ -21,8 +21,9 @@ pub fn 初始化() {
     );
     frame_allocator::init(MEMORY_END);
     unsafe {
+        memory_set::init();
         // 切换到内核地址空间
-        let satp = 内核地址空间.token();
+        let satp = KERNEL_SPACE.as_ref().unwrap().token();
         KERNEL_SATP = satp;
         switch_kernel();
     }
