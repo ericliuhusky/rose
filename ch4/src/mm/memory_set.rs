@@ -16,14 +16,7 @@ static CONTEXT_START_ADDR: usize = 0xffffffffffffe000;
 
 
 extern "C" {
-    fn stext();
-    fn etext();
-    fn srodata();
-    fn erodata();
-    fn sdata();
-    fn edata();
-    fn sbss_with_stack();
-    fn ebss();
+    fn skernel();
     fn ekernel();
     fn strampoline();
     fn etrampoline();
@@ -64,10 +57,7 @@ impl 地址空间 {
     pub fn 新建内核地址空间() -> Self {
         let mut 地址空间 = Self::新建空地址空间();
 
-        地址空间.恒等映射(逻辑段 { 虚拟地址范围: stext as usize..etext as usize });
-        地址空间.恒等映射(逻辑段 { 虚拟地址范围: srodata as usize..erodata as usize });
-        地址空间.恒等映射(逻辑段 { 虚拟地址范围: sdata as usize..edata as usize });
-        地址空间.恒等映射(逻辑段 { 虚拟地址范围: sbss_with_stack as usize..ebss as usize });
+        地址空间.恒等映射(逻辑段 { 虚拟地址范围: skernel as usize..ekernel as usize});
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: ekernel as usize..MEMORY_END });
         地址空间.恒等映射(逻辑段 { 虚拟地址范围: 0x100000..0x102000 }); // MMIO VIRT_TEST/RTC  in virt machine
         // 内核栈

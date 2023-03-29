@@ -17,14 +17,7 @@ static KERNEL_STACK_TOP: usize = 0xfffffffffffff000;
 static CONTEXT_START_ADDR: usize = 0xffffffffffffe000;
 
 extern "C" {
-    fn stext();
-    fn etext();
-    fn srodata();
-    fn erodata();
-    fn sdata();
-    fn edata();
-    fn sbss_with_stack();
-    fn ebss();
+    fn skernel();
     fn ekernel();
     fn strampoline();
     fn etrampoline();
@@ -65,25 +58,10 @@ impl 地址空间 {
         let mut 地址空间 = Self::新建空地址空间();
 
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: stext as usize..etext as usize },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: skernel as usize..ekernel as usize },
             恒等映射: true,
             用户可见: false,
         });
-        地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: srodata as usize..erodata as usize },
-            恒等映射: true,
-            用户可见: false,
-         });
-        地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: sdata as usize..edata as usize },
-            恒等映射: true,
-            用户可见: false,
-         });
-        地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: sbss_with_stack as usize..ebss as usize },
-            恒等映射: true,
-            用户可见: false,
-         });
         地址空间.映射(逻辑段 { 
             连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: ekernel as usize..MEMORY_END },
             恒等映射: true,
