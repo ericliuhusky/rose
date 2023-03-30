@@ -6,12 +6,8 @@ use frame_allocator::FrameAllocator;
 
 pub const MEMORY_END: usize = 0x80800000;
 
-#[no_mangle]
-#[link_section = ".text.trampoline"]
-static KERNEL_STACK_TOP: usize = 0xfffffffffffff000;
-#[link_section = ".text.trampoline"]
-#[no_mangle]
-static CONTEXT_START_ADDR: usize = 0xffffffffffffe000;
+pub const KERNEL_STACK_TOP: usize = 0xfffffffffffff000;
+pub const CONTEXT_START_ADDR: usize = 0xffffffffffffe000;
 
 
 extern "C" {

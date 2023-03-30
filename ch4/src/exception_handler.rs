@@ -1,3 +1,4 @@
+use crate::mm::memory_set::CONTEXT_START_ADDR;
 use crate::{syscall::SysFuncImpl, task::current_task};
 use crate::task::{TaskManager, exit_and_run_next, suspend_and_run_next};
 use crate::timer::为下一次时钟中断定时;
@@ -42,4 +43,5 @@ pub fn exception_handler() {
         _ => {}
     }
     let user_satp = 当前任务的地址空间.token();
+    restore_context(CONTEXT_START_ADDR, user_satp);
 }

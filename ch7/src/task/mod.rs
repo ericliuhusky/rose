@@ -3,10 +3,11 @@ mod pid;
 
 use core::cell::{RefCell, Ref, RefMut};
 
-use crate::mm::USER_SATP;
 use alloc::{vec::Vec, rc::Rc};
 use exception::restore::restore_context;
 use sbi_call::shutdown;
+use crate::mm::memory_set::CONTEXT_START_ADDR;
+
 use self::task::{任务, 任务状态};
 
 
@@ -78,10 +79,10 @@ impl 任务管理器 {
         unsafe {
             let 下一个任务 = 任务管理器.就绪任务队列.remove(0);
             下一个任务.borrow_mut().状态 = 任务状态::运行;
-            USER_SATP = 下一个任务.borrow().地址空间.token();
+            let user_satp = 下一个任务.borrow().地址空间.token();
             任务管理器.当前任务 = Some(下一个任务);
             
-            restore_context();
+            restore_context(CONTEXT_START_ADDR, user_satp);
         }
     }
 

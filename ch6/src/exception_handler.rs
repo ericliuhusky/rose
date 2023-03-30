@@ -1,7 +1,8 @@
-use crate::syscall::SysFuncImpl;
+use crate::{syscall::SysFuncImpl, mm::memory_set::CONTEXT_START_ADDR};
 use crate::task::任务管理器;
 use crate::timer::为下一次时钟中断定时;
 use core::arch::global_asm;
+use exception::restore::restore_context;
 use riscv_register::{
     scause::{self, Exception, Interrupt},
     stvec,
@@ -40,4 +41,6 @@ pub fn exception_handler() {
         }
         _ => {}
     }
+    let user_satp = 任务管理器::当前任务().地址空间.token();
+    restore_context(CONTEXT_START_ADDR, user_satp);
 }

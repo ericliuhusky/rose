@@ -1,7 +1,6 @@
 use alloc::collections::VecDeque;
 use sbi_call::shutdown;
-use crate::mm::USER_SATP;
-use crate::mm::memory_set::地址空间;
+use crate::mm::memory_set::{地址空间, CONTEXT_START_ADDR};
 use exception::context::Context;
 use exception::restore::restore_context;
 
@@ -55,11 +54,9 @@ impl TaskManager {
 
     fn run_next(&mut self) {
         if let Some(next) = self.ready_queue.pop_front() {
-            unsafe {
-                USER_SATP = next.memory_set.token();
-            }
+            let user_satp = next.memory_set.token();
             self.current = Some(next);
-            restore_context();
+            restore_context(CONTEXT_START_ADDR ,user_satp);
         } else {
             println!("[Kernel] All applications completed!");
             shutdown();

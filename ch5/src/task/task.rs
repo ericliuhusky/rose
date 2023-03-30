@@ -1,7 +1,6 @@
 use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
-use crate::mm::USER_SATP;
 use crate::mm::memory_set::地址空间;
 use exception::context::Context;
 use super::pid::{进程标识符, 进程标识符管理器};
@@ -38,9 +37,6 @@ impl 任务 {
             应用入口地址,
             用户栈栈顶,
         );
-        unsafe {
-            USER_SATP = 地址空间.token();
-        }
         self.地址空间 = 地址空间;
     }
 
