@@ -1,21 +1,25 @@
 use core::cell::RefCell;
-use alloc::rc::Rc;
+use alloc::rc::Weak;
+use alloc::{rc::Rc, collections::BTreeMap};
 use alloc::vec;
 use alloc::vec::Vec;
 use crate::mm::memory_set::{地址空间, 内核地址空间};
 use exception::context::Context;
-use super::id::{Pid, pid_alloc};
+use super::add_task;
+use super::id::{Pid, pid_alloc, IDAllocator};
 use crate::fs::{File, Stdin, Stdout};
 
-pub struct Task {
+pub struct Process {
+    pub pid: Pid,
     pub is_exited: bool,
     pub memory_set: 地址空间,
-    pub pid: Pid,
-    pub children: Vec<Rc<RefCell<Task>>>,
+    pub children: Vec<Rc<RefCell<Process>>>,
     pub fd_table: Vec<Option<Rc<dyn File>>>,
+    pub tasks: BTreeMap<usize, Rc<RefCell<Task>>>,
+    pub tid_allocator: IDAllocator,
 }
 
-impl Task {
+impl Process {
     pub fn alloc_fd(&mut self) -> usize {
         if let Some(fd) = (0..self.fd_table.len()).find(|fd| self.fd_table[*fd].is_none()) {
             fd
@@ -24,30 +28,43 @@ impl Task {
             self.fd_table.len() - 1
         }
     }
+
+    pub fn alloc_tid(&mut self) -> usize {
+        self.tid_allocator.alloc()
+    }
+
+    pub fn main_task(&self) -> Rc<RefCell<Task>> {
+        self.tasks.get(&0).unwrap().clone()
+    }
 }
 
-impl Task {
-    pub fn new(elf_data: &[u8]) -> Self {
+impl Process {
+    pub fn new(elf_data: &[u8]) -> Rc<RefCell<Self>> {
         let (memory_set, entry_address) = 地址空间::新建应用地址空间(elf_data);
-        let cx = memory_set.get_context();
+        let process = Rc::new(RefCell::new(Self{
+            pid: pid_alloc(),
+            is_exited: false,
+            memory_set,
+            children: Vec::new(),
+            fd_table: vec![
+                Some(Rc::new(Stdin)),
+                Some(Rc::new(Stdout)),
+                Some(Rc::new(Stdout)),
+            ],
+            tasks: BTreeMap::new(),
+            tid_allocator: IDAllocator::new(),
+        }));
+        let task = Rc::new(RefCell::new(Task::new(Rc::clone(&process))));
+        let cx = process.borrow().memory_set.get_context();
         *cx = Context::app_init(
             entry_address,
             0xFFFFFFFFFFFFE000,
         );
-        Self {
-            is_exited: false,
-            memory_set,
-            pid: pid_alloc(),
-            children: Vec::new(),
-            fd_table: vec![
-                // 0 -> stdin
-                Some(Rc::new(Stdin)),
-                // 1 -> stdout
-                Some(Rc::new(Stdout)),
-                // 2 -> stderr
-                Some(Rc::new(Stdout)),
-            ],
-        }
+        let mut process_mut = process.borrow_mut();
+        process_mut.tasks.insert(0, Rc::clone(&task));
+        drop(process_mut);
+        add_task(task);
+        process
     }
 
     pub fn exec(&mut self, elf_data: &[u8]) {
@@ -70,16 +87,33 @@ impl Task {
                 new_fd_table.push(None);
             }
         }
-        let task = Rc::new(RefCell::new(
-            Self {
-                is_exited: false,
-                memory_set,
-                pid: pid_alloc(),
-                children: Vec::new(),
-                fd_table: new_fd_table,
-            }
-        ));
-        self.children.push(Rc::clone(&task));
-        task
+        let process = Rc::new(RefCell::new(Self {
+            pid: pid_alloc(),
+            is_exited: false,
+            memory_set,
+            children: Vec::new(),
+            fd_table: new_fd_table,
+            tasks: BTreeMap::new(),
+            tid_allocator: IDAllocator::new(),
+        }));
+        self.children.push(Rc::clone(&process));
+        let task = Rc::new(RefCell::new(Task::new(Rc::clone(&process))));
+        let mut process_mut = process.borrow_mut();
+        process_mut.tasks.insert(0, Rc::clone(&task));
+        drop(process_mut);
+        add_task(task);
+        process
+    }
+}
+
+pub struct Task {
+    pub process: Weak<RefCell<Process>>,
+}
+
+impl Task {
+    pub fn new(process: Rc<RefCell<Process>>) -> Self {
+        Self { 
+            process: Rc::downgrade(&process),
+        }
     }
 }

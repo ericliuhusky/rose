@@ -54,18 +54,18 @@ impl SysFunc for SysFuncImpl {
 }
 
 mod 系统调用_输出 {
-    use crate::task::{TaskManager, current_task};
+    use crate::task::{TaskManager, current_task, current_process};
     use page_table::VA;
 
     pub fn write(fd: usize, buf: *const u8, len: usize) -> isize {
-        let task = current_task();
-        let fd_table = &task.borrow().fd_table;
+        let process = current_process();
+        let fd_table = &process.borrow().fd_table;
         if fd >= fd_table.len() {
             return -1;
         }
         if let Some(file) = &fd_table[fd] {
             let file = file.clone();
-            let buf = task.borrow()
+            let buf = process.borrow()
                 .memory_set
                 .page_table
                 .translate_buffer(buf as usize, len);
@@ -92,18 +92,18 @@ mod 系统调用_终止 {
 }
 
 mod 系统调用_读取 {
-    use crate::task::{TaskManager, current_task};
+    use crate::task::{TaskManager, current_task, current_process};
     use page_table::VA;
 
     pub fn read(fd: usize, buf: *const u8, len: usize) -> isize {
-        let task = current_task();
-        let fd_table = &task.borrow().fd_table;
+        let process = current_process();
+        let fd_table = &process.borrow().fd_table;
         if fd >= fd_table.len() {
             return -1;
         }
         if let Some(file) = &fd_table[fd] {
             let file = file.clone();
-            let buf = task.borrow()
+            let buf = process.borrow()
                 .memory_set
                 .page_table
                 .translate_buffer(buf as usize, len);
@@ -136,35 +136,34 @@ mod 系统调用_时钟计数器 {
 }
 
 mod 系统调用_进程 {
-    use crate::task::{TaskManager, current_task, add_task};
+    use crate::task::{TaskManager, current_task, add_task, current_process};
     use alloc::string::String;
 
     pub fn getpid() -> isize {
-        current_task().borrow().pid.0 as isize
+        current_process().borrow().pid.0 as isize
     }
 
     pub fn fork() -> isize {
-        let task = current_task();
-        let mut task = task.borrow_mut();
-        let new_task = task.fork();
-        let cx = new_task.borrow().memory_set.get_context();
+        let process = current_process();
+        let mut process = process.borrow_mut();
+        let new_process = process.fork();
+        let cx = new_process.borrow().memory_set.get_context();
         cx.x[10] = 0;
-        let new_task_pid = new_task.borrow().pid.0;
-        add_task(new_task);
-        new_task_pid as isize
+        let new_pid = new_process.borrow().pid.0;
+        new_pid as isize
     }
 
     use crate::fs::open_file;
 
     pub fn exec(path: *const u8, len: usize) -> isize {
-        let task = current_task();
-        let 应用名称 = task.borrow()
+        let process = current_process();
+        let 应用名称 = process.borrow()
             .memory_set
             .read_str(path as usize, len);
         if let Some(elf_inode) = open_file(&应用名称, false) {
             let elf_data = elf_inode.read_all();
-            let mut task = task.borrow_mut();
-            task.exec(&elf_data);
+            let mut process = process.borrow_mut();
+            process.exec(&elf_data);
             0
         } else {
             -1
@@ -172,9 +171,9 @@ mod 系统调用_进程 {
     }
 
     pub fn waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
-        let task = current_task();
-        let mut task = task.borrow_mut();
-        if !task
+        let process = current_process();
+        let mut process = process.borrow_mut();
+        if !process
             .children
             .iter()
             .any(|p| pid == -1 || pid as usize == p.borrow().pid.0)
@@ -182,12 +181,12 @@ mod 系统调用_进程 {
             return -1;
         }
 
-        let pair = task.children.iter().enumerate().find(|(_, p)| {
+        let pair = process.children.iter().enumerate().find(|(_, p)| {
             let p = p.borrow();
             p.is_exited && (pid == -1 || pid as usize == p.pid.0)
         });
         if let Some((idx, _)) = pair {
-            let child = task.children.remove(idx);
+            let child = process.children.remove(idx);
             let found_pid = child.borrow().pid.0;
             // TODO: 终止代码
             // let exit_code = child.borrow().终止代码;
@@ -201,21 +200,21 @@ mod 系统调用_进程 {
 }
 
 use crate::fs::open_file;
-use crate::task::current_task;
+use crate::task::{current_task, current_process};
 use crate::task::{task::Task, TaskManager};
 use alloc::string::String;
 use page_table::VA;
 
 pub fn open(path: *const u8, len: usize, create: u32) -> isize {
-    let task = current_task();
-    let path = task.borrow()
+    let process = current_process();
+    let path = process.borrow()
         .memory_set
         .read_str(path as usize, len);
     let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {
-        let mut task = task.borrow_mut();
-        let fd = task.alloc_fd();
-        task.fd_table[fd] = Some(inode);
+        let mut process = process.borrow_mut();
+        let fd = process.alloc_fd();
+        process.fd_table[fd] = Some(inode);
         fd as isize
     } else {
         -1
@@ -223,31 +222,31 @@ pub fn open(path: *const u8, len: usize, create: u32) -> isize {
 }
 
 pub fn close(fd: usize) -> isize {
-    let task = current_task();
-    let mut task = task.borrow_mut();
-    let fd_table = &task.fd_table;
+    let process = current_process();
+    let mut process = process.borrow_mut();
+    let fd_table = &process.fd_table;
     if fd >= fd_table.len() {
         return -1;
     }
     if fd_table[fd].is_none() {
         return -1;
     }
-    task.fd_table[fd].take();
+    process.fd_table[fd].take();
     0
 }
 
 use crate::fs::make_pipe;
 
 pub fn pipe(pipe_fd: *mut usize) -> isize {
-    let task = current_task();
-    let mut task = task.borrow_mut();
+    let process = current_process();
+    let mut process = process.borrow_mut();
 
     let (pipe_read, pipe_write) = make_pipe();
-    let read_fd = task.alloc_fd();
-    task.fd_table[read_fd] = Some(pipe_read);
-    let write_fd = task.alloc_fd();
-    task.fd_table[write_fd] = Some(pipe_write);
-    let pipe_fd = task.memory_set.page_table.translate_type::<[usize; 2]>(pipe_fd as usize);
+    let read_fd = process.alloc_fd();
+    process.fd_table[read_fd] = Some(pipe_read);
+    let write_fd = process.alloc_fd();
+    process.fd_table[write_fd] = Some(pipe_write);
+    let pipe_fd = process.memory_set.page_table.translate_type::<[usize; 2]>(pipe_fd as usize);
     pipe_fd[0] = read_fd;
     pipe_fd[1] = write_fd;
     0
