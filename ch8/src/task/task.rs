@@ -55,10 +55,11 @@ impl Process {
             tid_allocator: IDAllocator::new(),
         }));
         let task = Rc::new(RefCell::new(Task::new(Rc::clone(&process))));
-        let cx = process.borrow().memory_set.get_context();
+        let cx = process.borrow().get_trap_cx(task.borrow().tid);
+        let user_stack_top = task.borrow().user_stack_top();
         *cx = Context::app_init(
             entry_address,
-            0xFFFFFFFFFFFFE000,
+            user_stack_top,
         );
         let mut process_mut = process.borrow_mut();
         process_mut.tasks.insert(0, Rc::clone(&task));
@@ -69,12 +70,17 @@ impl Process {
 
     pub fn exec(&mut self, elf_data: &[u8]) {
         let (memory_set, entry_address) = 地址空间::新建应用地址空间(elf_data);
-        let cx = memory_set.get_context();
+        self.memory_set = memory_set;
+
+        let task = self.main_task();
+        let user_stack_top = task.borrow().user_stack_top();
+
+
+        let cx = self.get_trap_cx(task.borrow().tid);
         *cx = Context::app_init(
             entry_address,
-            0xFFFFFFFFFFFFE000,
+            user_stack_top,
         );
-        self.memory_set = memory_set;
     }
 
     pub fn fork(&mut self) -> Rc<RefCell<Self>> {
@@ -104,16 +110,37 @@ impl Process {
         add_task(task);
         process
     }
+
+    pub fn get_trap_cx(&self, tid: usize) -> &'static mut Context {
+        let cx_user_va = 0xFFFFFFFFFFFFE000 - tid * 0x1000;
+        self
+            .memory_set
+            .page_table
+            .translate_type(cx_user_va)
+    }
 }
 
 pub struct Task {
     pub process: Weak<RefCell<Process>>,
+    pub is_exited: bool,
+    pub tid: usize,
 }
 
 impl Task {
     pub fn new(process: Rc<RefCell<Process>>) -> Self {
+        let tid = process.borrow_mut().alloc_tid();
         Self { 
             process: Rc::downgrade(&process),
+            is_exited: false,
+            tid,
         }
+    }
+
+    pub fn trap_cx_user_va(&self) -> usize {
+        0xFFFFFFFFFFFFE000 - self.tid * 0x1000
+    }
+
+    pub fn user_stack_top(&self) -> usize {
+        0xFFFFFFFFFFFCF000 + (self.tid + 1) * 0x2000
     }
 }

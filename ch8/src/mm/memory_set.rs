@@ -105,13 +105,13 @@ impl 地址空间 {
         }
 
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0xFFFFFFFFFFFFC000..0xFFFFFFFFFFFFE000 },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0xFFFFFFFFFFFCF000..0xFFFFFFFFFFFEF000 },
             恒等映射: false,
             用户可见: true,
          });
 
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: CONTEXT_START_ADDR..0xfffffffffffff000 },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0xFFFFFFFFFFFEF000..0xfffffffffffff000 },
             恒等映射: false,
             用户可见: false,
          });
