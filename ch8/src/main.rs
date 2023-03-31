@@ -27,6 +27,6 @@ fn main() {
     exception::init();
     timer::开启时钟中断();
     timer::为下一次时钟中断定时();
-    task::任务管理器::添加初始进程();
-    task::任务管理器::运行下一个任务();
+    task::add_initproc();
+    task::run_next();
 }

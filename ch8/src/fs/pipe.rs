@@ -4,7 +4,7 @@ use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use alloc::rc::{Rc, Weak};
 
-use crate::task::任务管理器;
+use crate::task::{TaskManager, suspend_and_run_next};
 
 pub struct Pipe {
     buffer: Rc<RefCell<PipeBuffer>>,
@@ -79,7 +79,7 @@ impl File for Pipe {
                     return already_read;
                 }
                 drop(pipe_buffer);
-                任务管理器::暂停并运行下一个任务();
+                suspend_and_run_next();
                 continue;
             }
             for i in 0..loop_read {
@@ -105,7 +105,7 @@ impl File for Pipe {
             let loop_write = pipe_buffer.available_write();
             if loop_write == 0 {
                 drop(pipe_buffer);
-                任务管理器::暂停并运行下一个任务();
+                suspend_and_run_next();
                 continue;
             }
             // write at most loop_write bytes

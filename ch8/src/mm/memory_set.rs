@@ -157,7 +157,7 @@ impl 地址空间 {
 }
 
 impl 地址空间 {
-    pub fn 陷入上下文(&self) -> &'static mut Context {
+    pub fn get_context(&self) -> &'static mut Context {
         self.page_table.translate_type(CONTEXT_START_ADDR)
     }
 

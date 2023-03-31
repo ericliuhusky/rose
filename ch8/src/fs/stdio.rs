@@ -1,7 +1,7 @@
 //!Stdin & Stdout
 use super::File;
 use alloc::vec::Vec;
-use crate::task::任务管理器;
+use crate::task::{TaskManager, suspend_and_run_next};
 ///Standard input
 pub struct Stdin;
 ///Standard output
@@ -15,7 +15,7 @@ impl File for Stdin {
         loop {
             c = sbi_call::getchar();
             if c == 0 {
-                任务管理器::暂停并运行下一个任务();
+                suspend_and_run_next();
                 continue;
             } else {
                 break;

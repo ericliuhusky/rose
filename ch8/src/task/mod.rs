@@ -1,98 +1,89 @@
-pub mod task;
 mod id;
+pub mod task;
 
-use core::cell::{RefCell, Ref, RefMut};
-
-use alloc::{vec::Vec, rc::Rc};
+use self::task::Task;
+use crate::mm::memory_set::CONTEXT_START_ADDR;
+use alloc::{rc::Rc, vec::Vec};
+use core::cell::{Ref, RefCell, RefMut};
 use exception::restore::restore_context;
 use sbi_call::shutdown;
-use crate::mm::memory_set::CONTEXT_START_ADDR;
 
-use self::task::任务;
-
-
-pub struct 任务管理器 {
-    pub 当前任务: Option<Rc<RefCell<任务>>>,
-    就绪任务队列: Vec<Rc<RefCell<任务>>>,
+pub struct TaskManager {
+    pub current: Option<Rc<RefCell<Task>>>,
+    ready_queue: Vec<Rc<RefCell<Task>>>,
 }
 
-impl 任务管理器 {
-    pub fn 当前任务() -> Ref<'static, 任务> {
-        unsafe {
-            任务管理器.当前任务.as_ref().unwrap().borrow()
-        }
+impl TaskManager {
+    fn current(&self) -> Rc<RefCell<Task>> {
+        Rc::clone(self.current.as_ref().unwrap())
     }
 
-    pub fn 可变当前任务<F, T>(f: F) -> T where F: FnOnce(RefMut<'static, 任务>) -> T {
-        f(unsafe {
-            任务管理器.当前任务.as_ref().unwrap().borrow_mut()
-        })
+    fn suspend_and_run_next(&mut self) {
+        let previous = self.current.take().unwrap();
+        self.ready_queue.push(previous);
+        self.run_next();
     }
 
-    // fn take_current() -> Rc<RefCell<TaskControlBlock>> {
-    //     unsafe {
-    //         TASK_MANAGER.current.take().unwrap()
-    //     }
-    // }
-
-    pub fn 添加任务(任务: Rc<RefCell<任务>>) {
-        unsafe {
-            任务管理器.就绪任务队列.push(任务);
-        }
-    }
-
-    pub fn 暂停并运行下一个任务() {
-        // TODO: 纠结用take还是clone
-        // let task = Self::take_current();
-        // task.borrow_mut().task_status = TaskStatus::Ready;
-        // Self::add(task);
-        unsafe {
-            Self::添加任务(Rc::clone(任务管理器.当前任务.as_ref().unwrap()));
-        }
-        Self::运行下一个任务();
-    }
-
-    pub fn 终止并运行下一个任务(终止代码: i32) {
-        if Self::当前任务().进程标识符.0 == 0 {
+    fn exit_and_run_next(&mut self, exit_code: i32) {
+        if self.current().borrow().pid.0 == 0 {
             println!("[Kernel] exit!");
             shutdown();
         }
-        Self::可变当前任务(|mut 任务| {
-            任务.is_exited = true;
-            任务.终止代码 = 终止代码;
-            任务.子进程列表.clear();
-        });
-        // TODO: 将子进程挂在初始进程下面，也就是删除了当前进程它的子进程却不一定也结束
-        // {
-        //     let mut initproc_inner = INITPROC.inner.exclusive_access();
-        //     for child in inner.children.iter() {
-        //         initproc_inner.children.push(child.clone());
-        //     }
-        // }
-        Self::运行下一个任务();
+
+        let task = self.current();
+        let mut task = task.borrow_mut();
+        task.is_exited = true;
+        task.exit_code = exit_code;
+        task.children.clear();
+        drop(task);
+
+        self.run_next();
     }
 
-    pub fn 运行下一个任务() {
-        unsafe {
-            let 下一个任务 = 任务管理器.就绪任务队列.remove(0);
-            let user_satp = 下一个任务.borrow().地址空间.token();
-            任务管理器.当前任务 = Some(下一个任务);
-            
-            restore_context(CONTEXT_START_ADDR, user_satp);
-        }
-    }
-
-    pub fn 添加初始进程() {
-        use crate::fs::open_file;
-        let inode = open_file("initproc", false).unwrap();
-        let elf_data = inode.read_all();
-        Self::添加任务(Rc::new(RefCell::new(
-            任务::新建(&elf_data)
-        )));
+    fn run_next(&mut self) {
+        let next = self.ready_queue.remove(0);
+        let user_satp = next.borrow().memory_set.token();
+        self.current = Some(next);
+        restore_context(CONTEXT_START_ADDR, user_satp);
     }
 }
 
-pub static mut 任务管理器: 任务管理器 = 任务管理器 {
-    当前任务: None,
-    就绪任务队列: Vec::new(),
+pub static mut TASK_MANAGER: TaskManager = TaskManager {
+    current: None,
+    ready_queue: Vec::new(),
 };
+
+pub fn current_task() -> Rc<RefCell<Task>> {
+    unsafe { TASK_MANAGER.current() }
+}
+
+pub fn add_task(task: Rc<RefCell<Task>>) {
+    unsafe {
+        TASK_MANAGER.ready_queue.push(task);
+    }
+}
+
+pub fn run_next() {
+    unsafe {
+        TASK_MANAGER.run_next();
+    }
+}
+
+pub fn suspend_and_run_next() {
+    unsafe {
+        TASK_MANAGER.suspend_and_run_next();
+    }
+}
+
+pub fn exit_and_run_next(exit_code: i32) {
+    unsafe {
+        TASK_MANAGER.exit_and_run_next(exit_code);
+    }
+}
+
+pub fn add_initproc() {
+    use crate::fs::open_file;
+    let inode = open_file("initproc", false).unwrap();
+    let elf_data = inode.read_all();
+    add_task(Rc::new(RefCell::new(Task::new(&elf_data))))
+}
