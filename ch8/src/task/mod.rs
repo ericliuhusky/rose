@@ -31,17 +31,25 @@ impl TaskManager {
     }
 
     fn exit_and_run_next(&mut self, exit_code: i32) {
-        if self.current_process().borrow().pid.0 == 0 {
-            println!("[Kernel] exit!");
-            shutdown();
+        let previous = self.current.take().unwrap();
+        let mut previous_mut = previous.borrow_mut();
+        previous_mut.is_exited = true;
+        let process = previous_mut.process.upgrade().unwrap();
+        drop(previous_mut);
+
+        if previous.borrow().tid == 0 {
+            if process.borrow().pid.0 == 0 {
+                println!("[Kernel] exit!");
+                shutdown();
+            }
+    
+            let mut process = process.borrow_mut();
+            process.is_exited = true;
+            process.children.clear();
+            process.tasks.clear();
         }
 
-        let process = self.current_process();
-        let mut process = process.borrow_mut();
-        process.is_exited = true;
-        process.children.clear();
         drop(process);
-
         self.run_next();
     }
 
