@@ -2,7 +2,7 @@
 #![feature(alloc_error_handler)]
 
 use print::{println, print};
-pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe};
+pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create};
 extern crate panic;
 
 #[no_mangle]
@@ -11,10 +11,10 @@ fn _start() {
     extern "C" {
         fn main();
     }
-    static mut HEAP: [u8; 0x4000] = [0; 0x4000];
+    static mut HEAP: [u8; 0x80000] = [0; 0x80000];
     heap_allocator::init(
         unsafe { &HEAP } as *const [u8] as *const u8 as usize,
-        0x4000,
+        0x80000,
     );
     unsafe { main(); }
     exit(0);
@@ -55,5 +55,16 @@ pub fn sleep(period_ms: usize) {
     let start = get_time();
     while get_time() < start + period_ms as isize {
         yield_();
+    }
+}
+
+pub fn waittid(tid: usize) -> isize {
+    loop {
+        match sys_call::waittid(tid) {
+            -2 => {
+                yield_();
+            }
+            exit_code => return exit_code,
+        }
     }
 }
