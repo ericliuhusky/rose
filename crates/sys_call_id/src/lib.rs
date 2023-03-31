@@ -14,3 +14,5 @@ pub const SYS_GETCHAR: usize = 10;
 pub const SYS_OPEN: usize = 11;
 pub const SYS_CLOSE: usize = 12;
 pub const SYS_PIPE: usize = 13;
+pub const SYS_THREAD_CREATE: usize = 14;
+pub const SYS_WAITTID: usize = 15;

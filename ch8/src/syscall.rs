@@ -1,3 +1,4 @@
+use exception::context::Context;
 use sys_func::SysFunc;
 use 系统调用_时钟计数器::get_time;
 use 系统调用_终止::exit;
@@ -50,6 +51,12 @@ impl SysFunc for SysFuncImpl {
     }
     fn pipe(pipe_fd: *mut usize) -> isize {
         pipe(pipe_fd)
+    }
+    fn thread_create(entry: usize, arg: usize) -> isize {
+        thread_create(entry, arg)
+    }
+    fn waittid(tid: usize) -> isize {
+        waittid(tid)
     }
 }
 
@@ -147,7 +154,8 @@ mod 系统调用_进程 {
         let process = current_process();
         let mut process = process.borrow_mut();
         let new_process = process.fork();
-        let cx = new_process.borrow().memory_set.get_context();
+        let task = new_process.borrow().main_task();
+        let cx = new_process.borrow().get_trap_cx(task.borrow().tid);
         cx.x[10] = 0;
         let new_pid = new_process.borrow().pid.0;
         new_pid as isize
@@ -200,10 +208,12 @@ mod 系统调用_进程 {
 }
 
 use crate::fs::open_file;
-use crate::task::{current_task, current_process};
+use crate::task::{current_task, current_process, add_task};
 use crate::task::{task::Task, TaskManager};
 use alloc::string::String;
 use page_table::VA;
+use alloc::rc::Rc;
+use core::cell::RefCell;
 
 pub fn open(path: *const u8, len: usize, create: u32) -> isize {
     let process = current_process();
@@ -250,4 +260,43 @@ pub fn pipe(pipe_fd: *mut usize) -> isize {
     pipe_fd[0] = read_fd;
     pipe_fd[1] = write_fd;
     0
+}
+
+pub fn thread_create(entry: usize, arg: usize) -> isize {
+    let task = current_task();
+    let process = task.borrow_mut().process.upgrade().unwrap();
+    let new_task = Rc::new(RefCell::new(Task::new(
+        Rc::clone(&process),
+    )));
+    add_task(Rc::clone(&new_task));
+    let new_task_inner = new_task.borrow_mut();
+    let new_task_tid = new_task_inner.tid;
+    let mut process_inner = process.borrow_mut();
+    let tasks = &mut process_inner.tasks;
+    tasks.insert(new_task_tid, Rc::clone(&new_task));
+    let new_task_trap_cx = process_inner.get_trap_cx(new_task_tid);
+    let ustack_top = new_task_inner.user_stack_top();
+    *new_task_trap_cx = Context::app_init(
+        entry,
+        ustack_top,
+    );
+    (*new_task_trap_cx).x[10] = arg;
+    new_task_tid as isize
+}
+
+pub fn waittid(tid: usize) -> isize {
+    let task = current_task();
+    let process = task.borrow_mut().process.upgrade().unwrap();
+    let process_inner = process.borrow_mut();
+
+    let waited_task = &process_inner.tasks.get(&tid);
+    if let Some(waited_task) = waited_task {
+        if waited_task.borrow_mut().is_exited {
+            0
+        } else {
+            -2
+        }
+    } else {
+        -1
+    }
 }

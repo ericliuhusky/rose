@@ -5,7 +5,7 @@ use self::task::{Task, Process};
 use crate::mm::memory_set::CONTEXT_START_ADDR;
 use alloc::{rc::Rc, vec::Vec};
 use core::cell::{Ref, RefCell, RefMut};
-use exception::restore::restore_context;
+use exception::{restore::restore_context, context::Context};
 use sbi_call::shutdown;
 
 pub struct TaskManager {
@@ -57,7 +57,7 @@ impl TaskManager {
         let next = self.ready_queue.remove(0);        
         self.current = Some(next);
         let user_satp = current_user_token();
-        restore_context(CONTEXT_START_ADDR, user_satp);
+        restore_context(current_trap_cx_user_va(), user_satp);
     }
 }
 
@@ -78,6 +78,15 @@ pub fn current_user_token() -> usize {
     let process = current_process();
     let process = process.borrow();
     process.memory_set.token()
+}
+
+pub fn current_trap_cx() -> &'static mut Context {
+    let tid = current_task().borrow().tid;
+    current_process().borrow().get_trap_cx(tid)
+}
+
+pub fn current_trap_cx_user_va() -> usize {
+    current_task().borrow().trap_cx_user_va()
 }
 
 pub fn add_task(task: Rc<RefCell<Task>>) {

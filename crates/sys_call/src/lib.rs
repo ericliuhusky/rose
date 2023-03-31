@@ -72,3 +72,11 @@ pub fn waitpid(pid: isize, exit_code: *mut i32) -> isize {
 pub fn pipe(pipe: &mut [usize]) -> isize {
     sys_call(SYS_PIPE, [pipe.as_mut_ptr() as usize, 0, 0])
 }
+
+pub fn thread_create(entry: usize, arg: usize) -> isize {
+    sys_call(SYS_THREAD_CREATE, [entry, arg, 0])
+}
+
+pub fn waittid(tid: usize) -> isize {
+    sys_call(SYS_WAITTID, [tid, 0, 0])
+}
