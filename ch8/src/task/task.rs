@@ -12,7 +12,6 @@ pub struct Task {
     pub memory_set: 地址空间,
     pub pid: Pid,
     pub children: Vec<Rc<RefCell<Task>>>,
-    pub exit_code: i32,
     pub fd_table: Vec<Option<Rc<dyn File>>>,
 }
 
@@ -40,7 +39,6 @@ impl Task {
             memory_set,
             pid: pid_alloc(),
             children: Vec::new(),
-            exit_code: 0,
             fd_table: vec![
                 // 0 -> stdin
                 Some(Rc::new(Stdin)),
@@ -78,7 +76,6 @@ impl Task {
                 memory_set,
                 pid: pid_alloc(),
                 children: Vec::new(),
-                exit_code: 0,
                 fd_table: new_fd_table,
             }
         ));

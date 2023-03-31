@@ -33,7 +33,6 @@ impl TaskManager {
         let task = self.current();
         let mut task = task.borrow_mut();
         task.is_exited = true;
-        task.exit_code = exit_code;
         task.children.clear();
         drop(task);
 
