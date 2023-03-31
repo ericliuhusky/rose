@@ -29,11 +29,11 @@ impl Task {
 
 impl Task {
     pub fn new(elf_data: &[u8]) -> Self {
-        let (memory_set, user_stack_top, entry_address) = 地址空间::新建应用地址空间(elf_data);
+        let (memory_set, entry_address) = 地址空间::新建应用地址空间(elf_data);
         let cx = memory_set.get_context();
         *cx = Context::app_init(
             entry_address,
-            user_stack_top,
+            0xFFFFFFFFFFFFE000,
         );
         Self {
             is_exited: false,
@@ -53,11 +53,11 @@ impl Task {
     }
 
     pub fn exec(&mut self, elf_data: &[u8]) {
-        let (memory_set, user_stack_top, entry_address) = 地址空间::新建应用地址空间(elf_data);
+        let (memory_set, entry_address) = 地址空间::新建应用地址空间(elf_data);
         let cx = memory_set.get_context();
         *cx = Context::app_init(
             entry_address,
-            user_stack_top,
+            0xFFFFFFFFFFFFE000,
         );
         self.memory_set = memory_set;
     }

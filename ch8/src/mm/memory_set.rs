@@ -83,7 +83,7 @@ impl 地址空间 {
         地址空间
     }
     
-    pub fn 新建应用地址空间(elf文件数据: &[u8]) -> (Self, usize, usize) {
+    pub fn 新建应用地址空间(elf文件数据: &[u8]) -> (Self, usize) {
         let mut 地址空间 = Self::新建空地址空间();
 
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
@@ -104,12 +104,8 @@ impl 地址空间 {
             地址空间.page_table.write(程序段.start_va(), 程序段.memory_size(), 程序段.data);
         }
 
-        let 最后一个程序段的虚拟地址范围 = 程序段列表.last().unwrap().start_va()..程序段列表.last().unwrap().end_va();
-
-        let 用户栈栈底 = 连续地址虚拟内存 { 虚拟地址范围: 最后一个程序段的虚拟地址范围 }.对齐到分页的结尾地址();
-        let 用户栈栈顶 = 用户栈栈底 + 0x2000;
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 用户栈栈底..用户栈栈顶 },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0xFFFFFFFFFFFFC000..0xFFFFFFFFFFFFE000 },
             恒等映射: false,
             用户可见: true,
          });
@@ -122,7 +118,6 @@ impl 地址空间 {
         
         (
             地址空间,
-            用户栈栈顶,
             elf文件.entry_address(),
         )
     }
