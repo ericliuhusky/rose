@@ -8,7 +8,7 @@ use super::id::{Pid, pid_alloc};
 use crate::fs::{File, Stdin, Stdout};
 
 pub struct 任务 {
-    pub 状态: 任务状态,
+    pub is_exited: bool,
     pub 地址空间: 地址空间,
     pub 进程标识符: Pid,
     pub 子进程列表: Vec<Rc<RefCell<任务>>>,
@@ -36,7 +36,7 @@ impl 任务 {
             用户栈栈顶,
         );
         Self {
-            状态: 任务状态::就绪,
+            is_exited: false,
             地址空间,
             进程标识符: pid_alloc(),
             子进程列表: Vec::new(),
@@ -74,7 +74,7 @@ impl 任务 {
         }
         let 任务 = Rc::new(RefCell::new(
             Self {
-                状态: 任务状态::就绪,
+                is_exited: false,
                 地址空间,
                 进程标识符: pid_alloc(),
                 子进程列表: Vec::new(),
@@ -85,11 +85,4 @@ impl 任务 {
         self.子进程列表.push(Rc::clone(&任务));
         任务
     }
-}
-
-#[derive(PartialEq)]
-pub enum 任务状态 {
-    就绪,
-    运行,
-    终止,
 }

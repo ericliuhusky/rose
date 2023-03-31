@@ -8,7 +8,7 @@ use exception::restore::restore_context;
 use sbi_call::shutdown;
 use crate::mm::memory_set::CONTEXT_START_ADDR;
 
-use self::task::{任务, 任务状态};
+use self::task::任务;
 
 
 pub struct 任务管理器 {
@@ -42,9 +42,6 @@ impl 任务管理器 {
     }
 
     pub fn 暂停并运行下一个任务() {
-        Self::可变当前任务(|mut 任务| {
-            任务.状态 = 任务状态::就绪;
-        });
         // TODO: 纠结用take还是clone
         // let task = Self::take_current();
         // task.borrow_mut().task_status = TaskStatus::Ready;
@@ -61,7 +58,7 @@ impl 任务管理器 {
             shutdown();
         }
         Self::可变当前任务(|mut 任务| {
-            任务.状态 = 任务状态::终止;
+            任务.is_exited = true;
             任务.终止代码 = 终止代码;
             任务.子进程列表.clear();
         });
@@ -78,7 +75,6 @@ impl 任务管理器 {
     pub fn 运行下一个任务() {
         unsafe {
             let 下一个任务 = 任务管理器.就绪任务队列.remove(0);
-            下一个任务.borrow_mut().状态 = 任务状态::运行;
             let user_satp = 下一个任务.borrow().地址空间.token();
             任务管理器.当前任务 = Some(下一个任务);
             

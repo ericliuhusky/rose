@@ -134,7 +134,6 @@ mod 系统调用_时钟计数器 {
 }
 
 mod 系统调用_进程 {
-    use crate::task::task::任务状态;
     use crate::task::任务管理器;
     use alloc::string::String;
 
@@ -182,7 +181,7 @@ mod 系统调用_进程 {
 
             let pair = task.子进程列表.iter().enumerate().find(|(_, p)| {
                 let p = p.borrow();
-                p.状态 == 任务状态::终止 && (pid == -1 || pid as usize == p.进程标识符.0)
+                p.is_exited && (pid == -1 || pid as usize == p.进程标识符.0)
             });
             if let Some((idx, _)) = pair {
                 let child = task.子进程列表.remove(idx);
