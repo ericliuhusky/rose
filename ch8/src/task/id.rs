@@ -6,6 +6,13 @@ pub struct IDAllocator {
 }
 
 impl IDAllocator {
+    pub const fn new() -> Self {
+        Self { 
+            current: 0, 
+            recycled: Vec::new() 
+        }
+    }
+
     pub fn alloc(&mut self) -> usize {
         if let Some(id) = self.recycled.pop() {
             id
@@ -21,10 +28,7 @@ impl IDAllocator {
     }
 }
 
-static mut PID_ALLOCATOR: IDAllocator = IDAllocator {
-    current: 0,
-    recycled: Vec::new(),
-};
+static mut PID_ALLOCATOR: IDAllocator = IDAllocator::new();
 
 pub fn pid_alloc() -> Pid {
     Pid(unsafe { PID_ALLOCATOR.alloc() })
