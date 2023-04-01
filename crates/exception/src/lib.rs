@@ -24,3 +24,7 @@ pub fn set_kernel_top(addr: usize) {
         KERNEL_STACK_TOP = addr;
     }
 }
+
+#[no_mangle]
+#[link_section = ".text.trampoline"]
+static mut TRAP_CONTEXT_ADDR: usize = 0;

@@ -1,3 +1,4 @@
+use crate::TRAP_CONTEXT_ADDR;
 use super::context::Context;
 use core::arch::asm;
 
@@ -9,6 +10,7 @@ pub fn restore_context(cx_user_va: usize, user_satp: usize) {
         super::memory_set::switch_user(user_satp);
         let cx = &*(cx_user_va as *const Context);
         riscv_register::sepc::write(cx.sepc);
+        TRAP_CONTEXT_ADDR = cx_user_va;
         restore(cx_user_va);
     }
 }
@@ -19,8 +21,6 @@ extern "C" fn restore(cx_user_va: usize) {
     unsafe {
         asm!(
             "
-            csrw sscratch, a0
-
             ld x1, 1*8(a0)
             ld x2, 2*8(a0)
             ld x3, 3*8(a0)
