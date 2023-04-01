@@ -2,7 +2,6 @@ mod id;
 pub mod task;
 
 use self::task::{Task, Process};
-use crate::mm::memory_set::CONTEXT_START_ADDR;
 use alloc::{rc::Rc, vec::Vec};
 use core::cell::{Ref, RefCell, RefMut};
 use exception::{restore::restore_context, context::Context};

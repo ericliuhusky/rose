@@ -10,7 +10,6 @@ use lazy_static::lazy_static;
 pub const MEMORY_END: usize = 0x88000000;
 
 pub const KERNEL_STACK_TOP: usize = 0xfffffffffffff000;
-pub const CONTEXT_START_ADDR: usize = 0xffffffffffffe000;
 
 extern "C" {
     fn skernel();
@@ -152,10 +151,6 @@ impl 地址空间 {
 }
 
 impl 地址空间 {
-    pub fn get_context(&self) -> &'static mut Context {
-        self.page_table.translate_type(CONTEXT_START_ADDR)
-    }
-
     pub fn token(&self) -> usize {
         8usize << 60 | self.page_table.root_ppn.0
     }
