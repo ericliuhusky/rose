@@ -9,7 +9,9 @@ use lazy_static::lazy_static;
 
 pub const MEMORY_END: usize = 0x88000000;
 
-pub const KERNEL_STACK_TOP: usize = 0xfffffffffffff000;
+pub const KERNEL_STACK_START_ADDR: usize = HIGH_START_ADDR;
+pub const KERNEL_STACK_END_ADDR: usize = KERNEL_STACK_START_ADDR + 0x2000;
+pub const KERNEL_STACK_TOP: usize = KERNEL_STACK_END_ADDR;
 
 extern "C" {
     fn skernel();
@@ -18,7 +20,7 @@ extern "C" {
     fn etrampoline();
 }
 
-use page_table::SV39PageTable;
+use page_table::{SV39PageTable, HIGH_START_ADDR};
 use page_table::{VPN, VA};
 use page_table::PageTableEntryFlags;
 
@@ -75,7 +77,7 @@ impl 地址空间 {
         
         // 内核栈
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: KERNEL_STACK_TOP - 0x2000..KERNEL_STACK_TOP },
+            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: KERNEL_STACK_START_ADDR..KERNEL_STACK_END_ADDR },
             恒等映射: false,
             用户可见: false,
         });
