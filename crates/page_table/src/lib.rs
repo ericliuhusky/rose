@@ -13,6 +13,11 @@ use core::marker::PhantomData;
 use alloc::vec;
 use alloc::vec::Vec;
 
+pub const LOW_START_ADDR: usize = 0;
+pub const LOW_END_ADDR: usize = 0x4000000000;
+pub const HIGH_START_ADDR: usize = 0xffffffc000000000;
+pub const HIGH_END_ADDR: usize = 0xfffffffffffff000;
+
 pub trait FrameAlloc {
     fn alloc() -> PPN;
     fn dealloc(frame: PPN);
