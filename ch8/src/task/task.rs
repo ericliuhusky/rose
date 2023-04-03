@@ -55,7 +55,7 @@ impl Process {
             tid_allocator: IDAllocator::new(),
         }));
         let task = Rc::new(RefCell::new(Task::new(Rc::clone(&process))));
-        let cx = process.borrow().get_trap_cx(task.borrow().tid);
+        let cx = task.borrow().get_trap_cx();
         let user_stack_top = task.borrow().user_stack_top();
         *cx = Context::app_init(
             entry_address,
@@ -76,7 +76,7 @@ impl Process {
         let user_stack_top = task.borrow().user_stack_top();
 
 
-        let cx = self.get_trap_cx(task.borrow().tid);
+        let cx = task.borrow().get_trap_cx();
         *cx = Context::app_init(
             entry_address,
             user_stack_top,
@@ -107,16 +107,13 @@ impl Process {
         let mut process_mut = process.borrow_mut();
         process_mut.tasks.insert(0, Rc::clone(&task));
         drop(process_mut);
+
+        let old_cx = self.main_task().borrow().get_trap_cx();
+        let new_cx = process.borrow().main_task().borrow().get_trap_cx();
+        *new_cx = old_cx.clone();
+
         add_task(task);
         process
-    }
-
-    pub fn get_trap_cx(&self, tid: usize) -> &'static mut Context {
-        let cx_user_va = 0xFFFFFFFFFFFFE000 - tid * 0x1000;
-        self
-            .memory_set
-            .page_table
-            .translate_type(cx_user_va)
     }
 }
 
@@ -124,6 +121,7 @@ pub struct Task {
     pub process: Weak<RefCell<Process>>,
     pub is_exited: bool,
     pub tid: usize,
+    pub pid: usize,
 }
 
 impl Task {
@@ -133,11 +131,22 @@ impl Task {
             process: Rc::downgrade(&process),
             is_exited: false,
             tid,
+            pid: process.borrow().pid.0,
         }
     }
 
     pub fn trap_cx_user_va(&self) -> usize {
-        0xFFFFFFFFFFFFE000 - self.tid * 0x1000
+        // TODO:
+        // let process = self.process.upgrade().unwrap();
+        // let pid = process.borrow().pid.0;
+        0xFFFFFFFFFFFFE000 - self.pid * 0x10000 - self.tid * 0x1000
+    }
+
+    pub fn get_trap_cx(&self) -> &'static mut Context {
+        let cx_va = self.trap_cx_user_va();
+        unsafe {
+            &mut *(cx_va as *mut Context)
+        }
     }
 
     pub fn user_stack_top(&self) -> usize {

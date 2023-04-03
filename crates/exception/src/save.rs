@@ -1,3 +1,6 @@
+use crate::TRAP_CONTEXT_ADDR;
+use crate::restore::TEMP_CONTEXT;
+
 use super::context::Context;
 use super::restore::restore_context;
 use core::arch::asm;
@@ -15,6 +18,11 @@ fn save_context(cx_user_va: usize) {
         cx.x[10] = riscv_register::sscratch::read();
         #[cfg(feature = "memory_set")]
         super::memory_set::switch_kernel();
+        let cx = &mut *(TRAP_CONTEXT_ADDR as *mut Context);
+        for i in 0..32 {
+            cx.x[i] = TEMP_CONTEXT.x[i];
+        }
+        cx.sepc = TEMP_CONTEXT.sepc;
         exception_handler();
     }
 }
@@ -28,7 +36,7 @@ pub extern "C" fn save() {
             "
             csrw sscratch, a0
 
-            ld a0, TRAP_CONTEXT_ADDR
+            la a0, TEMP_CONTEXT
             
             sd x1, 1*8(a0)
             sd x2, 2*8(a0)

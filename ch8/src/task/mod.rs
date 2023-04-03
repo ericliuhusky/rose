@@ -80,8 +80,7 @@ pub fn current_user_token() -> usize {
 }
 
 pub fn current_trap_cx() -> &'static mut Context {
-    let tid = current_task().borrow().tid;
-    current_process().borrow().get_trap_cx(tid)
+    current_task().borrow().get_trap_cx()
 }
 
 pub fn current_trap_cx_user_va() -> usize {

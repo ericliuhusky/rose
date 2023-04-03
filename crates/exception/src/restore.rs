@@ -6,19 +6,27 @@ use core::arch::asm;
 #[inline(never)]
 pub fn restore_context(cx_user_va: usize, user_satp: usize) {
     unsafe {
+        let cx = &*(cx_user_va as *const Context);
+        for i in 0..32 {
+            TEMP_CONTEXT.x[i] = cx.x[i];
+        }
+        TEMP_CONTEXT.sepc = cx.sepc;
+        TRAP_CONTEXT_ADDR = cx_user_va;
         #[cfg(feature = "memory_set")]
         super::memory_set::switch_user(user_satp);
-        let cx = &*(cx_user_va as *const Context);
-        riscv_register::sepc::write(cx.sepc);
-        TRAP_CONTEXT_ADDR = cx_user_va;
-        restore(cx_user_va);
+        riscv_register::sepc::write(TEMP_CONTEXT.sepc);
+        restore(&TEMP_CONTEXT);
     }
 }
+
+#[no_mangle]
+#[link_section = ".text.trampoline"]
+pub static mut TEMP_CONTEXT: Context = Context { x: [0; 32], sepc: 0 };
 
 #[link_section = ".text.trampoline"]
 #[repr(align(8))]
 #[naked]
-extern "C" fn restore(cx_user_va: usize) {
+extern "C" fn restore(cx: &Context) {
     unsafe {
         asm!(
             "

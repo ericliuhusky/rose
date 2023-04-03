@@ -1,3 +1,4 @@
+#[derive(Clone)]
 #[repr(C)]
 pub struct Context {
     // x1~x31
