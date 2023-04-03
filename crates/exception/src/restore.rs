@@ -16,6 +16,7 @@ pub fn restore_context(cx_user_va: usize, user_satp: usize) {
 }
 
 #[link_section = ".text.trampoline"]
+#[repr(align(8))]
 #[naked]
 extern "C" fn restore(cx_user_va: usize) {
     unsafe {

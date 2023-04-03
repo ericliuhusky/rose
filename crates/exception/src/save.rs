@@ -20,6 +20,7 @@ fn save_context(cx_user_va: usize) {
 }
 
 #[link_section = ".text.trampoline"]
+#[repr(align(8))]
 #[naked]
 pub extern "C" fn save() {
     unsafe {

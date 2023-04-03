@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(naked_functions)]
+#![feature(fn_align)]
 
 pub mod context;
 pub mod restore;
