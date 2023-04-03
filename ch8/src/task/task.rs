@@ -121,7 +121,7 @@ pub struct Task {
     pub process: Weak<RefCell<Process>>,
     pub is_exited: bool,
     pub tid: usize,
-    pub pid: usize,
+    pub cx: Context,
 }
 
 impl Task {
@@ -131,15 +131,12 @@ impl Task {
             process: Rc::downgrade(&process),
             is_exited: false,
             tid,
-            pid: process.borrow().pid.0,
+            cx: Context { x: [0; 32], sepc: 0 },
         }
     }
 
     pub fn get_trap_cx(&self) -> &'static mut Context {
-        // TODO:
-        // let process = self.process.upgrade().unwrap();
-        // let pid = process.borrow().pid.0;
-        let cx_va = 0xFFFFFFFFFFFFE000 - self.pid * 0x10000 - self.tid * 0x1000;
+        let cx_va = &self.cx as *const Context as usize;
         unsafe {
             &mut *(cx_va as *mut Context)
         }

@@ -81,11 +81,6 @@ impl 地址空间 {
             恒等映射: false,
             用户可见: false,
         });
-        地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0xffffffffffeff000..0xfffffffffffff000 },
-            恒等映射: false,
-            用户可见: false,
-        });
         地址空间
     }
     
