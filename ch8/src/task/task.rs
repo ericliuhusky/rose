@@ -55,12 +55,13 @@ impl Process {
             tid_allocator: IDAllocator::new(),
         }));
         let task = Rc::new(RefCell::new(Task::new(Rc::clone(&process))));
-        let cx = task.borrow().get_trap_cx();
-        let user_stack_top = task.borrow().user_stack_top();
-        *cx = Context::app_init(
+        let mut task_mut = task.borrow_mut();
+        let user_stack_top = task_mut.user_stack_top();
+        task_mut.cx = Context::app_init(
             entry_address,
             user_stack_top,
         );
+        drop(task_mut);
         let mut process_mut = process.borrow_mut();
         process_mut.tasks.insert(0, Rc::clone(&task));
         drop(process_mut);
@@ -75,9 +76,8 @@ impl Process {
         let task = self.main_task();
         let user_stack_top = task.borrow().user_stack_top();
 
-
-        let cx = task.borrow().get_trap_cx();
-        *cx = Context::app_init(
+        let mut task = task.borrow_mut();
+        task.cx = Context::app_init(
             entry_address,
             user_stack_top,
         );
@@ -108,9 +108,11 @@ impl Process {
         process_mut.tasks.insert(0, Rc::clone(&task));
         drop(process_mut);
 
-        let old_cx = self.main_task().borrow().get_trap_cx();
-        let new_cx = process.borrow().main_task().borrow().get_trap_cx();
-        *new_cx = old_cx.clone();
+        let old_task = self.main_task();
+        let old_task = old_task.borrow();
+        let new_task = process.borrow().main_task();
+        let mut new_task = new_task.borrow_mut();
+        new_task.cx = old_task.cx.clone();
 
         add_task(task);
         process

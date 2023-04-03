@@ -155,8 +155,8 @@ mod 系统调用_进程 {
         let mut process = process.borrow_mut();
         let new_process = process.fork();
         let task = new_process.borrow().main_task();
-        let cx = task.borrow().get_trap_cx();
-        cx.x[10] = 0;
+        let mut task = task.borrow_mut();
+        task.cx.x[10] = 0;
         let new_pid = new_process.borrow().pid.0;
         new_pid as isize
     }
@@ -269,18 +269,17 @@ pub fn thread_create(entry: usize, arg: usize) -> isize {
         Rc::clone(&process),
     )));
     add_task(Rc::clone(&new_task));
-    let new_task_inner = new_task.borrow_mut();
+    let mut new_task_inner = new_task.borrow_mut();
     let new_task_tid = new_task_inner.tid;
     let mut process_inner = process.borrow_mut();
     let tasks = &mut process_inner.tasks;
     tasks.insert(new_task_tid, Rc::clone(&new_task));
-    let new_task_trap_cx = new_task_inner.get_trap_cx();
     let ustack_top = new_task_inner.user_stack_top();
-    *new_task_trap_cx = Context::app_init(
+    new_task_inner.cx = Context::app_init(
         entry,
         ustack_top,
     );
-    (*new_task_trap_cx).x[10] = arg;
+    new_task_inner.cx.x[10] = arg;
     new_task_tid as isize
 }
 
