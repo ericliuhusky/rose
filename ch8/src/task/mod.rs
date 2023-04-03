@@ -56,7 +56,7 @@ impl TaskManager {
         let next = self.ready_queue.remove(0);        
         self.current = Some(next);
         let user_satp = current_user_token();
-        restore_context(current_trap_cx_user_va(), user_satp);
+        restore_context(current_trap_cx(), user_satp);
     }
 }
 
@@ -81,10 +81,6 @@ pub fn current_user_token() -> usize {
 
 pub fn current_trap_cx() -> &'static mut Context {
     current_task().borrow().get_trap_cx()
-}
-
-pub fn current_trap_cx_user_va() -> usize {
-    current_task().borrow().trap_cx_user_va()
 }
 
 pub fn add_task(task: Rc<RefCell<Task>>) {

@@ -135,15 +135,11 @@ impl Task {
         }
     }
 
-    pub fn trap_cx_user_va(&self) -> usize {
+    pub fn get_trap_cx(&self) -> &'static mut Context {
         // TODO:
         // let process = self.process.upgrade().unwrap();
         // let pid = process.borrow().pid.0;
-        0xFFFFFFFFFFFFE000 - self.pid * 0x10000 - self.tid * 0x1000
-    }
-
-    pub fn get_trap_cx(&self) -> &'static mut Context {
-        let cx_va = self.trap_cx_user_va();
+        let cx_va = 0xFFFFFFFFFFFFE000 - self.pid * 0x10000 - self.tid * 0x1000;
         unsafe {
             &mut *(cx_va as *mut Context)
         }

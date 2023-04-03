@@ -4,14 +4,13 @@ use core::arch::asm;
 
 #[link_section = ".text.trampoline"]
 #[inline(never)]
-pub fn restore_context(cx_user_va: usize, user_satp: usize) {
+pub fn restore_context(cx_ptr: *const Context, user_satp: usize) {
     unsafe {
-        let cx = &*(cx_user_va as *const Context);
         for i in 0..32 {
-            TEMP_CONTEXT.x[i] = cx.x[i];
+            TEMP_CONTEXT.x[i] = (*cx_ptr).x[i];
         }
-        TEMP_CONTEXT.sepc = cx.sepc;
-        TRAP_CONTEXT_ADDR = cx_user_va;
+        TEMP_CONTEXT.sepc = (*cx_ptr).sepc;
+        TRAP_CONTEXT_ADDR = cx_ptr as usize;
         #[cfg(feature = "memory_set")]
         super::memory_set::switch_user(user_satp);
         riscv_register::sepc::write(TEMP_CONTEXT.sepc);
