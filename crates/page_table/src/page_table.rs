@@ -4,9 +4,9 @@ use core::ops::{Index, IndexMut};
 pub struct PageTableEntryFlags(u8);
 
 impl PageTableEntryFlags {
-    pub const POINT_TO_NEXT: PageTableEntryFlags = PageTableEntryFlags(0b_0_000_1);
-    pub const XWR: PageTableEntryFlags = PageTableEntryFlags(0b_0_111_1);
-    pub const UXWR: PageTableEntryFlags = PageTableEntryFlags(0b_1_111_1);
+    pub const POINT_TO_NEXT: Self = Self(0b_0_000_1);
+    pub const XWR: Self = Self(0b_0_111_1);
+    pub const UXWR: Self = Self(0b_1_111_1);
 }
 
 #[repr(C)]

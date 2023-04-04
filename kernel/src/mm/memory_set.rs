@@ -19,7 +19,6 @@ extern "C" {
     fn etrampoline();
 }
 
-use page_table::PageTableEntryFlags;
 use page_table::{SV39PageTable, HIGH_START_ADDR};
 use page_table::{VA, VPN};
 
@@ -31,13 +30,7 @@ pub struct MemorySpace {
 impl MemorySpace {
     fn map(&mut self, segment: Segment) {
         for vpn in segment.vpn_range() {
-            let flags;
-            if segment.user_accessible {
-                flags = PageTableEntryFlags::UXWR;
-            } else {
-                flags = PageTableEntryFlags::XWR;
-            }
-            self.page_table.map(vpn, segment.identical, flags);
+            self.page_table.map(vpn, segment.identical, segment.user_accessible);
         }
         self.segments.push(segment);
     }

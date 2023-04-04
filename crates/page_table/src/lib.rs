@@ -6,7 +6,7 @@ mod address;
 mod page_table;
 
 use alloc::string::String;
-pub use page_table::PageTableEntryFlags;
+use page_table::PageTableEntryFlags;
 pub use address::{VPN, PPN, VA, PA};
 use page_table::{PageTableEntry, PageTable};
 use core::marker::PhantomData;
@@ -85,18 +85,22 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
 }
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
-    pub fn map(&mut self, vpn: usize, identical: bool, flags: PageTableEntryFlags) {
+    pub fn map(&mut self, vpn: usize, identical: bool, user_accessible: bool) {
         let vpn = VPN::new(vpn);
-        let ppn;
-        if identical {
-            ppn = PPN::new(vpn.0);
+        let ppn =if identical {
+            PPN::new(vpn.0)
         } else {
             let frame = FrameAllocator::alloc();
             self.frames.push(frame);
-            ppn = frame;
-        }
+            frame
+        };
         let pte = self.find_pte_create(vpn);
         assert!(!pte.is_valid());
+        let flags = if user_accessible {
+            PageTableEntryFlags::UXWR
+        } else {
+            PageTableEntryFlags::XWR
+        };
         *pte = PageTableEntry::new(ppn, flags);
     }
 
