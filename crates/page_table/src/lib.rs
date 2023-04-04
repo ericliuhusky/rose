@@ -104,6 +104,10 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
         let vpn = VPN::new(vpn);
         self.find_pte(vpn).ppn()
     }
+
+    pub fn satp(&self) -> usize {
+        1 << 63 | self.root_ppn.0
+    }
 }
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {

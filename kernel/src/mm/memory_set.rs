@@ -149,7 +149,7 @@ impl 地址空间 {
 
 impl 地址空间 {
     pub fn token(&self) -> usize {
-        8usize << 60 | self.page_table.root_ppn.0
+        self.page_table.satp()
     }
 
     pub fn read_str(&self, va: usize, len: usize) -> String {
