@@ -15,7 +15,7 @@ pub struct Process {
     pub is_exited: bool,
     pub memory_set: 地址空间,
     pub children: Vec<MutRc<Process>>,
-    pub fd_table: Vec<Option<Rc<dyn File>>>,
+    pub fd_table: Vec<Option<MutRc<dyn File>>>,
     pub tasks: BTreeMap<usize, MutRc<Task>>,
     pub tid_allocator: IDAllocator,
 }
@@ -48,9 +48,9 @@ impl Process {
             memory_set,
             children: Vec::new(),
             fd_table: vec![
-                Some(Rc::new(Stdin)),
-                Some(Rc::new(Stdout)),
-                Some(Rc::new(Stdout)),
+                Some(MutRc::new(Stdin)),
+                Some(MutRc::new(Stdout)),
+                Some(MutRc::new(Stdout)),
             ],
             tasks: BTreeMap::new(),
             tid_allocator: IDAllocator::new(),
@@ -81,7 +81,7 @@ impl Process {
 
     pub fn fork(&mut self) -> MutRc<Self> {
         let memory_set = 地址空间::复制地址空间(&self.memory_set);
-        let mut new_fd_table: Vec<Option<Rc<dyn File>>> = Vec::new();
+        let mut new_fd_table: Vec<Option<MutRc<dyn File>>> = Vec::new();
         for fd in self.fd_table.iter() {
             if let Some(file) = fd {
                 new_fd_table.push(Some(file.clone()));

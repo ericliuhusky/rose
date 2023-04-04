@@ -8,7 +8,7 @@ pub struct Stdin;
 pub struct Stdout;
 
 impl File for Stdin {
-    fn read(&self, mut buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, mut buf: Vec<&'static mut [u8]>) -> usize {
         assert_eq!(buf.len(), 1);
         // busy loop
         let mut c: usize;
@@ -27,16 +27,16 @@ impl File for Stdin {
         }
         1
     }
-    fn write(&self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
         panic!("Cannot write to stdin!");
     }
 }
 
 impl File for Stdout {
-    fn read(&self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
         panic!("Cannot read from stdout!");
     }
-    fn write(&self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
         for buffer in &buf {
             print!("{}", core::str::from_utf8(buffer).unwrap());
         }

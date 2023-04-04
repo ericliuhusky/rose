@@ -71,7 +71,7 @@ mod 系统调用_输出 {
             return -1;
         }
         if let Some(file) = &fd_table[fd] {
-            let file = file.clone();
+            let mut file = file.clone();
             let buf = process
                 .memory_set
                 .page_table
@@ -109,7 +109,7 @@ mod 系统调用_读取 {
             return -1;
         }
         if let Some(file) = &fd_table[fd] {
-            let file = file.clone();
+            let mut file = file.clone();
             let buf = process
                 .memory_set
                 .page_table

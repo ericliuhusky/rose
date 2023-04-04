@@ -1,5 +1,6 @@
 use super::File;
 use crate::drivers::BLOCK_DEVICE;
+use mutrc::MutRc;
 use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
@@ -50,27 +51,27 @@ pub fn list_apps() {
 }
 
 ///Open file with flags
-pub fn open_file(name: &str, create: bool) -> Option<Rc<OSInode>> {
+pub fn open_file(name: &str, create: bool) -> Option<MutRc<OSInode>> {
     let mut fs = FILE_SYSTEM.borrow_mut();
     if create {
         if let Some(inode) = fs.find(name) {
             fs.clear(inode);
-            Some(Rc::new(OSInode::new(inode)))
+            Some(MutRc::new(OSInode::new(inode)))
         } else {
             // create file
             fs
                 .create_inode(name)
-                .map(|inode| Rc::new(OSInode::new(inode)))
+                .map(|inode| MutRc::new(OSInode::new(inode)))
         }
     } else {
         fs.find(name).map(|inode| {
-            Rc::new(OSInode::new(inode))
+            MutRc::new(OSInode::new(inode))
         })
     }
 }
 
 impl File for OSInode {
-    fn read(&self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
         let mut offset = self.offset.borrow_mut();
         let mut total_read_size = 0usize;
         for slice in buf {
@@ -83,7 +84,7 @@ impl File for OSInode {
         }
         total_read_size
     }
-    fn write(&self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
         let mut offset = self.offset.borrow_mut();
         let mut total_write_size = 0usize;
         for slice in buf {

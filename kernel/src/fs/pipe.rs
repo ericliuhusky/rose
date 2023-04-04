@@ -4,14 +4,15 @@ use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use alloc::rc::{Rc, Weak};
 
+use mutrc::{MutRc, MutWeak};
 use crate::task::{TaskManager, suspend_and_run_next};
 
 pub struct Pipe {
-    buffer: Rc<RefCell<PipeBuffer>>,
+    buffer: MutRc<PipeBuffer>,
 }
 
 impl Pipe {
-    pub fn new(buffer: Rc<RefCell<PipeBuffer>>) -> Self {
+    pub fn new(buffer: MutRc<PipeBuffer>) -> Self {
         Self {
             buffer,
         }
@@ -22,7 +23,7 @@ const BUFFER_SIZE: usize = 32;
 
 pub struct PipeBuffer {
     buffer: VecDeque<u8>,
-    write_end: Option<Weak<Pipe>>,
+    write_end: Option<MutWeak<Pipe>>,
 }
 
 impl PipeBuffer {
@@ -32,8 +33,8 @@ impl PipeBuffer {
             write_end: None,
         }
     }
-    pub fn set_write_end(&mut self, write_end: &Rc<Pipe>) {
-        self.write_end = Some(Rc::downgrade(write_end));
+    pub fn set_write_end(&mut self, write_end: &MutRc<Pipe>) {
+        self.write_end = Some(write_end.downgrade());
     }
     pub fn write_byte(&mut self, byte: u8) {
         self.buffer.push_back(byte);
@@ -54,16 +55,16 @@ impl PipeBuffer {
 }
 
 /// Return (read_end, write_end)
-pub fn make_pipe() -> (Rc<Pipe>, Rc<Pipe>) {
-    let buffer = Rc::new(unsafe { RefCell::new(PipeBuffer::new()) });
-    let read_end = Rc::new(Pipe::new(buffer.clone()));
-    let write_end = Rc::new(Pipe::new(buffer.clone()));
-    buffer.borrow_mut().set_write_end(&write_end);
+pub fn make_pipe() -> (MutRc<Pipe>, MutRc<Pipe>) {
+    let mut buffer = MutRc::new(PipeBuffer::new());
+    let read_end = MutRc::new(Pipe::new(buffer.clone()));
+    let write_end = MutRc::new(Pipe::new(buffer.clone()));
+    buffer.set_write_end(&write_end);
     (read_end, write_end)
 }
 
 impl File for Pipe {
-    fn read(&self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
         let mut v = Vec::new();
         for b in buf {
             for bb in b {
@@ -72,13 +73,11 @@ impl File for Pipe {
         }
         let mut already_read = 0usize;
         loop {
-            let mut pipe_buffer = self.buffer.borrow_mut();
-            let loop_read = pipe_buffer.available_read();
+            let loop_read = self.buffer.available_read();
             if loop_read == 0 {
-                if pipe_buffer.all_write_ends_closed() {
+                if self.buffer.all_write_ends_closed() {
                     return already_read;
                 }
-                drop(pipe_buffer);
                 suspend_and_run_next();
                 continue;
             }
@@ -87,13 +86,13 @@ impl File for Pipe {
                     break;
                 }
                 unsafe {
-                    *v[i] = pipe_buffer.read_byte();
+                    *v[i] = self.buffer.read_byte();
                 }
                 already_read += 1;
             }
         }
     }
-    fn write(&self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
         let mut v = Vec::new();
         for b in buf {
             for bb in b {
@@ -101,10 +100,8 @@ impl File for Pipe {
             }
         }
         loop {
-            let mut pipe_buffer = self.buffer.borrow_mut();
-            let loop_write = pipe_buffer.available_write();
+            let loop_write = self.buffer.available_write();
             if loop_write == 0 {
-                drop(pipe_buffer);
                 suspend_and_run_next();
                 continue;
             }
@@ -114,7 +111,7 @@ impl File for Pipe {
                     return  i;
                 }
                 let byte = &v[i];
-                pipe_buffer.write_byte(unsafe { **byte });
+                self.buffer.write_byte(unsafe { **byte });
             }
         }
     }
