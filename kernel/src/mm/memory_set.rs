@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::ops::Range;
 use exception::context::Context;
-use super::address::{逻辑段, 连续地址虚拟内存};
+use super::address::{逻辑段};
 use frame_allocator::FrameAllocator;
 use elf_reader::ElfFile;
 use lazy_static::lazy_static;
@@ -32,7 +32,7 @@ pub struct 地址空间 {
 
 impl 地址空间 {
     fn 映射(&mut self, 逻辑段: 逻辑段) {
-        for 虚拟页号 in 逻辑段.连续地址虚拟内存.虚拟页号范围() {
+        for 虚拟页号 in 逻辑段.虚拟页号范围() {
             let flags;
             if 逻辑段.用户可见 {
                 flags = PageTableEntryFlags::UXWR;
@@ -55,29 +55,29 @@ impl 地址空间 {
         let mut 地址空间 = Self::新建空地址空间();
 
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: skernel as usize..ekernel as usize },
+            虚拟地址范围: skernel as usize..ekernel as usize,
             恒等映射: true,
             用户可见: false,
         });
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: ekernel as usize..MEMORY_END },
+            虚拟地址范围: ekernel as usize..MEMORY_END,
             恒等映射: true,
             用户可见: false,
         });
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0x100000..0x102000 },
+            虚拟地址范围: 0x100000..0x102000,
             恒等映射: true,
             用户可见: false,
         }); // MMIO VIRT_TEST/RTC  in virt machine
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0x10001000..0x10002000 },
+            虚拟地址范围: 0x10001000..0x10002000,
             恒等映射: true,
             用户可见: false,
         }); // MMIO VIRT_TEST/RTC  in virt machine
         
         // 内核栈
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: KERNEL_STACK_START_ADDR..KERNEL_STACK_END_ADDR },
+            虚拟地址范围: KERNEL_STACK_START_ADDR..KERNEL_STACK_END_ADDR,
             恒等映射: false,
             用户可见: false,
         });
@@ -89,7 +89,7 @@ impl 地址空间 {
 
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: strampoline as usize..etrampoline as usize },
+            虚拟地址范围: strampoline as usize..etrampoline as usize,
             恒等映射: true,
             用户可见: false,
          });
@@ -98,7 +98,7 @@ impl 地址空间 {
         let 程序段列表 = elf文件.programs();
         for 程序段 in &程序段列表 {
             地址空间.映射(逻辑段 { 
-                连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 程序段.start_va()..程序段.end_va() },
+                虚拟地址范围: 程序段.start_va()..程序段.end_va(),
                 恒等映射: false,
                 用户可见: true,
              });
@@ -106,7 +106,7 @@ impl 地址空间 {
         }
 
         地址空间.映射(逻辑段 { 
-            连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 0xFFFFFFFFFFFCF000..0xFFFFFFFFFFFEF000 },
+            虚拟地址范围: 0xFFFFFFFFFFFCF000..0xFFFFFFFFFFFEF000,
             恒等映射: false,
             用户可见: true,
          });
@@ -121,14 +121,14 @@ impl 地址空间 {
     pub fn 复制地址空间(被复制的地址空间: &Self) -> Self {
         let mut 地址空间 = Self::新建空地址空间();
         for 逻辑段 in &被复制的地址空间.逻辑段列表 {
-            let 虚拟地址范围 = 逻辑段.连续地址虚拟内存.虚拟地址范围.clone();
+            let 虚拟地址范围 = 逻辑段.虚拟地址范围.clone();
             地址空间.映射(逻辑段 {
-                连续地址虚拟内存: 连续地址虚拟内存 { 虚拟地址范围: 虚拟地址范围.clone() },
+                虚拟地址范围: 虚拟地址范围.clone(),
                 恒等映射: 逻辑段.恒等映射,
                 用户可见: 逻辑段.用户可见
             });
             // TODO: 整理页表的完全复制，为何不能读完一部分数据再写入呢
-            for vpn in 逻辑段.连续地址虚拟内存.虚拟页号范围() {
+            for vpn in 逻辑段.虚拟页号范围() {
                 let src_ppn = 被复制的地址空间.page_table.translate(vpn).0;
                 let dst_ppn = 地址空间.page_table.translate(vpn).0;
                 if src_ppn == dst_ppn {
