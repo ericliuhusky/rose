@@ -1,14 +1,19 @@
 #![no_std]
+#![feature(coerce_unsized)]
+#![feature(unsize)]
 
 extern crate alloc;
 
 use alloc::rc::{Rc, Weak};
 use core::cell::UnsafeCell;
-use core::ops::{Deref, DerefMut};
+use core::marker::Unsize;
+use core::ops::{CoerceUnsized, Deref, DerefMut};
 
-pub struct MutRc<T> {
+pub struct MutRc<T: ?Sized> {
     rc: Rc<UnsafeCell<T>>,
 }
+
+impl<T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<MutRc<U>> for MutRc<T> {}
 
 impl<T> MutRc<T> {
     pub fn new(value: T) -> Self {
@@ -22,15 +27,17 @@ impl<T> MutRc<T> {
             weak: Rc::downgrade(&self.rc),
         }
     }
+}
 
-    pub fn clone(&self) -> Self {
+impl<T: ?Sized> Clone for MutRc<T> {
+    fn clone(&self) -> Self {
         Self {
             rc: self.rc.clone(),
         }
     }
 }
 
-impl<T> Deref for MutRc<T> {
+impl<T: ?Sized> Deref for MutRc<T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -38,7 +45,7 @@ impl<T> Deref for MutRc<T> {
     }
 }
 
-impl<T> DerefMut for MutRc<T> {
+impl<T: ?Sized> DerefMut for MutRc<T> {
     fn deref_mut(&mut self) -> &mut T {
         unsafe { &mut (*self.rc.get()) }
     }
