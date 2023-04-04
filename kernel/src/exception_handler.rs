@@ -1,5 +1,5 @@
 use crate::{syscall::SysFuncImpl, task::task::Task};
-use crate::task::{TaskManager, current_task, suspend_and_run_next, exit_and_run_next, current_process, current_trap_cx};
+use crate::task::{TaskManager, current_task, suspend_and_run_next, exit_and_run_next, current_process};
 use crate::timer::为下一次时钟中断定时;
 use core::arch::global_asm;
 use exception::restore::restore_context;
@@ -13,7 +13,8 @@ use sys_func::sys_func;
 /// 处理中断、异常或系统调用
 pub fn exception_handler() {
     // let 当前任务的地址空间 = 任务管理器::当前任务().borrow().地址空间;
-    let 上下文 = current_trap_cx();
+    let mut task = current_task();
+    let 上下文 = &mut task.cx;
     match scause::read() {
         Exception::UserEnvCall => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
@@ -42,5 +43,6 @@ pub fn exception_handler() {
         _ => {}
     }
     let token = current_process().memory_set.token();
-    restore_context(current_trap_cx(), token);
+    let task = current_task();
+    restore_context(&task.cx, token);
 }

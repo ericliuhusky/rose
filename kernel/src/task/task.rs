@@ -128,13 +128,6 @@ impl Task {
         }
     }
 
-    pub fn get_trap_cx(&self) -> &'static mut Context {
-        let cx_va = &self.cx as *const Context as usize;
-        unsafe {
-            &mut *(cx_va as *mut Context)
-        }
-    }
-
     pub fn user_stack_top(&self) -> usize {
         0xFFFFFFFFFFFCF000 + (self.tid + 1) * 0x2000
     }

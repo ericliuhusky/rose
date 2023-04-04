@@ -52,7 +52,8 @@ impl TaskManager {
         let next = self.ready_queue.remove(0);        
         self.current = Some(next);
         let user_satp = current_user_token();
-        restore_context(current_trap_cx(), user_satp);
+        let task = current_task();
+        restore_context(&task.cx, user_satp);
     }
 }
 
@@ -72,10 +73,6 @@ pub fn current_process() -> MutRc<Process> {
 pub fn current_user_token() -> usize {
     let process = current_process();
     process.memory_set.token()
-}
-
-pub fn current_trap_cx() -> &'static mut Context {
-    current_task().get_trap_cx()
 }
 
 pub fn add_task(task: MutRc<Task>) {
