@@ -4,7 +4,6 @@ pub mod task;
 use mutrc::MutRc;
 use self::task::{Task, Process};
 use alloc::{rc::Rc, vec::Vec};
-use core::cell::{Ref, RefCell, RefMut};
 use exception::{restore::restore_context, context::Context};
 use sbi_call::shutdown;
 

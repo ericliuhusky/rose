@@ -1,5 +1,4 @@
 use super::File;
-use core::cell::RefCell;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use alloc::rc::{Rc, Weak};

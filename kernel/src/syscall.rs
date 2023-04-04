@@ -209,7 +209,6 @@ use crate::task::{task::Task, TaskManager};
 use alloc::string::String;
 use page_table::VA;
 use alloc::rc::Rc;
-use core::cell::RefCell;
 
 pub fn open(path: *const u8, len: usize, create: u32) -> isize {
     let mut process = current_process();
