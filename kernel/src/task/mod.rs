@@ -1,6 +1,7 @@
 mod id;
 pub mod task;
 
+use crate::mutrc::MutRc;
 use self::task::{Task, Process};
 use alloc::{rc::Rc, vec::Vec};
 use core::cell::{Ref, RefCell, RefMut};
@@ -17,7 +18,7 @@ impl TaskManager {
         Rc::clone(self.current.as_ref().unwrap())
     }
 
-    fn current_process(&self) -> Rc<RefCell<Process>> {
+    fn current_process(&self) -> MutRc<Process> {
         let task = current_task();
         let task = task.borrow();
         task.process.upgrade().unwrap()
@@ -33,16 +34,15 @@ impl TaskManager {
         let previous = self.current.take().unwrap();
         let mut previous_mut = previous.borrow_mut();
         previous_mut.is_exited = true;
-        let process = previous_mut.process.upgrade().unwrap();
+        let mut process = previous_mut.process.upgrade().unwrap();
         drop(previous_mut);
 
         if previous.borrow().tid == 0 {
-            if process.borrow().pid.0 == 0 {
+            if process.pid.0 == 0 {
                 println!("[Kernel] exit!");
                 shutdown();
             }
     
-            let mut process = process.borrow_mut();
             process.is_exited = true;
             process.children.clear();
             process.tasks.clear();
@@ -69,13 +69,12 @@ pub fn current_task() -> Rc<RefCell<Task>> {
     unsafe { TASK_MANAGER.current_task() }
 }
 
-pub fn current_process() -> Rc<RefCell<Process>> {
+pub fn current_process() -> MutRc<Process> {
     unsafe { TASK_MANAGER.current_process() }
 }
 
 pub fn current_user_token() -> usize {
     let process = current_process();
-    let process = process.borrow();
     process.memory_set.token()
 }
 
@@ -108,7 +107,7 @@ pub fn exit_and_run_next(exit_code: i32) {
 }
 
 // TODO: 必须持有根进程才不会被释放
-static mut ROOT_PROC: Option<Rc<RefCell<Process>>> = None;
+static mut ROOT_PROC: Option<MutRc<Process>> = None;
 
 pub fn add_initproc() {
     use crate::fs::open_file;

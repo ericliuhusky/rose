@@ -41,6 +41,6 @@ pub fn exception_handler() {
         }
         _ => {}
     }
-    let token = current_process().borrow().memory_set.token();
+    let token = current_process().memory_set.token();
     restore_context(current_trap_cx(), token);
 }

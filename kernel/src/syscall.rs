@@ -66,13 +66,13 @@ mod 系统调用_输出 {
 
     pub fn write(fd: usize, buf: *const u8, len: usize) -> isize {
         let process = current_process();
-        let fd_table = &process.borrow().fd_table;
+        let fd_table = &process.fd_table;
         if fd >= fd_table.len() {
             return -1;
         }
         if let Some(file) = &fd_table[fd] {
             let file = file.clone();
-            let buf = process.borrow()
+            let buf = process
                 .memory_set
                 .page_table
                 .translate_buffer(buf as usize, len);
@@ -104,13 +104,13 @@ mod 系统调用_读取 {
 
     pub fn read(fd: usize, buf: *const u8, len: usize) -> isize {
         let process = current_process();
-        let fd_table = &process.borrow().fd_table;
+        let fd_table = &process.fd_table;
         if fd >= fd_table.len() {
             return -1;
         }
         if let Some(file) = &fd_table[fd] {
             let file = file.clone();
-            let buf = process.borrow()
+            let buf = process
                 .memory_set
                 .page_table
                 .translate_buffer(buf as usize, len);
@@ -147,30 +147,28 @@ mod 系统调用_进程 {
     use alloc::string::String;
 
     pub fn getpid() -> isize {
-        current_process().borrow().pid.0 as isize
+        current_process().pid.0 as isize
     }
 
     pub fn fork() -> isize {
-        let process = current_process();
-        let mut process = process.borrow_mut();
+        let mut process = current_process();
         let new_process = process.fork();
-        let task = new_process.borrow().main_task();
+        let task = new_process.main_task();
         let mut task = task.borrow_mut();
         task.cx.x[10] = 0;
-        let new_pid = new_process.borrow().pid.0;
+        let new_pid = new_process.pid.0;
         new_pid as isize
     }
 
     use crate::fs::open_file;
 
     pub fn exec(path: *const u8, len: usize) -> isize {
-        let process = current_process();
-        let 应用名称 = process.borrow()
+        let mut process = current_process();
+        let 应用名称 = process
             .memory_set
             .read_str(path as usize, len);
         if let Some(elf_inode) = open_file(&应用名称, false) {
             let elf_data = elf_inode.read_all();
-            let mut process = process.borrow_mut();
             process.exec(&elf_data);
             0
         } else {
@@ -179,23 +177,21 @@ mod 系统调用_进程 {
     }
 
     pub fn waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
-        let process = current_process();
-        let mut process = process.borrow_mut();
+        let mut process = current_process();
         if !process
             .children
             .iter()
-            .any(|p| pid == -1 || pid as usize == p.borrow().pid.0)
+            .any(|p| pid == -1 || pid as usize == p.pid.0)
         {
             return -1;
         }
 
         let pair = process.children.iter().enumerate().find(|(_, p)| {
-            let p = p.borrow();
             p.is_exited && (pid == -1 || pid as usize == p.pid.0)
         });
         if let Some((idx, _)) = pair {
             let child = process.children.remove(idx);
-            let found_pid = child.borrow().pid.0;
+            let found_pid = child.pid.0;
             // TODO: 终止代码
             // let exit_code = child.borrow().终止代码;
             // let refmut = task.memory_set.page_table.translated_refmut(exit_code_ptr);
@@ -216,13 +212,12 @@ use alloc::rc::Rc;
 use core::cell::RefCell;
 
 pub fn open(path: *const u8, len: usize, create: u32) -> isize {
-    let process = current_process();
-    let path = process.borrow()
+    let mut process = current_process();
+    let path = process
         .memory_set
         .read_str(path as usize, len);
     let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {
-        let mut process = process.borrow_mut();
         let fd = process.alloc_fd();
         process.fd_table[fd] = Some(inode);
         fd as isize
@@ -232,8 +227,7 @@ pub fn open(path: *const u8, len: usize, create: u32) -> isize {
 }
 
 pub fn close(fd: usize) -> isize {
-    let process = current_process();
-    let mut process = process.borrow_mut();
+    let mut process = current_process();
     let fd_table = &process.fd_table;
     if fd >= fd_table.len() {
         return -1;
@@ -248,8 +242,7 @@ pub fn close(fd: usize) -> isize {
 use crate::fs::make_pipe;
 
 pub fn pipe(pipe_fd: *mut usize) -> isize {
-    let process = current_process();
-    let mut process = process.borrow_mut();
+    let mut process = current_process();
 
     let (pipe_read, pipe_write) = make_pipe();
     let read_fd = process.alloc_fd();
@@ -264,16 +257,14 @@ pub fn pipe(pipe_fd: *mut usize) -> isize {
 
 pub fn thread_create(entry: usize, arg: usize) -> isize {
     let task = current_task();
-    let process = task.borrow_mut().process.upgrade().unwrap();
+    let mut process = task.borrow_mut().process.upgrade().unwrap();
     let new_task = Rc::new(RefCell::new(Task::new(
-        Rc::clone(&process),
+        process.clone(),
     )));
     add_task(Rc::clone(&new_task));
     let mut new_task_inner = new_task.borrow_mut();
     let new_task_tid = new_task_inner.tid;
-    let mut process_inner = process.borrow_mut();
-    let tasks = &mut process_inner.tasks;
-    tasks.insert(new_task_tid, Rc::clone(&new_task));
+    process.tasks.insert(new_task_tid, Rc::clone(&new_task));
     let ustack_top = new_task_inner.user_stack_top();
     new_task_inner.cx = Context::app_init(
         entry,
@@ -286,9 +277,8 @@ pub fn thread_create(entry: usize, arg: usize) -> isize {
 pub fn waittid(tid: usize) -> isize {
     let task = current_task();
     let process = task.borrow_mut().process.upgrade().unwrap();
-    let process_inner = process.borrow_mut();
 
-    let waited_task = &process_inner.tasks.get(&tid);
+    let waited_task = process.tasks.get(&tid);
     if let Some(waited_task) = waited_task {
         if waited_task.borrow_mut().is_exited {
             0
