@@ -2,7 +2,7 @@ use alloc::rc::Weak;
 use alloc::{rc::Rc, collections::BTreeMap};
 use alloc::vec;
 use alloc::vec::Vec;
-use crate::mm::memory_set::{地址空间, 内核地址空间};
+use crate::mm::memory_set::{MemorySpace, KERNEL_SPACE};
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
 use super::add_task;
@@ -12,7 +12,7 @@ use crate::fs::{File, Stdin, Stdout};
 pub struct Process {
     pub pid: Pid,
     pub is_exited: bool,
-    pub memory_set: 地址空间,
+    pub memory_set: MemorySpace,
     pub children: Vec<MutRc<Process>>,
     pub fd_table: Vec<Option<MutRc<dyn File>>>,
     pub tasks: BTreeMap<usize, MutRc<Task>>,
@@ -40,7 +40,7 @@ impl Process {
 
 impl Process {
     pub fn new(elf_data: &[u8]) -> MutRc<Self> {
-        let (memory_set, entry_address) = 地址空间::新建应用地址空间(elf_data);
+        let (memory_set, entry_address) = MemorySpace::new_user(elf_data);
         let mut process = MutRc::new(Self{
             pid: pid_alloc(),
             is_exited: false,
@@ -66,7 +66,7 @@ impl Process {
     }
 
     pub fn exec(&mut self, elf_data: &[u8]) {
-        let (memory_set, entry_address) = 地址空间::新建应用地址空间(elf_data);
+        let (memory_set, entry_address) = MemorySpace::new_user(elf_data);
         self.memory_set = memory_set;
 
         let mut task = self.main_task();
@@ -79,7 +79,7 @@ impl Process {
     }
 
     pub fn fork(&mut self) -> MutRc<Self> {
-        let memory_set = 地址空间::复制地址空间(&self.memory_set);
+        let memory_set = self.memory_set.clone();
         let mut new_fd_table: Vec<Option<MutRc<dyn File>>> = Vec::new();
         for fd in self.fd_table.iter() {
             if let Some(file) = fd {

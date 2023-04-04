@@ -2,7 +2,7 @@ use alloc::rc::Rc;
 use fs::BlockDevice;
 use lazy_static::*;
 use core::cell::RefCell;
-use crate::mm::memory_set::内核地址空间;
+use crate::mm::memory_set::KERNEL_SPACE;
 use frame_allocator::{alloc, dealloc};
 use alloc::vec::Vec;
 use lazy_static::*;
@@ -75,7 +75,7 @@ impl Hal for VirtioHal {
     }
 
     fn virt_to_phys(vaddr: usize) -> usize {
-        内核地址空间
+        KERNEL_SPACE
             .page_table
             .translate_one_addr(vaddr)
     }

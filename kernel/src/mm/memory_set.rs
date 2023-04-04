@@ -1,10 +1,9 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::ops::Range;
-use exception::context::Context;
-use super::address::{逻辑段};
-use frame_allocator::FrameAllocator;
 use elf_reader::ElfFile;
+use exception::context::Context;
+use frame_allocator::FrameAllocator;
 use lazy_static::lazy_static;
 
 pub const MEMORY_END: usize = 0x88000000;
@@ -20,134 +19,135 @@ extern "C" {
     fn etrampoline();
 }
 
-use page_table::{SV39PageTable, HIGH_START_ADDR};
-use page_table::{VPN, VA};
 use page_table::PageTableEntryFlags;
+use page_table::{SV39PageTable, HIGH_START_ADDR};
+use page_table::{VA, VPN};
 
-
-pub struct 地址空间 {
+pub struct MemorySpace {
     pub page_table: SV39PageTable<FrameAllocator>,
-    逻辑段列表: Vec<逻辑段>,
+    segments: Vec<Segment>,
 }
 
-impl 地址空间 {
-    fn 映射(&mut self, 逻辑段: 逻辑段) {
-        for 虚拟页号 in 逻辑段.虚拟页号范围() {
+impl MemorySpace {
+    fn map(&mut self, segment: Segment) {
+        for vpn in segment.vpn_range() {
             let flags;
-            if 逻辑段.用户可见 {
+            if segment.user_accessible {
                 flags = PageTableEntryFlags::UXWR;
             } else {
                 flags = PageTableEntryFlags::XWR;
             }
-            self.page_table.map(虚拟页号, 逻辑段.恒等映射, flags);
+            self.page_table.map(vpn, segment.identical, flags);
         }
-        self.逻辑段列表.push(逻辑段);
+        self.segments.push(segment);
     }
 
-    fn 新建空地址空间() -> Self {
-        Self { 
+    fn new_bare() -> Self {
+        Self {
             page_table: SV39PageTable::<FrameAllocator>::new(),
-            逻辑段列表: Vec::new(),
+            segments: Vec::new(),
         }
     }
 
-    pub fn 新建内核地址空间() -> Self {
-        let mut 地址空间 = Self::新建空地址空间();
+    pub fn new_kernel() -> Self {
+        let mut memory_space = Self::new_bare();
 
-        地址空间.映射(逻辑段 { 
-            虚拟地址范围: skernel as usize..ekernel as usize,
-            恒等映射: true,
-            用户可见: false,
+        memory_space.map(Segment {
+            va_range: skernel as usize..ekernel as usize,
+            identical: true,
+            user_accessible: false,
         });
-        地址空间.映射(逻辑段 { 
-            虚拟地址范围: ekernel as usize..MEMORY_END,
-            恒等映射: true,
-            用户可见: false,
+        memory_space.map(Segment {
+            va_range: ekernel as usize..MEMORY_END,
+            identical: true,
+            user_accessible: false,
         });
-        地址空间.映射(逻辑段 { 
-            虚拟地址范围: 0x100000..0x102000,
-            恒等映射: true,
-            用户可见: false,
+        memory_space.map(Segment {
+            va_range: 0x100000..0x102000,
+            identical: true,
+            user_accessible: false,
         }); // MMIO VIRT_TEST/RTC  in virt machine
-        地址空间.映射(逻辑段 { 
-            虚拟地址范围: 0x10001000..0x10002000,
-            恒等映射: true,
-            用户可见: false,
+        memory_space.map(Segment {
+            va_range: 0x10001000..0x10002000,
+            identical: true,
+            user_accessible: false,
         }); // MMIO VIRT_TEST/RTC  in virt machine
-        
+
         // 内核栈
-        地址空间.映射(逻辑段 { 
-            虚拟地址范围: KERNEL_STACK_START_ADDR..KERNEL_STACK_END_ADDR,
-            恒等映射: false,
-            用户可见: false,
+        memory_space.map(Segment {
+            va_range: KERNEL_STACK_START_ADDR..KERNEL_STACK_END_ADDR,
+            identical: false,
+            user_accessible: false,
         });
-        地址空间
+        memory_space
     }
-    
-    pub fn 新建应用地址空间(elf文件数据: &[u8]) -> (Self, usize) {
-        let mut 地址空间 = Self::新建空地址空间();
+
+    pub fn new_user(elf_data: &[u8]) -> (Self, usize) {
+        let mut memory_space = Self::new_bare();
 
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
-        地址空间.映射(逻辑段 { 
-            虚拟地址范围: strampoline as usize..etrampoline as usize,
-            恒等映射: true,
-            用户可见: false,
-         });
+        memory_space.map(Segment {
+            va_range: strampoline as usize..etrampoline as usize,
+            identical: true,
+            user_accessible: false,
+        });
 
-        let elf文件 = ElfFile::read(elf文件数据);
-        let 程序段列表 = elf文件.programs();
-        for 程序段 in &程序段列表 {
-            地址空间.映射(逻辑段 { 
-                虚拟地址范围: 程序段.start_va()..程序段.end_va(),
-                恒等映射: false,
-                用户可见: true,
-             });
-            地址空间.page_table.write(程序段.start_va(), 程序段.memory_size(), 程序段.data);
+        let elf = ElfFile::read(elf_data);
+        let program_segments = elf.programs();
+        for program_segment in &program_segments {
+            memory_space.map(Segment {
+                va_range: program_segment.start_va()..program_segment.end_va(),
+                identical: false,
+                user_accessible: true,
+            });
+            memory_space.page_table.write(
+                program_segment.start_va(),
+                program_segment.memory_size(),
+                program_segment.data,
+            );
         }
 
-        地址空间.映射(逻辑段 { 
-            虚拟地址范围: 0xFFFFFFFFFFFCF000..0xFFFFFFFFFFFEF000,
-            恒等映射: false,
-            用户可见: true,
-         });
+        memory_space.map(Segment {
+            va_range: 0xFFFFFFFFFFFCF000..0xFFFFFFFFFFFEF000,
+            identical: false,
+            user_accessible: true,
+        });
 
-        
-        (
-            地址空间,
-            elf文件.entry_address(),
-        )
+        (memory_space, elf.entry_address())
     }
+}
 
-    pub fn 复制地址空间(被复制的地址空间: &Self) -> Self {
-        let mut 地址空间 = Self::新建空地址空间();
-        for 逻辑段 in &被复制的地址空间.逻辑段列表 {
-            let 虚拟地址范围 = 逻辑段.虚拟地址范围.clone();
-            地址空间.映射(逻辑段 {
-                虚拟地址范围: 虚拟地址范围.clone(),
-                恒等映射: 逻辑段.恒等映射,
-                用户可见: 逻辑段.用户可见
+impl Clone for MemorySpace {
+    fn clone(&self) -> Self {
+        let mut memory_space = Self::new_bare();
+        for segment in &self.segments {
+            let vpn_range = segment.va_range.clone();
+            memory_space.map(Segment {
+                va_range: vpn_range.clone(),
+                identical: segment.identical,
+                user_accessible: segment.user_accessible,
             });
             // TODO: 整理页表的完全复制，为何不能读完一部分数据再写入呢
-            for vpn in 逻辑段.虚拟页号范围() {
-                let src_ppn = 被复制的地址空间.page_table.translate(vpn).0;
-                let dst_ppn = 地址空间.page_table.translate(vpn).0;
+            for vpn in segment.vpn_range() {
+                let src_ppn = self.page_table.translate(vpn).0;
+                let dst_ppn = memory_space.page_table.translate(vpn).0;
                 if src_ppn == dst_ppn {
                     continue;
                 }
                 unsafe {
                     let dst = core::slice::from_raw_parts_mut((dst_ppn << 12) as *mut u8, 4096);
                     let src = core::slice::from_raw_parts_mut((src_ppn << 12) as *mut u8, 4096);
-                    dst.copy_from_slice(src); 
+                    dst.copy_from_slice(src);
                 }
             }
             // let 数据 = 被复制的地址空间.读取字节数组(虚拟地址范围.clone());
             // 地址空间.多级页表.写入字节数组(虚拟地址范围.clone(), &数据);
         }
-        地址空间
+        memory_space
     }
 }
 
-impl 地址空间 {
+impl MemorySpace {
     pub fn token(&self) -> usize {
         self.page_table.satp()
     }
@@ -158,5 +158,22 @@ impl 地址空间 {
 }
 
 lazy_static! {
-    pub static ref 内核地址空间: 地址空间 = 地址空间::新建内核地址空间();
+    pub static ref KERNEL_SPACE: MemorySpace = MemorySpace::new_kernel();
+}
+
+pub struct Segment {
+    pub va_range: Range<usize>,
+    pub identical: bool,
+    pub user_accessible: bool,
+}
+
+impl Segment {
+    pub fn vpn_range(&self) -> Range<usize> {
+        let start_vpn = VA::new(self.va_range.start)
+            .align_to_lower()
+            .page_number()
+            .0;
+        let end_vpn = VA::new(self.va_range.end).align_to_upper().page_number().0;
+        start_vpn..end_vpn
+    }
 }
