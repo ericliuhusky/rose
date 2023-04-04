@@ -1,3 +1,7 @@
+#![no_std]
+
+extern crate alloc;
+
 use alloc::rc::{Rc, Weak};
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};

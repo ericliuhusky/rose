@@ -19,3 +19,4 @@ frame_allocator = { version = "0.1.0", path = "../crates/frame_allocator" }
 virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers", rev = "4ee80e5" }
 fs = { version = "0.1.0", path = "../fs" }
 sys_func = { version = "0.1.0", path = "../crates/sys_func" }
+mutrc = { version = "0.1.0", path = "../crates/mutrc" }

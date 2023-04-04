@@ -1,7 +1,7 @@
 mod id;
 pub mod task;
 
-use crate::mutrc::MutRc;
+use mutrc::MutRc;
 use self::task::{Task, Process};
 use alloc::{rc::Rc, vec::Vec};
 use core::cell::{Ref, RefCell, RefMut};

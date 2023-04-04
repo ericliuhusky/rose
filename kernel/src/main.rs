@@ -13,7 +13,6 @@ mod timer;
 mod mm;
 mod drivers;
 mod fs;
-mod mutrc;
 
 use core::arch::global_asm;
 extern crate panic;
