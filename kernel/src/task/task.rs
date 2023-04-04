@@ -16,7 +16,7 @@ pub struct Process {
     pub memory_set: 地址空间,
     pub children: Vec<MutRc<Process>>,
     pub fd_table: Vec<Option<Rc<dyn File>>>,
-    pub tasks: BTreeMap<usize, Rc<RefCell<Task>>>,
+    pub tasks: BTreeMap<usize, MutRc<Task>>,
     pub tid_allocator: IDAllocator,
 }
 
@@ -34,7 +34,7 @@ impl Process {
         self.tid_allocator.alloc()
     }
 
-    pub fn main_task(&self) -> Rc<RefCell<Task>> {
+    pub fn main_task(&self) -> MutRc<Task> {
         self.tasks.get(&0).unwrap().clone()
     }
 }
@@ -55,15 +55,13 @@ impl Process {
             tasks: BTreeMap::new(),
             tid_allocator: IDAllocator::new(),
         });
-        let task = Rc::new(RefCell::new(Task::new(process.clone())));
-        let mut task_mut = task.borrow_mut();
-        let user_stack_top = task_mut.user_stack_top();
-        task_mut.cx = Context::app_init(
+        let mut task = MutRc::new(Task::new(process.clone()));
+        let user_stack_top = task.user_stack_top();
+        task.cx = Context::app_init(
             entry_address,
             user_stack_top,
         );
-        drop(task_mut);
-        process.tasks.insert(0, Rc::clone(&task));
+        process.tasks.insert(0, task.clone());
         add_task(task);
         process
     }
@@ -72,10 +70,9 @@ impl Process {
         let (memory_set, entry_address) = 地址空间::新建应用地址空间(elf_data);
         self.memory_set = memory_set;
 
-        let task = self.main_task();
-        let user_stack_top = task.borrow().user_stack_top();
+        let mut task = self.main_task();
+        let user_stack_top = task.user_stack_top();
 
-        let mut task = task.borrow_mut();
         task.cx = Context::app_init(
             entry_address,
             user_stack_top,
@@ -102,13 +99,11 @@ impl Process {
             tid_allocator: IDAllocator::new(),
         });
         self.children.push(process.clone());
-        let task = Rc::new(RefCell::new(Task::new(process.clone())));
-        process.tasks.insert(0, Rc::clone(&task));
+        let task = MutRc::new(Task::new(process.clone()));
+        process.tasks.insert(0, task.clone());
 
         let old_task = self.main_task();
-        let old_task = old_task.borrow();
-        let new_task = process.main_task();
-        let mut new_task = new_task.borrow_mut();
+        let mut new_task = process.main_task();
         new_task.cx = old_task.cx.clone();
 
         add_task(task);

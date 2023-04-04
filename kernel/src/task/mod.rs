@@ -9,18 +9,17 @@ use exception::{restore::restore_context, context::Context};
 use sbi_call::shutdown;
 
 pub struct TaskManager {
-    pub current: Option<Rc<RefCell<Task>>>,
-    ready_queue: Vec<Rc<RefCell<Task>>>,
+    pub current: Option<MutRc<Task>>,
+    ready_queue: Vec<MutRc<Task>>,
 }
 
 impl TaskManager {
-    fn current_task(&self) -> Rc<RefCell<Task>> {
-        Rc::clone(self.current.as_ref().unwrap())
+    fn current_task(&self) -> MutRc<Task> {
+        self.current.as_ref().unwrap().clone()
     }
 
     fn current_process(&self) -> MutRc<Process> {
         let task = current_task();
-        let task = task.borrow();
         task.process.upgrade().unwrap()
     }
 
@@ -31,13 +30,11 @@ impl TaskManager {
     }
 
     fn exit_and_run_next(&mut self, exit_code: i32) {
-        let previous = self.current.take().unwrap();
-        let mut previous_mut = previous.borrow_mut();
-        previous_mut.is_exited = true;
-        let mut process = previous_mut.process.upgrade().unwrap();
-        drop(previous_mut);
+        let mut previous = self.current.take().unwrap();
+        previous.is_exited = true;
+        let mut process = previous.process.upgrade().unwrap();
 
-        if previous.borrow().tid == 0 {
+        if previous.tid == 0 {
             if process.pid.0 == 0 {
                 println!("[Kernel] exit!");
                 shutdown();
@@ -65,7 +62,7 @@ pub static mut TASK_MANAGER: TaskManager = TaskManager {
     ready_queue: Vec::new(),
 };
 
-pub fn current_task() -> Rc<RefCell<Task>> {
+pub fn current_task() -> MutRc<Task> {
     unsafe { TASK_MANAGER.current_task() }
 }
 
@@ -79,10 +76,10 @@ pub fn current_user_token() -> usize {
 }
 
 pub fn current_trap_cx() -> &'static mut Context {
-    current_task().borrow().get_trap_cx()
+    current_task().get_trap_cx()
 }
 
-pub fn add_task(task: Rc<RefCell<Task>>) {
+pub fn add_task(task: MutRc<Task>) {
     unsafe {
         TASK_MANAGER.ready_queue.push(task);
     }

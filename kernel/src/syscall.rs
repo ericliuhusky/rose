@@ -153,8 +153,7 @@ mod 系统调用_进程 {
     pub fn fork() -> isize {
         let mut process = current_process();
         let new_process = process.fork();
-        let task = new_process.main_task();
-        let mut task = task.borrow_mut();
+        let mut task = new_process.main_task();
         task.cx.x[10] = 0;
         let new_pid = new_process.pid.0;
         new_pid as isize
@@ -204,6 +203,7 @@ mod 系统调用_进程 {
 }
 
 use crate::fs::open_file;
+use crate::mutrc::MutRc;
 use crate::task::{current_task, current_process, add_task};
 use crate::task::{task::Task, TaskManager};
 use alloc::string::String;
@@ -257,30 +257,29 @@ pub fn pipe(pipe_fd: *mut usize) -> isize {
 
 pub fn thread_create(entry: usize, arg: usize) -> isize {
     let task = current_task();
-    let mut process = task.borrow_mut().process.upgrade().unwrap();
-    let new_task = Rc::new(RefCell::new(Task::new(
+    let mut process = task.process.upgrade().unwrap();
+    let mut new_task = MutRc::new(Task::new(
         process.clone(),
-    )));
-    add_task(Rc::clone(&new_task));
-    let mut new_task_inner = new_task.borrow_mut();
-    let new_task_tid = new_task_inner.tid;
-    process.tasks.insert(new_task_tid, Rc::clone(&new_task));
-    let ustack_top = new_task_inner.user_stack_top();
-    new_task_inner.cx = Context::app_init(
+    ));
+    add_task(new_task.clone());
+    let new_task_tid = new_task.tid;
+    process.tasks.insert(new_task_tid, new_task.clone());
+    let ustack_top = new_task.user_stack_top();
+    new_task.cx = Context::app_init(
         entry,
         ustack_top,
     );
-    new_task_inner.cx.x[10] = arg;
+    new_task.cx.x[10] = arg;
     new_task_tid as isize
 }
 
 pub fn waittid(tid: usize) -> isize {
     let task = current_task();
-    let process = task.borrow_mut().process.upgrade().unwrap();
+    let process = task.process.upgrade().unwrap();
 
     let waited_task = process.tasks.get(&tid);
     if let Some(waited_task) = waited_task {
-        if waited_task.borrow_mut().is_exited {
+        if waited_task.is_exited {
             0
         } else {
             -2
