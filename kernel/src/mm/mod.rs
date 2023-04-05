@@ -18,7 +18,7 @@ pub fn 初始化() {
     set_kernel_top(KERNEL_STACK_TOP);
     unsafe {
         // 切换到内核地址空间
-        let satp = KERNEL_SPACE.token();
+        let satp = KERNEL_SPACE.page_table.satp();
         set_kernel_satp(satp);
         switch_kernel();
     }

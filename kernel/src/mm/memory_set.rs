@@ -104,16 +104,6 @@ impl Clone for MemorySpace {
     }
 }
 
-impl MemorySpace {
-    pub fn token(&self) -> usize {
-        self.page_table.satp()
-    }
-
-    pub fn read_str(&self, va: usize, len: usize) -> String {
-        self.page_table.read_str(va, len)
-    }
-}
-
 lazy_static! {
     pub static ref KERNEL_SPACE: MemorySpace = MemorySpace::new_kernel();
 }

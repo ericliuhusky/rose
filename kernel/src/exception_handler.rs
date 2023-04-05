@@ -42,7 +42,7 @@ pub fn exception_handler() {
         }
         _ => {}
     }
-    let token = current_process().memory_set.token();
+    let token = current_process().memory_set.page_table.satp();
     let task = current_task();
     restore_context(&task.cx, token);
 }

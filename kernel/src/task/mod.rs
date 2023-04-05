@@ -72,7 +72,7 @@ pub fn current_process() -> MutRc<Process> {
 
 pub fn current_user_token() -> usize {
     let process = current_process();
-    process.memory_set.token()
+    process.memory_set.page_table.satp()
 }
 
 pub fn add_task(task: MutRc<Task>) {

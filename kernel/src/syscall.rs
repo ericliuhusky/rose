@@ -165,6 +165,7 @@ mod 系统调用_进程 {
         let mut process = current_process();
         let 应用名称 = process
             .memory_set
+            .page_table
             .read_str(path as usize, len);
         if let Some(elf_inode) = open_file(&应用名称, false) {
             let elf_data = elf_inode.read_all();
@@ -214,6 +215,7 @@ pub fn open(path: *const u8, len: usize, create: u32) -> isize {
     let mut process = current_process();
     let path = process
         .memory_set
+        .page_table
         .read_str(path as usize, len);
     let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {
