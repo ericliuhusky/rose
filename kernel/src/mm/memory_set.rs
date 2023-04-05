@@ -89,12 +89,7 @@ impl Clone for MemorySpace {
     fn clone(&self) -> Self {
         let mut memory_space = Self::new_bare();
         for segment in &self.segments {
-            let vpn_range = segment.va_range.clone();
-            memory_space.map(Segment {
-                va_range: vpn_range.clone(),
-                identical: segment.identical,
-                user_accessible: segment.user_accessible,
-            });
+            memory_space.map(segment.clone());
             // TODO: 整理页表的完全复制，为何不能读完一部分数据再写入呢
             for vpn in segment.vpn_range() {
                 let src_ppn = self.page_table.translate(vpn).0;
@@ -129,6 +124,7 @@ lazy_static! {
     pub static ref KERNEL_SPACE: MemorySpace = MemorySpace::new_kernel();
 }
 
+#[derive(Clone)]
 pub struct Segment {
     pub va_range: Range<usize>,
     pub identical: bool,
