@@ -104,7 +104,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
         *pte = PageTableEntry::new(ppn, flags);
     }
 
-    pub fn translate(&self, vpn: usize) -> PPN {
+    fn translate(&self, vpn: usize) -> PPN {
         let vpn = VPN::new(vpn);
         self.find_pte(vpn).ppn()
     }

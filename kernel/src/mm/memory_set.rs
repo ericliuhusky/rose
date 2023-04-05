@@ -90,21 +90,15 @@ impl Clone for MemorySpace {
         let mut memory_space = Self::new_bare();
         for segment in &self.segments {
             memory_space.map(segment.clone());
-            // TODO: 整理页表的完全复制，为何不能读完一部分数据再写入呢
-            for vpn in segment.vpn_range() {
-                let src_ppn = self.page_table.translate(vpn).0;
-                let dst_ppn = memory_space.page_table.translate(vpn).0;
-                if src_ppn == dst_ppn {
-                    continue;
-                }
-                unsafe {
-                    let dst = core::slice::from_raw_parts_mut((dst_ppn << 12) as *mut u8, 4096);
-                    let src = core::slice::from_raw_parts_mut((src_ppn << 12) as *mut u8, 4096);
-                    dst.copy_from_slice(src);
+            let va = segment.va_range.start;
+            let len = segment.va_range.len();
+            let src_bufs = self.page_table.translate_buffer(va, len);
+            let mut dst_bufs = memory_space.page_table.translate_buffer(va, len);
+            for i in 0..src_bufs.len() {
+                for j in 0..src_bufs[i].len() {
+                    dst_bufs[i][j] = src_bufs[i][j];
                 }
             }
-            // let 数据 = 被复制的地址空间.读取字节数组(虚拟地址范围.clone());
-            // 地址空间.多级页表.写入字节数组(虚拟地址范围.clone(), &数据);
         }
         memory_space
     }
