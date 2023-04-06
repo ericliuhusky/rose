@@ -37,6 +37,12 @@ impl<T: ?Sized> Clone for MutRc<T> {
     }
 }
 
+impl<T: ?Sized> AsRef<T> for MutRc<T> {
+    fn as_ref(&self) -> &T {
+        &**self
+    }
+}
+
 impl<T: ?Sized> Deref for MutRc<T> {
     type Target = T;
 
