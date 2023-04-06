@@ -3,7 +3,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use page_table::{FrameAlloc, PA, PPN};
+use page_table::{FrameAlloc, PA, PPN, Address, Page};
 
 struct StackFrameAllocator {
     current: usize,
@@ -17,8 +17,8 @@ impl StackFrameAllocator {
             // 内核结尾地址
             fn ekernel();
         }
-        let current = PA::new(ekernel as usize).align_to_upper().page_number().0;
-        let end = PA::new(end_pa).align_to_lower().page_number().0;
+        let current = PA::new(ekernel as usize).align_to_upper().page().number();
+        let end = PA::new(end_pa).align_to_lower().page().number();
         Self {
             current,
             end,
@@ -41,9 +41,9 @@ impl StackFrameAllocator {
 
     fn dealloc(&mut self, frame: PPN) {
         unsafe {
-            *(frame.start_addr().0 as *mut [u8; 0x1000]) = [0; 0x1000];
+            *(frame.start_addr().number() as *mut [u8; 0x1000]) = [0; 0x1000];
         }
-        self.recycled.push(frame.0);
+        self.recycled.push(frame.number());
     }
 }
 
@@ -64,7 +64,7 @@ impl FrameAlloc for FrameAllocator {
 }
 
 pub fn alloc() -> usize {
-    FrameAllocator::alloc().0
+    FrameAllocator::alloc().number()
 }
 
 pub fn dealloc(frame: usize) {

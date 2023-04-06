@@ -6,7 +6,7 @@ use crate::mm::memory_set::KERNEL_SPACE;
 use frame_allocator::{alloc, dealloc};
 use alloc::vec::Vec;
 use lazy_static::*;
-use page_table::{PA, PPN, VA};
+use page_table::{PA, PPN, VA, Address, Page};
 use virtio_drivers::{Hal, VirtIOBlk, VirtIOHeader};
 
 lazy_static! {
@@ -55,14 +55,14 @@ impl Hal for VirtioHal {
             if i == 0 {
                 ppn_base = PPN::new(frame);
             }
-            assert_eq!(frame, ppn_base.0 + i);
+            assert_eq!(frame, ppn_base.number() + i);
         }
-        ppn_base.start_addr().0
+        ppn_base.start_addr().number()
     }
 
     fn dma_dealloc(pa: usize, pages: usize) -> i32 {
         let pa = PA::new(pa);
-        let mut ppn_base = pa.page_number().0;
+        let mut ppn_base = pa.page().number();
         for _ in 0..pages {
             dealloc(ppn_base);
             ppn_base += 1;

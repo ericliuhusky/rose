@@ -19,7 +19,7 @@ extern "C" {
     fn etrampoline();
 }
 
-use page_table::{SV39PageTable, HIGH_START_ADDR};
+use page_table::{SV39PageTable, HIGH_START_ADDR, Address, Page};
 use page_table::{VA, VPN};
 
 pub struct MemorySpace {
@@ -143,9 +143,9 @@ impl Segment {
     pub fn vpn_range(&self) -> Range<usize> {
         let start_vpn = VA::new(self.va_range.start)
             .align_to_lower()
-            .page_number()
-            .0;
-        let end_vpn = VA::new(self.va_range.end).align_to_upper().page_number().0;
+            .page()
+            .number();
+        let end_vpn = VA::new(self.va_range.end).align_to_upper().page().number();
         start_vpn..end_vpn
     }
 }

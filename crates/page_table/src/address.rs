@@ -1,73 +1,127 @@
-use core::marker::PhantomData;
+pub type VPN = VirtualPage;
+pub type PPN = PhysicalPage;
+pub type VA = VirtualAddress;
+pub type PA = PhysicalAddress;
 
-pub trait Space: Clone + Copy {}
+pub trait Page {
+    type Address: Address;
 
-#[derive(Clone, Copy)]
-pub struct PageNumber<S>(pub usize, PhantomData<S>);
+    fn new(n: usize) -> Self;
 
-#[derive(Clone, Copy)]
-pub struct Address<S>(pub usize, PhantomData<S>);
+    fn number(&self) -> usize;
 
-#[derive(Clone, Copy)]
-pub struct Virtual;
-
-#[derive(Clone, Copy)]
-pub struct Physical;
-
-impl Space for Virtual {}
-impl Space for Physical {}
-
-pub type VPN = PageNumber<Virtual>;
-pub type PPN = PageNumber<Physical>;
-pub type VA = Address<Virtual>;
-pub type PA = Address<Physical>;
-
-impl<S: Space> PageNumber<S> {
-    pub fn new(n: usize) -> Self {
-        Self(n, PhantomData)
+    fn start_addr(&self) -> Self::Address {
+        Self::Address::new(self.number() << 12)
     }
 
-    pub fn start_addr(&self) -> Address<S> {
-        Address::new(self.0 << 12)
-    }
-
-    pub fn end_addr(&self) -> Address<S> {
-        Address::new((self.0 + 1) << 12)
+    fn end_addr(&self) -> Self::Address {
+        Self::Address::new((self.number() + 1) << 12)
     }
 }
 
-impl VPN {
+#[derive(Clone, Copy)]
+pub struct VirtualPage(usize);
+
+impl Page for VirtualPage {
+    type Address = VirtualAddress;
+
+    fn new(n: usize) -> Self {
+        Self(n)
+    }
+
+    fn number(&self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct PhysicalPage(usize);
+
+impl Page for PhysicalPage {
+    type Address = PhysicalAddress;
+
+    fn new(n: usize) -> Self {
+        Self(n)
+    }
+
+    fn number(&self) -> usize {
+        self.0
+    }
+}
+
+impl VirtualPage {
     pub fn indexs(&self) -> [usize; 3] {
         [
             (self.0 >> 18) & 0x1ff,
             (self.0 >> 9) & 0x1ff,
-            self.0 & 0x1ff
+            self.0 & 0x1ff,
         ]
     }
 }
 
-impl<S: Space> Address<S> {
-    pub fn new(n: usize) -> Self {
-        Self(n, PhantomData)
+pub trait Address {
+    type Page: Page;
+
+    fn new(n: usize) -> Self;
+
+    fn number(&self) -> usize;
+
+    fn page(&self) -> Self::Page {
+        Self::Page::new(self.number() >> 12)
     }
 
-    pub fn page_number(&self) -> PageNumber<S> {
-        PageNumber::new(self.0 >> 12)
+    fn align_to_lower(&self) -> Self
+    where
+        Self: Sized,
+    {
+        Self::new(self.number() & !0xfff)
     }
 
-    pub fn align_to_lower(&self) -> Self {
-        Self::new(self.0 & !0xfff)
+    fn align_to_upper(&self) -> Self
+    where
+        Self: Sized,
+    {
+        Self::new((self.number() + 0xfff) & !0xfff)
     }
 
-    pub fn align_to_upper(&self) -> Self {
-        Self::new((self.0 + 0xfff) & !0xfff)
+    fn page_offset(&self) -> usize {
+        self.number() & 0xfff
     }
 
-    pub fn page_offset(&self) -> usize {
-        self.0 & 0xfff
+    fn offset(&self, page_offset: usize) -> Self
+    where
+        Self: Sized,
+    {
+        Self::new(self.number() + page_offset)
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct VirtualAddress(usize);
+
+impl Address for VirtualAddress {
+    type Page = VirtualPage;
+
+    fn new(n: usize) -> Self {
+        Self(n)
     }
 
-    pub fn offset(&self, page_offset: usize) -> Self {
-        Self::new(self.0 + page_offset)
+    fn number(&self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct PhysicalAddress(usize);
+
+impl Address for PhysicalAddress {
+    type Page = PhysicalPage;
+
+    fn new(n: usize) -> Self {
+        Self(n)
+    }
+
+    fn number(&self) -> usize {
+        self.0
     }
 }

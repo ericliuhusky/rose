@@ -1,3 +1,4 @@
+use crate::address::{Page, Address};
 use super::address::{PPN, PA};
 use core::ops::{Index, IndexMut};
 
@@ -14,7 +15,7 @@ pub struct PageTableEntry(usize);
 
 impl PageTableEntry {
     pub fn new(ppn: PPN, flags: PageTableEntryFlags) -> Self {
-        Self(ppn.0 << 10 | flags.0 as usize)
+        Self(ppn.number() << 10 | flags.0 as usize)
     }
 
     pub fn ppn(&self) -> PPN {
@@ -30,7 +31,7 @@ pub struct PageTable(pub &'static mut [PageTableEntry; 512]);
 
 impl PageTable {
     pub fn from(address: PA) -> Self {
-        Self(unsafe { &mut *(address.0 as *mut [PageTableEntry; 512]) })
+        Self(unsafe { &mut *(address.number() as *mut [PageTableEntry; 512]) })
     }
 }
 

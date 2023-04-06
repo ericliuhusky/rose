@@ -5,6 +5,7 @@ extern crate alloc;
 mod address;
 mod page_table;
 
+pub use address::{Page, Address};
 use alloc::string::String;
 use page_table::PageTableEntryFlags;
 pub use address::{VPN, PPN, VA, PA};
@@ -88,7 +89,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
     pub fn map(&mut self, vpn: usize, identical: bool, user_accessible: bool) {
         let vpn = VPN::new(vpn);
         let ppn =if identical {
-            PPN::new(vpn.0)
+            PPN::new(vpn.number())
         } else {
             let frame = FrameAllocator::alloc();
             self.frames.push(frame);
@@ -110,15 +111,15 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
     }
 
     pub fn satp(&self) -> usize {
-        1 << 63 | self.root_ppn.0
+        1 << 63 | self.root_ppn.number()
     }
 }
 
 impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
     fn translate_addr(&self, start_va: VA, end_va: VA) -> Vec<(PA, PA)> {
-        let start_vpn = start_va.align_to_lower().page_number();
-        let end_vpn = end_va.align_to_upper().page_number();
-        (start_vpn.0..end_vpn.0)
+        let start_vpn = start_va.align_to_lower().page();
+        let end_vpn = end_va.align_to_upper().page();
+        (start_vpn.number()..end_vpn.number())
             .map(|vpn| {
                 self.translate(vpn)
             })
@@ -131,7 +132,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
                     start_pa = ppn.start_addr();
                 }
                 let end_pa;
-                if i == end_vpn.0 - start_vpn.0 - 1 {
+                if i == end_vpn.number() - start_vpn.number() - 1 {
                     end_pa = ppn.start_addr().offset(end_va.page_offset());
                 } else {
                     end_pa = ppn.end_addr();
@@ -148,7 +149,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
             .iter()
             .map(|(start_pa, end_pa)| {
                 unsafe {
-                    core::slice::from_raw_parts_mut(start_pa.0 as *mut u8, end_pa.0 - start_pa.0)
+                    core::slice::from_raw_parts_mut(start_pa.number() as *mut u8, end_pa.number() - start_pa.number())
                 }
             })
             .collect()
@@ -156,9 +157,9 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
 
     pub fn translate_one_addr(&self, va: usize) -> usize {
         let va = VA::new(va);
-        let vpn = va.align_to_lower().page_number().0;
+        let vpn = va.align_to_lower().page().number();
         let ppn = self.translate(vpn);
-        ppn.start_addr().offset(va.page_offset()).0
+        ppn.start_addr().offset(va.page_offset()).number()
     }
 
     pub fn translate_type<T>(&self, va: usize) -> &'static mut T {
@@ -170,7 +171,7 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
         assert!(pa_ranges.len() == 1);
         let start_pa = pa_ranges[0].0;
         unsafe {
-            &mut *(start_pa.0 as *mut T)
+            &mut *(start_pa.number() as *mut T)
         }
     }
 
