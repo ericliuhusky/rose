@@ -19,23 +19,28 @@ extern "C" {
     fn etrampoline();
 }
 
-use page_table::{SV39PageTable, HIGH_START_ADDR, Address, Page};
+use page_table::{Address, Page, SV39PageTable, HIGH_START_ADDR};
 use page_table::{VA, VPN};
 
-pub struct MemorySpace {
+trait Space {
+    fn new_bare() -> Self;
+
+    fn page_table(&mut self) -> &mut SV39PageTable<FrameAllocator>;
+
+    fn map(&mut self, segment: Segment) {
+        for vpn in segment.vpn_range() {
+            self.page_table()
+                .map(vpn, segment.identical, segment.user_accessible);
+        }
+    }
+}
+
+pub struct UserSpace {
     pub page_table: SV39PageTable<FrameAllocator>,
     segments: Vec<Segment>,
 }
 
-impl MemorySpace {
-    fn map(&mut self, segment: Segment) {
-        for vpn in segment.vpn_range() {
-            self.page_table
-                .map(vpn, segment.identical, segment.user_accessible);
-        }
-        self.segments.push(segment);
-    }
-
+impl Space for UserSpace {
     fn new_bare() -> Self {
         Self {
             page_table: SV39PageTable::<FrameAllocator>::new(),
@@ -43,33 +48,27 @@ impl MemorySpace {
         }
     }
 
-    pub fn new_kernel() -> Self {
-        let mut memory_space = Self::new_bare();
-
-        memory_space.map(Segment::new_identical(skernel as usize..ekernel as usize));
-        memory_space.map(Segment::new_identical(ekernel as usize..MEMORY_END));
-        memory_space.map(Segment::new_identical(0x100000..0x102000)); // MMIO VIRT_TEST/RTC  in virt machine
-        memory_space.map(Segment::new_identical(0x10001000..0x10002000)); // MMIO VIRT_TEST/RTC  in virt machine
-
-        // 内核栈
-        memory_space.map(Segment::new(KERNEL_STACK_START_ADDR..KERNEL_STACK_END_ADDR));
-        memory_space
+    fn page_table(&mut self) -> &mut SV39PageTable<FrameAllocator> {
+        &mut self.page_table
     }
+}
 
-    pub fn new_user(elf_data: &[u8]) -> (Self, usize) {
+impl UserSpace {
+    pub fn new(elf_data: &[u8]) -> (Self, usize) {
         let mut memory_space = Self::new_bare();
 
         // 将__trap_entry映射到用户地址空间，并使之与内核地址空间的地址相同
-        memory_space.map(Segment::new_identical(
-            strampoline as usize..etrampoline as usize,
-        ));
+        let trampoline = Segment::new_identical(strampoline as usize..etrampoline as usize);
+        memory_space.map(trampoline.clone());
+        memory_space.segments.push(trampoline);
 
         let elf = ElfFile::read(elf_data);
         let program_segments = elf.programs();
         for program_segment in &program_segments {
-            memory_space.map(Segment::new_user_accessible(
-                program_segment.start_va()..program_segment.end_va(),
-            ));
+            let program =
+                Segment::new_user_accessible(program_segment.start_va()..program_segment.end_va());
+            memory_space.map(program.clone());
+            memory_space.segments.push(program);
             memory_space.page_table.write(
                 program_segment.start_va(),
                 program_segment.memory_size(),
@@ -77,15 +76,15 @@ impl MemorySpace {
             );
         }
 
-        memory_space.map(Segment::new_user_accessible(
-            0xFFFFFFFFFFFCF000..0xFFFFFFFFFFFEF000,
-        ));
+        let stack = Segment::new_user_accessible(0xFFFFFFFFFFFCF000..0xFFFFFFFFFFFEF000);
+        memory_space.map(stack.clone());
+        memory_space.segments.push(stack);
 
         (memory_space, elf.entry_address())
     }
 }
 
-impl Clone for MemorySpace {
+impl Clone for UserSpace {
     fn clone(&self) -> Self {
         let mut memory_space = Self::new_bare();
         for segment in &self.segments {
@@ -104,8 +103,39 @@ impl Clone for MemorySpace {
     }
 }
 
+pub struct KernelSpace {
+    pub page_table: SV39PageTable<FrameAllocator>,
+}
+
+impl Space for KernelSpace {
+    fn new_bare() -> Self {
+        Self {
+            page_table: SV39PageTable::<FrameAllocator>::new(),
+        }
+    }
+
+    fn page_table(&mut self) -> &mut SV39PageTable<FrameAllocator> {
+        &mut self.page_table
+    }
+}
+
+impl KernelSpace {
+    pub fn new() -> Self {
+        let mut memory_space = Self::new_bare();
+
+        memory_space.map(Segment::new_identical(skernel as usize..ekernel as usize));
+        memory_space.map(Segment::new_identical(ekernel as usize..MEMORY_END));
+        memory_space.map(Segment::new_identical(0x100000..0x102000)); // MMIO VIRT_TEST/RTC  in virt machine
+        memory_space.map(Segment::new_identical(0x10001000..0x10002000)); // MMIO VIRT_TEST/RTC  in virt machine
+
+        // 内核栈
+        memory_space.map(Segment::new(KERNEL_STACK_START_ADDR..KERNEL_STACK_END_ADDR));
+        memory_space
+    }
+}
+
 lazy_static! {
-    pub static ref KERNEL_SPACE: MemorySpace = MemorySpace::new_kernel();
+    pub static ref KERNEL_SPACE: KernelSpace = KernelSpace::new();
 }
 
 #[derive(Clone)]

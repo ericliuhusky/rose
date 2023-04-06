@@ -2,7 +2,7 @@ use alloc::rc::Weak;
 use alloc::{rc::Rc, collections::BTreeMap};
 use alloc::vec;
 use alloc::vec::Vec;
-use crate::mm::memory_set::{MemorySpace, KERNEL_SPACE};
+use crate::mm::memory_set::{UserSpace, KERNEL_SPACE};
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
 use super::add_task;
@@ -12,7 +12,7 @@ use crate::fs::{File, Stdin, Stdout};
 pub struct Process {
     pub pid: Pid,
     pub is_exited: bool,
-    pub memory_set: MemorySpace,
+    pub memory_set: UserSpace,
     pub children: Vec<MutRc<Process>>,
     pub fd_table: Vec<Option<MutRc<dyn File>>>,
     pub tasks: BTreeMap<usize, MutRc<Task>>,
@@ -40,7 +40,7 @@ impl Process {
 
 impl Process {
     pub fn new(elf_data: &[u8]) -> MutRc<Self> {
-        let (memory_set, entry_address) = MemorySpace::new_user(elf_data);
+        let (memory_set, entry_address) = UserSpace::new(elf_data);
         let mut process = MutRc::new(Self{
             pid: pid_alloc(),
             is_exited: false,
@@ -66,7 +66,7 @@ impl Process {
     }
 
     pub fn exec(&mut self, elf_data: &[u8]) {
-        let (memory_set, entry_address) = MemorySpace::new_user(elf_data);
+        let (memory_set, entry_address) = UserSpace::new(elf_data);
         self.memory_set = memory_set;
 
         let mut task = self.main_task();
