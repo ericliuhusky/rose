@@ -7,6 +7,10 @@ use frame_allocator::FrameAllocator;
 use lazy_static::lazy_static;
 
 pub const MEMORY_END: usize = 0x88000000;
+pub const KERNEL_HEAP_SIZE: usize = 0x800000;
+pub const KERNEL_HEAP_START_ADDR: usize = KERNEL_HEAP_END_ADDR - KERNEL_HEAP_SIZE;
+pub const KERNEL_HEAP_END_ADDR: usize = MEMORY_END;
+pub const AVAILABLE_MEMORY_END: usize = KERNEL_HEAP_START_ADDR;
 
 pub const KERNEL_STACK_START_ADDR: usize = HIGH_START_ADDR;
 pub const KERNEL_STACK_END_ADDR: usize = KERNEL_STACK_START_ADDR + 0x2000;
@@ -124,12 +128,17 @@ impl KernelSpace {
         let mut memory_space = Self::new_bare();
 
         memory_space.map(Segment::new_identical(skernel as usize..ekernel as usize));
-        memory_space.map(Segment::new_identical(ekernel as usize..MEMORY_END));
+        memory_space.map(Segment::new_identical(
+            ekernel as usize..AVAILABLE_MEMORY_END,
+        ));
         memory_space.map(Segment::new_identical(0x100000..0x102000)); // MMIO VIRT_TEST/RTC  in virt machine
         memory_space.map(Segment::new_identical(0x10001000..0x10002000)); // MMIO VIRT_TEST/RTC  in virt machine
 
         // 内核栈
         memory_space.map(Segment::new(KERNEL_STACK_START_ADDR..KERNEL_STACK_END_ADDR));
+        memory_space.map(Segment::new_identical(
+            KERNEL_HEAP_START_ADDR..KERNEL_HEAP_END_ADDR,
+        ));
         memory_space
     }
 }
