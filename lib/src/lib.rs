@@ -11,11 +11,8 @@ fn _start() {
     extern "C" {
         fn main();
     }
-    static mut HEAP: [u8; 0x80000] = [0; 0x80000];
-    heap_allocator::init(
-        unsafe { &HEAP } as *const [u8] as *const u8 as usize,
-        0x80000,
-    );
+    // TODO: USER_HEAP_START_ADDR
+    heap_allocator::init(0xFFFFFFFFFFF7F000, 0x80000);
     unsafe { main(); }
     exit(0);
 }

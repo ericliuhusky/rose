@@ -18,6 +18,9 @@ pub const MEMORY_END: usize = 0x88000000;
 pub const USER_STACK_SIZE: usize = 0x2000;
 pub const USER_STACK_START_ADDR: usize = HIGH_START_ADDR;
 pub const USER_STACK_END_ADDR: usize = USER_STACK_START_ADDR + 10 * USER_STACK_SIZE;
+pub const USER_HEAP_SIZE: usize = 0x80000;
+pub const USER_HEAP_START_ADDR: usize = USER_HEAP_END_ADDR - USER_HEAP_SIZE;
+pub const USER_HEAP_END_ADDR: usize = HIGH_END_ADDR;
 
 extern "C" {
     fn skernel();
@@ -26,7 +29,7 @@ extern "C" {
     fn etrampoline();
 }
 
-use page_table::{Address, Page, SV39PageTable, HIGH_START_ADDR};
+use page_table::{Address, Page, SV39PageTable, HIGH_START_ADDR, HIGH_END_ADDR};
 use page_table::{VA, VPN};
 
 trait Space {
@@ -86,6 +89,10 @@ impl UserSpace {
         let stack = Segment::new_user_accessible(USER_STACK_START_ADDR..USER_STACK_END_ADDR);
         memory_space.map(stack.clone());
         memory_space.segments.push(stack);
+
+        let heap = Segment::new_user_accessible(USER_HEAP_START_ADDR..USER_HEAP_END_ADDR);
+        memory_space.map(heap.clone());
+        memory_space.segments.push(heap);
 
         (memory_space, elf.entry_address())
     }
