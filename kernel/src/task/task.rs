@@ -98,12 +98,12 @@ impl Process {
             tid_allocator: IDAllocator::new(),
         });
         self.children.push(process.clone());
-        let task = MutRc::new(Task::new(process.clone()));
+        let mut task = self.main_task().as_ref().clone();
+        // MARK: 确保下一个分配的tid是1，是0会覆盖主线程
+        process.alloc_tid();
+        task.process = process.downgrade();
+        let task = MutRc::new(task);
         process.tasks.insert(0, task.clone());
-
-        let old_task = self.main_task();
-        let mut new_task = process.main_task();
-        new_task.cx = old_task.cx.clone();
 
         add_task(task);
         process
@@ -130,5 +130,17 @@ impl Task {
 
     pub fn user_stack_top(&self) -> usize {
         0xFFFFFFFFFFFCF000 + (self.tid + 1) * 0x2000
+    }
+}
+
+impl Clone for Task {
+    fn clone(&self) -> Self {
+        let process = self.process.upgrade().unwrap().downgrade();
+        Self {
+            process,
+            is_exited: self.is_exited,
+            tid: self.tid,
+            cx: self.cx.clone(),
+        }
     }
 }
