@@ -2,7 +2,7 @@ use alloc::rc::Weak;
 use alloc::{rc::Rc, collections::BTreeMap};
 use alloc::vec;
 use alloc::vec::Vec;
-use crate::mm::memory_set::{UserSpace, KERNEL_SPACE};
+use crate::mm::memory_set::{UserSpace, KERNEL_SPACE, USER_STACK_START_ADDR, USER_STACK_SIZE};
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
 use super::add_task;
@@ -129,7 +129,7 @@ impl Task {
     }
 
     pub fn user_stack_top(&self) -> usize {
-        0xFFFFFFFFFFFCF000 + (self.tid + 1) * 0x2000
+        USER_STACK_START_ADDR + (self.tid + 1) * USER_STACK_SIZE
     }
 }
 

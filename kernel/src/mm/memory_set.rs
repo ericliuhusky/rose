@@ -15,6 +15,9 @@ pub const KERNEL_HEAP_SIZE: usize = 0x800000;
 pub const KERNEL_HEAP_START_ADDR: usize = KERNEL_HEAP_END_ADDR - KERNEL_HEAP_SIZE;
 pub const KERNEL_HEAP_END_ADDR: usize = MEMORY_END;
 pub const MEMORY_END: usize = 0x88000000;
+pub const USER_STACK_SIZE: usize = 0x2000;
+pub const USER_STACK_START_ADDR: usize = HIGH_START_ADDR;
+pub const USER_STACK_END_ADDR: usize = USER_STACK_START_ADDR + 10 * USER_STACK_SIZE;
 
 extern "C" {
     fn skernel();
@@ -80,7 +83,7 @@ impl UserSpace {
             );
         }
 
-        let stack = Segment::new_user_accessible(0xFFFFFFFFFFFCF000..0xFFFFFFFFFFFEF000);
+        let stack = Segment::new_user_accessible(USER_STACK_START_ADDR..USER_STACK_END_ADDR);
         memory_space.map(stack.clone());
         memory_space.segments.push(stack);
 
