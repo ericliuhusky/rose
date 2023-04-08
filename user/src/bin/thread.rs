@@ -10,7 +10,7 @@ use lib::{exit, thread_create, waittid, sleep};
 
 pub fn thread_a() -> ! {
     for i in 0..3 {
-        sleep(1);
+        sleep(10);
         println!("A {}", i);
     }
     exit(1)
@@ -18,7 +18,7 @@ pub fn thread_a() -> ! {
 
 pub fn thread_b() -> ! {
     for i in 0..3 {
-        sleep(1);
+        sleep(10);
         println!("B {}", i);
     }
     exit(2)
@@ -26,7 +26,7 @@ pub fn thread_b() -> ! {
 
 pub fn thread_c() -> ! {
     for i in 0..3 {
-        sleep(1);
+        sleep(10);
         println!("C {}", i);
     }
     exit(3)
