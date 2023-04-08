@@ -58,6 +58,15 @@ impl SysFunc for SysFuncImpl {
     fn waittid(tid: usize) -> isize {
         waittid(tid)
     }
+    fn mutex_create() -> isize {
+        mutex_create()
+    }
+    fn mutex_lock(mutex_id: usize) -> isize {
+        mutex_lock(mutex_id)
+    }
+    fn mutex_unlock(mutex_id: usize) -> isize {
+        mutex_unlock(mutex_id)
+    }
 }
 
 mod 系统调用_输出 {
@@ -204,6 +213,7 @@ mod 系统调用_进程 {
 }
 
 use crate::fs::open_file;
+use crate::mutex::Mutex;
 use mutrc::MutRc;
 use crate::task::{current_task, current_process, add_task};
 use crate::task::{task::Task, TaskManager};
@@ -288,4 +298,26 @@ pub fn waittid(tid: usize) -> isize {
     } else {
         -1
     }
+}
+
+fn mutex_create() -> isize {
+    let mut process = current_process();
+    let id = process.mutex_id_allocator.alloc();
+    let mutex = MutRc::new(Mutex::new(id));
+    process.mutexs.insert(id, mutex);
+    id as isize
+}
+
+fn mutex_lock(mutex_id: usize) -> isize {
+    let process = current_process();
+    let mut mutex = process.mutexs.get(&mutex_id).unwrap().clone();
+    mutex.lock();
+    0
+}
+
+fn mutex_unlock(mutex_id: usize) -> isize {
+    let process = current_process();
+    let mut mutex = process.mutexs.get(&mutex_id).unwrap().clone();
+    mutex.unlock();
+    0
 }

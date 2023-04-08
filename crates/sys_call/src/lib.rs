@@ -80,3 +80,15 @@ pub fn thread_create(entry: usize, arg: usize) -> isize {
 pub fn waittid(tid: usize) -> isize {
     sys_call(SYS_WAITTID, [tid, 0, 0])
 }
+
+pub fn mutex_create() -> isize {
+    sys_call(SYS_MUTEX_CREATE, [0, 0, 0])
+}
+
+pub fn mutex_lock(mutex_id: usize) -> isize {
+    sys_call(SYS_MUTEX_LOCK, [mutex_id, 0, 0])
+}
+
+pub fn mutex_unlock(mutex_id: usize) -> isize {
+    sys_call(SYS_MUTEX_UNLOCK, [mutex_id, 0, 0])
+}

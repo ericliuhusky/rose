@@ -16,3 +16,6 @@ pub const SYS_CLOSE: usize = 12;
 pub const SYS_PIPE: usize = 13;
 pub const SYS_THREAD_CREATE: usize = 14;
 pub const SYS_WAITTID: usize = 15;
+pub const SYS_MUTEX_CREATE: usize = 16;
+pub const SYS_MUTEX_LOCK: usize = 17;
+pub const SYS_MUTEX_UNLOCK: usize = 18;

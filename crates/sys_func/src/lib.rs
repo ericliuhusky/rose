@@ -24,6 +24,9 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isi
         SYS_PIPE => Ok(SysFuncImpl::pipe(args[0] as *mut usize)),
         SYS_THREAD_CREATE => Ok(SysFuncImpl::thread_create(args[0], args[1])),
         SYS_WAITTID => Ok(SysFuncImpl::waittid(args[0])),
+        SYS_MUTEX_CREATE => Ok(SysFuncImpl::mutex_create()),
+        SYS_MUTEX_LOCK => Ok(SysFuncImpl::mutex_lock(args[0])),
+        SYS_MUTEX_UNLOCK => Ok(SysFuncImpl::mutex_unlock(args[0])),
         _ => Err(id),
     }
 }
@@ -75,6 +78,15 @@ pub trait SysFunc {
         panic!()
     }
     fn waittid(tid: usize) -> isize {
+        panic!()
+    }
+    fn mutex_create() -> isize {
+        panic!()
+    }
+    fn mutex_lock(mutex_id: usize) -> isize {
+        panic!()
+    }
+    fn mutex_unlock(mutex_id: usize) -> isize {
         panic!()
     }
 }

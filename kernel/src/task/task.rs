@@ -3,6 +3,7 @@ use alloc::{rc::Rc, collections::BTreeMap};
 use alloc::vec;
 use alloc::vec::Vec;
 use crate::mm::memory_set::{UserSpace, KERNEL_SPACE, USER_STACK_START_ADDR, USER_STACK_SIZE};
+use crate::mutex::Mutex;
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
 use super::add_task;
@@ -17,6 +18,8 @@ pub struct Process {
     pub fd_table: Vec<Option<MutRc<dyn File>>>,
     pub tasks: BTreeMap<usize, MutRc<Task>>,
     pub tid_allocator: IDAllocator,
+    pub mutexs: BTreeMap<usize, MutRc<Mutex>>,
+    pub mutex_id_allocator: IDAllocator,
 }
 
 impl Process {
@@ -53,6 +56,8 @@ impl Process {
             ],
             tasks: BTreeMap::new(),
             tid_allocator: IDAllocator::new(),
+            mutexs: BTreeMap::new(),
+            mutex_id_allocator: IDAllocator::new(),
         });
         let mut task = MutRc::new(Task::new(process.clone()));
         let user_stack_top = task.user_stack_top();
@@ -96,6 +101,8 @@ impl Process {
             fd_table: new_fd_table,
             tasks: BTreeMap::new(),
             tid_allocator: IDAllocator::new(),
+            mutexs: BTreeMap::new(),
+            mutex_id_allocator: IDAllocator::new(),
         });
         self.children.push(process.clone());
         let mut task = self.main_task().as_ref().clone();
