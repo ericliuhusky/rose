@@ -48,6 +48,11 @@ impl TaskManager {
         self.run_next();
     }
 
+    fn block_and_run_next(&mut self) {
+        self.current.take().unwrap();
+        self.run_next();
+    }
+
     fn run_next(&mut self) {
         let next = self.ready_queue.remove(0);        
         self.current = Some(next);
@@ -97,6 +102,16 @@ pub fn exit_and_run_next(exit_code: i32) {
     unsafe {
         TASK_MANAGER.exit_and_run_next(exit_code);
     }
+}
+
+pub fn block_and_run_next() {
+    unsafe {
+        TASK_MANAGER.block_and_run_next();
+    }
+}
+
+pub fn wakeup_task(task: MutRc<Task>) {
+    add_task(task);
 }
 
 // TODO: 必须持有根进程才不会被释放
