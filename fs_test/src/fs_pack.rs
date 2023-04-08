@@ -9,12 +9,12 @@ use std::{
 SuperBlock          1
 InodeBitmapBlock    1
 InodeAreaBlock      64
-DataBitmapBlock     8
-DataAreaBlock       8 * 4096
+DataBitmapBlock     16
+DataAreaBlock       16 * 4096
 */
 pub const INODE_BITMAP_BLOCK_NUM: u32 = 1;
 pub const INODE_AREA_BLOCK_NUM: u32 = 64;
-pub const DATA_BITMAP_BLOCK_NUM: u32 = 8;
+pub const DATA_BITMAP_BLOCK_NUM: u32 = 16;
 pub const DATA_AREA_BLOCK_NUM: u32 = DATA_BITMAP_BLOCK_NUM * 4096;
 pub const TOTAL_BLOCK_NUM: u32 = 1 + INODE_BITMAP_BLOCK_NUM + INODE_AREA_BLOCK_NUM + DATA_BITMAP_BLOCK_NUM + DATA_AREA_BLOCK_NUM;
 
