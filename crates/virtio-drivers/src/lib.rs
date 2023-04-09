@@ -8,14 +8,12 @@
 extern crate alloc;
 
 mod blk;
-mod console;
 mod hal;
 mod header;
 mod net;
 mod queue;
 
 pub use self::blk::{BlkResp, RespStatus, VirtIOBlk};
-pub use self::console::VirtIOConsole;
 pub use self::hal::{Hal, PhysAddr, VirtAddr};
 pub use self::header::*;
 pub use self::net::VirtIONet;
