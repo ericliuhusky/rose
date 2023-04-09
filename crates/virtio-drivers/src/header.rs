@@ -9,17 +9,17 @@ const MAGIC_VALUE: u32 = 0x7472_6976;
 /// Ref: 4.2.4 Legacy interface
 #[repr(C)]
 pub struct VirtIOHeader {
-    _magic: ReadOnly<u32>,
-    _version: ReadOnly<u32>,
-    _device_id: ReadOnly<u32>,
-    _vendor_id: ReadOnly<u32>,
+    _magic: u32,
+    _version: u32,
+    _device_id: u32,
+    _vendor_id: u32,
     device_features: ReadOnly<u32>,
 
     /// Device (host) features word selection
     device_features_sel: WriteOnly<u32>,
 
     /// Reserved
-    __r1: [ReadOnly<u32>; 2],
+    __r1: [u32; 2],
 
     /// Flags representing device features understood and activated by the driver
     driver_features: WriteOnly<u32>,
@@ -36,7 +36,7 @@ pub struct VirtIOHeader {
     guest_page_size: WriteOnly<u32>,
 
     /// Reserved
-    __r2: ReadOnly<u32>,
+    __r2: u32,
 
     /// Virtual queue index
     ///
@@ -81,16 +81,16 @@ pub struct VirtIOHeader {
     /// selected by writing to QueueSel.
     queue_pfn: Volatile<u32>,
 
-    _queue_ready: Volatile<u32>,
+    _queue_ready: u32,
 
     /// Reserved
-    __r3: [ReadOnly<u32>; 2],
+    __r3: [u32; 2],
 
     /// Queue notifier
     queue_notify: WriteOnly<u32>,
 
     /// Reserved
-    __r4: [ReadOnly<u32>; 3],
+    __r4: [u32; 3],
 
     /// Interrupt status
     interrupt_status: ReadOnly<u32>,
@@ -99,7 +99,7 @@ pub struct VirtIOHeader {
     interrupt_ack: WriteOnly<u32>,
 
     /// Reserved
-    __r5: [ReadOnly<u32>; 2],
+    __r5: [u32; 2],
 
     /// Device status
     ///
@@ -111,27 +111,27 @@ pub struct VirtIOHeader {
     status: Volatile<u32>,
 
     /// Reserved
-    __r6: [ReadOnly<u32>; 3],
+    __r6: [u32; 3],
 
     _queue_desc_low: WriteOnly<u32>,
     _queue_desc_high: WriteOnly<u32>,
 
     /// Reserved
-    __r7: [ReadOnly<u32>; 2],
+    __r7: [u32; 2],
 
-    _queue_avail_low: WriteOnly<u32>,
-    _queue_avail_high: WriteOnly<u32>,
-
-    /// Reserved
-    __r8: [ReadOnly<u32>; 2],
-
-    _queue_used_low: WriteOnly<u32>,
-    _queue_used_high: WriteOnly<u32>,
+    _queue_avail_low: u32,
+    _queue_avail_high: u32,
 
     /// Reserved
-    __r9: [ReadOnly<u32>; 21],
+    __r8: [u32; 2],
 
-    _config_generation: ReadOnly<u32>,
+    _queue_used_low: u32,
+    _queue_used_high: u32,
+
+    /// Reserved
+    __r9: [u32; 21],
+
+    _config_generation: u32,
 }
 
 impl VirtIOHeader {
