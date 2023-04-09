@@ -108,7 +108,7 @@ pub struct VirtIOHeader {
     /// indicating the OS/driver progress. Writing zero (0x0) to this register
     /// triggers a device reset. The device sets QueuePFN to zero (0x0) for
     /// all queues in the device. Also see 3.1 Device Initialization.
-    status: Volatile<u32>,
+    status: u32,
 
     /// Reserved
     __r6: [u32; 3],
@@ -147,7 +147,7 @@ impl VirtIOHeader {
 
     /// Finish initializing the device.
     pub fn finish_init(&mut self) {
-        self.status.write(DRIVER_OK);
+        self.status = DRIVER_OK;
     }
 
     /// Read device features.
