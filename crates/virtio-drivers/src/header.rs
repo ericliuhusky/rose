@@ -9,21 +9,10 @@ const MAGIC_VALUE: u32 = 0x7472_6976;
 /// Ref: 4.2.4 Legacy interface
 #[repr(C)]
 pub struct VirtIOHeader {
-    /// Magic value
-    magic: ReadOnly<u32>,
-
-    /// Device version number
-    ///
-    /// Legacy device returns value 0x1.
-    version: ReadOnly<u32>,
-
-    /// Virtio Subsystem Device ID
-    device_id: ReadOnly<u32>,
-
-    /// Virtio Subsystem Vendor ID
-    vendor_id: ReadOnly<u32>,
-
-    /// Flags representing features the device supports
+    _magic: ReadOnly<u32>,
+    _version: ReadOnly<u32>,
+    _device_id: ReadOnly<u32>,
+    _vendor_id: ReadOnly<u32>,
     device_features: ReadOnly<u32>,
 
     /// Device (host) features word selection
@@ -92,8 +81,7 @@ pub struct VirtIOHeader {
     /// selected by writing to QueueSel.
     queue_pfn: Volatile<u32>,
 
-    /// new interface only
-    queue_ready: Volatile<u32>,
+    _queue_ready: Volatile<u32>,
 
     /// Reserved
     __r3: [ReadOnly<u32>; 2],
@@ -125,47 +113,28 @@ pub struct VirtIOHeader {
     /// Reserved
     __r6: [ReadOnly<u32>; 3],
 
-    // new interface only since here
-    queue_desc_low: WriteOnly<u32>,
-    queue_desc_high: WriteOnly<u32>,
+    _queue_desc_low: WriteOnly<u32>,
+    _queue_desc_high: WriteOnly<u32>,
 
     /// Reserved
     __r7: [ReadOnly<u32>; 2],
 
-    queue_avail_low: WriteOnly<u32>,
-    queue_avail_high: WriteOnly<u32>,
+    _queue_avail_low: WriteOnly<u32>,
+    _queue_avail_high: WriteOnly<u32>,
 
     /// Reserved
     __r8: [ReadOnly<u32>; 2],
 
-    queue_used_low: WriteOnly<u32>,
-    queue_used_high: WriteOnly<u32>,
+    _queue_used_low: WriteOnly<u32>,
+    _queue_used_high: WriteOnly<u32>,
 
     /// Reserved
     __r9: [ReadOnly<u32>; 21],
 
-    config_generation: ReadOnly<u32>,
+    _config_generation: ReadOnly<u32>,
 }
 
 impl VirtIOHeader {
-    /// Verify a valid header.
-    pub fn verify(&self) -> bool {
-        self.magic.read() == MAGIC_VALUE && self.version.read() == 1 && self.device_id.read() != 0
-    }
-
-    /// Get the device type.
-    pub fn device_type(&self) -> DeviceType {
-        match self.device_id.read() {
-            x @ 1..=13 | x @ 16..=24 => unsafe { core::mem::transmute(x as u8) },
-            _ => DeviceType::Invalid,
-        }
-    }
-
-    /// Get the vendor ID.
-    pub fn vendor_id(&self) -> u32 {
-        self.vendor_id.read()
-    }
-
     /// Begin initializing the device.
     ///
     /// Ref: virtio 3.1.1 Device Initialization
@@ -278,33 +247,3 @@ bitflags! {
 }
 
 const CONFIG_SPACE_OFFSET: usize = 0x100;
-
-/// Types of virtio devices.
-#[repr(u8)]
-#[derive(Debug, Eq, PartialEq)]
-#[allow(missing_docs)]
-pub enum DeviceType {
-    Invalid = 0,
-    Network = 1,
-    Block = 2,
-    Console = 3,
-    EntropySource = 4,
-    MemoryBallooning = 5,
-    IoMemory = 6,
-    Rpmsg = 7,
-    ScsiHost = 8,
-    _9P = 9,
-    Mac80211 = 10,
-    RprocSerial = 11,
-    VirtioCAIF = 12,
-    MemoryBalloon = 13,
-    GPU = 16,
-    Timer = 17,
-    Input = 18,
-    Socket = 19,
-    Crypto = 20,
-    SignalDistributionModule = 21,
-    Pstore = 22,
-    IOMMU = 23,
-    Memory = 24,
-}

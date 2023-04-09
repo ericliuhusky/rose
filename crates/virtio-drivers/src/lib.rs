@@ -1,9 +1,4 @@
-//! VirtIO guest drivers.
-
 #![no_std]
-#![deny(unused_must_use, missing_docs)]
-#![allow(clippy::identity_op)]
-#![allow(dead_code)]
 
 extern crate alloc;
 
