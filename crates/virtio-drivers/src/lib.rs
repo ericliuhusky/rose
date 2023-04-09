@@ -11,7 +11,6 @@ mod blk;
 mod console;
 mod hal;
 mod header;
-mod input;
 mod net;
 mod queue;
 
@@ -19,7 +18,6 @@ pub use self::blk::{BlkResp, RespStatus, VirtIOBlk};
 pub use self::console::VirtIOConsole;
 pub use self::hal::{Hal, PhysAddr, VirtAddr};
 pub use self::header::*;
-pub use self::input::{InputConfigSelect, InputEvent, VirtIOInput};
 pub use self::net::VirtIONet;
 use self::queue::VirtQueue;
 use core::mem::size_of;
