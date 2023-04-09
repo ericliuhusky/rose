@@ -108,7 +108,7 @@ pub struct VirtIOHeader {
     /// indicating the OS/driver progress. Writing zero (0x0) to this register
     /// triggers a device reset. The device sets QueuePFN to zero (0x0) for
     /// all queues in the device. Also see 3.1 Device Initialization.
-    status: Volatile<DeviceStatus>,
+    status: Volatile<u32>,
 
     /// Reserved
     __r6: [ReadOnly<u32>; 3],
@@ -139,19 +139,15 @@ impl VirtIOHeader {
     ///
     /// Ref: virtio 3.1.1 Device Initialization
     pub fn begin_init(&mut self, negotiate_features: impl FnOnce(u64) -> u64) {
-        self.status.write(DeviceStatus::ACKNOWLEDGE);
-        self.status.write(DeviceStatus::DRIVER);
-
         let features = self.read_device_features();
         self.write_driver_features(negotiate_features(features));
-        self.status.write(DeviceStatus::FEATURES_OK);
 
         self.guest_page_size.write(PAGE_SIZE as u32);
     }
 
     /// Finish initializing the device.
     pub fn finish_init(&mut self) {
-        self.status.write(DeviceStatus::DRIVER_OK);
+        self.status.write(DRIVER_OK);
     }
 
     /// Read device features.
@@ -217,33 +213,6 @@ impl VirtIOHeader {
     }
 }
 
-bitflags! {
-    /// The device status field.
-    struct DeviceStatus: u32 {
-        /// Indicates that the guest OS has found the device and recognized it
-        /// as a valid virtio device.
-        const ACKNOWLEDGE = 1;
-
-        /// Indicates that the guest OS knows how to drive the device.
-        const DRIVER = 2;
-
-        /// Indicates that something went wrong in the guest, and it has given
-        /// up on the device. This could be an internal error, or the driver
-        /// didn’t like the device for some reason, or even a fatal error
-        /// during device operation.
-        const FAILED = 128;
-
-        /// Indicates that the driver has acknowledged all the features it
-        /// understands, and feature negotiation is complete.
-        const FEATURES_OK = 8;
-
-        /// Indicates that the driver is set up and ready to drive the device.
-        const DRIVER_OK = 4;
-
-        /// Indicates that the device has experienced an error from which it
-        /// can’t recover.
-        const DEVICE_NEEDS_RESET = 64;
-    }
-}
+const DRIVER_OK: u32 = 4;
 
 const CONFIG_SPACE_OFFSET: usize = 0x100;
