@@ -14,7 +14,7 @@ lazy_static! {
 }
 
 #[allow(unused)]
-const VIRTIO0: usize = 0x10001000;
+const VIRTIO0: usize = 0x10008000;
 
 pub struct VirtIOBlock(RefCell<VirtIOBlk<'static, VirtioHal>>);
 
