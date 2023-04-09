@@ -1,6 +1,3 @@
-#[cfg(test)]
-pub mod fake;
-
 use super::*;
 use core::marker::PhantomData;
 
