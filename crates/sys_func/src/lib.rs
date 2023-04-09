@@ -27,6 +27,9 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isi
         SYS_MUTEX_CREATE => Ok(SysFuncImpl::mutex_create()),
         SYS_MUTEX_LOCK => Ok(SysFuncImpl::mutex_lock(args[0])),
         SYS_MUTEX_UNLOCK => Ok(SysFuncImpl::mutex_unlock(args[0])),
+        SYS_SEMAPHORE_CREATE => Ok(SysFuncImpl::semaphore_create(args[0])),
+        SYS_SEMAPHORE_DOWN => Ok(SysFuncImpl::semaphore_down(args[0])),
+        SYS_SEMAPHORE_UP => Ok(SysFuncImpl::semaphore_up(args[0])),
         _ => Err(id),
     }
 }
@@ -87,6 +90,15 @@ pub trait SysFunc {
         panic!()
     }
     fn mutex_unlock(mutex_id: usize) -> isize {
+        panic!()
+    }
+    fn semaphore_create(res_count: usize) -> isize {
+        panic!()
+    }
+    fn semaphore_down(sem_id: usize) -> isize {
+        panic!()
+    }
+    fn semaphore_up(sem_id: usize) -> isize {
         panic!()
     }
 }

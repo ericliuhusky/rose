@@ -67,6 +67,15 @@ impl SysFunc for SysFuncImpl {
     fn mutex_unlock(mutex_id: usize) -> isize {
         mutex_unlock(mutex_id)
     }
+    fn semaphore_create(res_count: usize) -> isize {
+        semaphore_create(res_count)
+    }
+    fn semaphore_down(sem_id: usize) -> isize {
+        semaphore_down(sem_id)
+    }
+    fn semaphore_up(sem_id: usize) -> isize {
+        semaphore_up(sem_id)
+    }
 }
 
 mod 系统调用_输出 {
@@ -214,6 +223,7 @@ mod 系统调用_进程 {
 
 use crate::fs::open_file;
 use crate::mutex::Mutex;
+use crate::semaphore::Semaphore;
 use mutrc::MutRc;
 use crate::task::{current_task, current_process, add_task};
 use crate::task::{task::Task, TaskManager};
@@ -319,5 +329,27 @@ fn mutex_unlock(mutex_id: usize) -> isize {
     let process = current_process();
     let mut mutex = process.mutexs.get(&mutex_id).unwrap().clone();
     mutex.unlock();
+    0
+}
+
+fn semaphore_create(res_count: usize) -> isize {
+    let mut process = current_process();
+    let id = process.semaphore_id_allocator.alloc();
+    let semaphore = MutRc::new(Semaphore::new(id, res_count));
+    process.semaphores.insert(id, semaphore);
+    id as isize
+}
+
+fn semaphore_down(sem_id: usize) -> isize {
+    let process = current_process();
+    let mut semaphore = process.semaphores.get(&sem_id).unwrap().clone();
+    semaphore.down();
+    0
+}
+
+fn semaphore_up(sem_id: usize) -> isize {
+    let process = current_process();
+    let mut semaphore = process.semaphores.get(&sem_id).unwrap().clone();
+    semaphore.up();
     0
 }

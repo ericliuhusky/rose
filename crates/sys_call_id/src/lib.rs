@@ -19,3 +19,6 @@ pub const SYS_WAITTID: usize = 15;
 pub const SYS_MUTEX_CREATE: usize = 16;
 pub const SYS_MUTEX_LOCK: usize = 17;
 pub const SYS_MUTEX_UNLOCK: usize = 18;
+pub const SYS_SEMAPHORE_CREATE: usize = 19;
+pub const SYS_SEMAPHORE_DOWN: usize = 20;
+pub const SYS_SEMAPHORE_UP: usize = 21;

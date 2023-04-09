@@ -2,7 +2,7 @@
 #![feature(alloc_error_handler)]
 
 use print::{println, print};
-pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create, mutex_create, mutex_lock, mutex_unlock};
+pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create, mutex_create, mutex_lock, mutex_unlock, semaphore_create, semaphore_down, semaphore_up};
 extern crate panic;
 
 #[no_mangle]

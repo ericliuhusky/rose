@@ -92,3 +92,15 @@ pub fn mutex_lock(mutex_id: usize) -> isize {
 pub fn mutex_unlock(mutex_id: usize) -> isize {
     sys_call(SYS_MUTEX_UNLOCK, [mutex_id, 0, 0])
 }
+
+pub fn semaphore_create(res_count: usize) -> isize {
+    sys_call(SYS_SEMAPHORE_CREATE, [res_count, 0, 0])
+}
+
+pub fn semaphore_down(sem_id: usize) -> isize {
+    sys_call(SYS_SEMAPHORE_DOWN, [sem_id, 0, 0])
+}
+
+pub fn semaphore_up(sem_id: usize) -> isize {
+    sys_call(SYS_SEMAPHORE_UP, [sem_id, 0, 0])
+}
