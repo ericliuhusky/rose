@@ -9,7 +9,6 @@ extern crate alloc;
 
 mod blk;
 mod console;
-mod gpu;
 mod hal;
 mod header;
 mod input;
@@ -18,7 +17,6 @@ mod queue;
 
 pub use self::blk::{BlkResp, RespStatus, VirtIOBlk};
 pub use self::console::VirtIOConsole;
-pub use self::gpu::VirtIOGpu;
 pub use self::hal::{Hal, PhysAddr, VirtAddr};
 pub use self::header::*;
 pub use self::input::{InputConfigSelect, InputEvent, VirtIOInput};
