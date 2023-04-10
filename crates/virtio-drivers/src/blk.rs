@@ -30,11 +30,6 @@ impl<H: Hal> VirtIOBlk<'_, H> {
         })
     }
 
-    /// Acknowledge interrupt.
-    pub fn ack_interrupt(&mut self) -> bool {
-        self.header.ack_interrupt()
-    }
-
     /// Read a block.
     pub fn read_block(&mut self, block_id: usize, buf: &mut [u8]) -> Result {
         assert_eq!(buf.len(), BLK_SIZE);
@@ -75,19 +70,6 @@ impl<H: Hal> VirtIOBlk<'_, H> {
             RespStatus::Ok => Ok(()),
             _ => Err(Error::IoError),
         }
-    }
-
-    /// During an interrupt, it fetches a token of a completed request from the used
-    /// ring and return it. If all completed requests have already been fetched, return
-    /// Err(Error::NotReady).
-    pub fn pop_used(&mut self) -> Result<u16> {
-        self.queue.pop_used().map(|p| p.0)
-    }
-
-    /// Return size of its VirtQueue.
-    /// It can be used to tell the caller how many channels he should monitor on.
-    pub fn virt_queue_size(&self) -> u16 {
-        self.queue.size()
     }
 }
 
