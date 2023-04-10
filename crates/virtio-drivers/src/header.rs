@@ -2,8 +2,6 @@ use crate::PAGE_SIZE;
 use bitflags::*;
 use volatile::{ReadOnly, Volatile, WriteOnly};
 
-const MAGIC_VALUE: u32 = 0x7472_6976;
-
 /// MMIO Device Legacy Register Interface.
 ///
 /// Ref: 4.2.4 Legacy interface
