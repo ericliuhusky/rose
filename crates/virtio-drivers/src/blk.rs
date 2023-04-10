@@ -4,7 +4,6 @@ use crate::queue::VirtQueue;
 use bitflags::*;
 use core::hint::spin_loop;
 use log::*;
-use volatile::Volatile;
 
 /// The virtio block device is a simple virtual block device (ie. disk).
 ///
@@ -29,7 +28,7 @@ impl<H: Hal> VirtIOBlk<'_, H> {
         info!("config: {:?}", config);
         info!(
             "found a block device of size {}KB",
-            config.capacity.read() / 2
+            config.capacity / 2
         );
 
         let queue = VirtQueue::new(header, 0, 16)?;
@@ -38,7 +37,7 @@ impl<H: Hal> VirtIOBlk<'_, H> {
         Ok(VirtIOBlk {
             header,
             queue,
-            capacity: config.capacity.read() as usize,
+            capacity: config.capacity as usize,
         })
     }
 
@@ -186,17 +185,17 @@ impl<H: Hal> VirtIOBlk<'_, H> {
 #[derive(Debug)]
 struct BlkConfig {
     /// Number of 512 Bytes sectors
-    capacity: Volatile<u64>,
-    size_max: Volatile<u32>,
-    seg_max: Volatile<u32>,
-    cylinders: Volatile<u16>,
-    heads: Volatile<u8>,
-    sectors: Volatile<u8>,
-    blk_size: Volatile<u32>,
-    physical_block_exp: Volatile<u8>,
-    alignment_offset: Volatile<u8>,
-    min_io_size: Volatile<u16>,
-    opt_io_size: Volatile<u32>,
+    capacity: u64,
+    _size_max: u32,
+    _seg_max: u32,
+    _cylinders: u16,
+    _heads: u8,
+    _sectors: u8,
+    _blk_size: u32,
+    _physical_block_exp: u8,
+    _alignment_offset: u8,
+    _min_io_size: u16,
+    _opt_io_size: u32,
     // ... ignored
 }
 
