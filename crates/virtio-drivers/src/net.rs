@@ -4,7 +4,6 @@ use super::*;
 use bitflags::*;
 use core::hint::spin_loop;
 use log::*;
-use volatile::{ReadOnly, Volatile};
 
 /// The virtio network device is a virtual ethernet card.
 ///
@@ -31,8 +30,8 @@ impl<H: Hal> VirtIONet<'_, H> {
         });
         // read configuration space
         let config = unsafe { &mut *(header.config_space() as *mut Config) };
-        let mac = config.mac.read();
-        debug!("Got MAC={:?}, status={:?}", mac, config.status.read());
+        let mac = config.mac;
+        debug!("Got MAC={:?}, status={:?}", mac, config.status);
 
         let queue_num = 2; // for simplicity
         let recv_queue = VirtQueue::new(header, QUEUE_RECEIVE, queue_num)?;
@@ -174,8 +173,8 @@ bitflags! {
 #[repr(C)]
 #[derive(Debug)]
 struct Config {
-    mac: ReadOnly<EthernetAddress>,
-    status: ReadOnly<Status>,
+    mac: EthernetAddress,
+    status: Status,
 }
 
 type EthernetAddress = [u8; 6];
@@ -184,12 +183,12 @@ type EthernetAddress = [u8; 6];
 #[repr(C)]
 #[derive(Debug)]
 struct Header {
-    flags: Volatile<Flags>,
-    gso_type: Volatile<GsoType>,
-    hdr_len: Volatile<u16>, // cannot rely on this
-    gso_size: Volatile<u16>,
-    csum_start: Volatile<u16>,
-    csum_offset: Volatile<u16>,
+    flags: Flags,
+    gso_type: GsoType,
+    hdr_len: u16, // cannot rely on this
+    gso_size: u16,
+    csum_start: u16,
+    csum_offset: u16,
     // payload starts from here
 }
 
