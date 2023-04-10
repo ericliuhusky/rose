@@ -31,7 +31,7 @@ pub struct VirtIOHeader {
     /// initialization, before any queues are used. This value should be a
     /// power of 2 and is used by the device to calculate the Guest address
     /// of the first queue page (see QueuePFN).
-    guest_page_size: WriteOnly<u32>,
+    guest_page_size: u32,
 
     /// Reserved
     __r2: u32,
@@ -91,10 +91,10 @@ pub struct VirtIOHeader {
     __r4: [u32; 3],
 
     /// Interrupt status
-    interrupt_status: ReadOnly<u32>,
+    interrupt_status: u32,
 
     /// Interrupt acknowledge
-    interrupt_ack: WriteOnly<u32>,
+    interrupt_ack: u32,
 
     /// Reserved
     __r5: [u32; 2],
@@ -111,8 +111,8 @@ pub struct VirtIOHeader {
     /// Reserved
     __r6: [u32; 3],
 
-    _queue_desc_low: WriteOnly<u32>,
-    _queue_desc_high: WriteOnly<u32>,
+    _queue_desc_low: u32,
+    _queue_desc_high: u32,
 
     /// Reserved
     __r7: [u32; 2],
@@ -140,7 +140,7 @@ impl VirtIOHeader {
         let features = self.read_device_features();
         self.write_driver_features(negotiate_features(features));
 
-        self.guest_page_size.write(PAGE_SIZE as u32);
+        self.guest_page_size = PAGE_SIZE as u32;
     }
 
     /// Finish initializing the device.
@@ -197,9 +197,9 @@ impl VirtIOHeader {
 
     /// Acknowledge interrupt and return true if success.
     pub fn ack_interrupt(&mut self) -> bool {
-        let interrupt = self.interrupt_status.read();
+        let interrupt = self.interrupt_status;
         if interrupt != 0 {
-            self.interrupt_ack.write(interrupt);
+            self.interrupt_ack = interrupt;
             true
         } else {
             false
