@@ -1,7 +1,6 @@
 use super::*;
 use crate::header::VirtIOHeader;
 use crate::queue::VirtQueue;
-use bitflags::*;
 use core::hint::spin_loop;
 use log::*;
 
@@ -186,17 +185,6 @@ impl<H: Hal> VirtIOBlk<'_, H> {
 struct BlkConfig {
     /// Number of 512 Bytes sectors
     capacity: u64,
-    _size_max: u32,
-    _seg_max: u32,
-    _cylinders: u16,
-    _heads: u8,
-    _sectors: u8,
-    _blk_size: u32,
-    _physical_block_exp: u8,
-    _alignment_offset: u8,
-    _min_io_size: u16,
-    _opt_io_size: u32,
-    // ... ignored
 }
 
 #[repr(C)]
