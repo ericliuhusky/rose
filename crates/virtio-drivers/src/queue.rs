@@ -114,14 +114,14 @@ impl<H: Hal> VirtQueue<'_, H> {
         self.num_used += (inputs.len() + outputs.len()) as u16;
 
         let avail_slot = self.avail_idx & (self.queue_size - 1);
-        self.avail.ring[avail_slot as usize].write(head);
+        self.avail.ring[avail_slot as usize] = head;
 
         // write barrier
         fence(Ordering::SeqCst);
 
         // increase head of avail ring
         self.avail_idx = self.avail_idx.wrapping_add(1);
-        self.avail.idx.write(self.avail_idx);
+        self.avail.idx = self.avail_idx;
         Ok(head)
     }
 
@@ -165,8 +165,8 @@ impl<H: Hal> VirtQueue<'_, H> {
         fence(Ordering::SeqCst);
 
         let last_used_slot = self.last_used_idx & (self.queue_size - 1);
-        let index = self.used.ring[last_used_slot as usize].id.read() as u16;
-        let len = self.used.ring[last_used_slot as usize].len.read();
+        let index = self.used.ring[last_used_slot as usize].id as u16;
+        let len = self.used.ring[last_used_slot as usize].len;
 
         self.recycle_descriptors(index);
         self.last_used_idx = self.last_used_idx.wrapping_add(1);
@@ -240,8 +240,8 @@ bitflags! {
 struct AvailRing {
     _flags: u16,
     /// A driver MUST NOT decrement the idx.
-    idx: Volatile<u16>,
-    ring: [Volatile<u16>; 32], // actual size: queue_size
+    idx: u16,
+    ring: [u16; 32], // actual size: queue_size
     _used_event: u16, // unused
 }
 
@@ -259,6 +259,6 @@ struct UsedRing {
 #[repr(C)]
 #[derive(Debug)]
 struct UsedElem {
-    id: Volatile<u32>,
-    len: Volatile<u32>,
+    id: u32,
+    len: u32,
 }
