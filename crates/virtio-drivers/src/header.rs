@@ -20,10 +20,10 @@ pub struct VirtIOHeader {
     __r1: [u32; 2],
 
     /// Flags representing device features understood and activated by the driver
-    driver_features: WriteOnly<u32>,
+    driver_features: u32,
 
     /// Activated (guest) features word selection
-    driver_features_sel: WriteOnly<u32>,
+    driver_features_sel: u32,
 
     /// Guest page size
     ///
@@ -160,10 +160,10 @@ impl VirtIOHeader {
 
     /// Write device features.
     fn write_driver_features(&mut self, driver_features: u64) {
-        self.driver_features_sel.write(0); // driver features [0, 32)
-        self.driver_features.write(driver_features as u32);
-        self.driver_features_sel.write(1); // driver features [32, 64)
-        self.driver_features.write((driver_features >> 32) as u32);
+        self.driver_features_sel = 0; // driver features [0, 32)
+        self.driver_features = driver_features as u32;
+        self.driver_features_sel = 1; // driver features [32, 64)
+        self.driver_features = (driver_features >> 32) as u32;
     }
 
     /// Set queue.
