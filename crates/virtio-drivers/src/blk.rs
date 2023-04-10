@@ -11,7 +11,6 @@ use log::*;
 pub struct VirtIOBlk<'a, H: Hal> {
     header: &'static mut VirtIOHeader,
     queue: VirtQueue<'a, H>,
-    capacity: usize,
 }
 
 impl<H: Hal> VirtIOBlk<'_, H> {
@@ -22,21 +21,12 @@ impl<H: Hal> VirtIOBlk<'_, H> {
             0
         });
 
-        // read configuration space
-        let config = unsafe { &mut *(header.config_space() as *mut BlkConfig) };
-        info!("config: {:?}", config);
-        info!(
-            "found a block device of size {}KB",
-            config.capacity / 2
-        );
-
         let queue = VirtQueue::new(header, 0, 16)?;
         header.finish_init();
 
         Ok(VirtIOBlk {
             header,
             queue,
-            capacity: config.capacity as usize,
         })
     }
 
@@ -178,13 +168,6 @@ impl<H: Hal> VirtIOBlk<'_, H> {
     pub fn virt_queue_size(&self) -> u16 {
         self.queue.size()
     }
-}
-
-#[repr(C)]
-#[derive(Debug)]
-struct BlkConfig {
-    /// Number of 512 Bytes sectors
-    capacity: u64,
 }
 
 #[repr(C)]
