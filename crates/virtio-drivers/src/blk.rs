@@ -56,51 +56,6 @@ impl<H: Hal> VirtIOBlk<'_, H> {
         }
     }
 
-    /// Read a block in a non-blocking way which means that it returns immediately.
-    ///
-    /// # Arguments
-    ///
-    /// * `block_id` - The identifier of the block to read.
-    /// * `buf` - The buffer in the memory which the block is read into.
-    /// * `resp` - A mutable reference to a variable provided by the caller
-    ///   which contains the status of the requests. The caller can safely
-    ///   read the variable only after the request is ready.
-    ///
-    /// # Usage
-    ///
-    /// It will submit request to the virtio block device and return a token identifying
-    /// the position of the first Descriptor in the chain. If there are not enough
-    /// Descriptors to allocate, then it returns [Error::BufferTooSmall].
-    ///
-    /// After the request is ready, `resp` will be updated and the caller can get the
-    /// status of the request(e.g. succeed or failed) through it. However, the caller
-    /// **must not** spin on `resp` to wait for it to change. A safe way is to read it
-    /// after the same token as this method returns is fetched through [VirtIOBlk::pop_used()],
-    /// which means that the request has been ready.
-    ///
-    /// # Safety
-    ///
-    /// `buf` is still borrowed by the underlying virtio block device even if this
-    /// method returns. Thus, it is the caller's responsibility to guarantee that
-    /// `buf` is not accessed before the request is completed in order to avoid
-    /// data races.
-    pub unsafe fn read_block_nb(
-        &mut self,
-        block_id: usize,
-        buf: &mut [u8],
-        resp: &mut BlkResp,
-    ) -> Result<u16> {
-        assert_eq!(buf.len(), BLK_SIZE);
-        let req = BlkReq {
-            type_: ReqType::In,
-            reserved: 0,
-            sector: block_id as u64,
-        };
-        let token = self.queue.add(&[req.as_buf()], &[buf, resp.as_buf_mut()])?;
-        self.header.notify(0);
-        Ok(token)
-    }
-
     /// Write a block.
     pub fn write_block(&mut self, block_id: usize, buf: &[u8]) -> Result {
         assert_eq!(buf.len(), BLK_SIZE);
@@ -120,40 +75,6 @@ impl<H: Hal> VirtIOBlk<'_, H> {
             RespStatus::Ok => Ok(()),
             _ => Err(Error::IoError),
         }
-    }
-
-    //// Write a block in a non-blocking way which means that it returns immediately.
-    ///
-    /// # Arguments
-    ///
-    /// * `block_id` - The identifier of the block to write.
-    /// * `buf` - The buffer in the memory containing the data to write to the block.
-    /// * `resp` - A mutable reference to a variable provided by the caller
-    ///   which contains the status of the requests. The caller can safely
-    ///   read the variable only after the request is ready.
-    ///
-    /// # Usage
-    ///
-    /// See also [VirtIOBlk::read_block_nb()].
-    ///
-    /// # Safety
-    ///
-    /// See also [VirtIOBlk::read_block_nb()].
-    pub unsafe fn write_block_nb(
-        &mut self,
-        block_id: usize,
-        buf: &[u8],
-        resp: &mut BlkResp,
-    ) -> Result<u16> {
-        assert_eq!(buf.len(), BLK_SIZE);
-        let req = BlkReq {
-            type_: ReqType::Out,
-            reserved: 0,
-            sector: block_id as u64,
-        };
-        let token = self.queue.add(&[req.as_buf(), buf], &[resp.as_buf_mut()])?;
-        self.header.notify(0);
-        Ok(token)
     }
 
     /// During an interrupt, it fetches a token of a completed request from the used
