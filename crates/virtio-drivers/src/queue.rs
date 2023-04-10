@@ -59,7 +59,7 @@ impl<H: Hal> VirtQueue<'_, H> {
 
         // Link descriptors together.
         for i in 0..(size - 1) {
-            desc[i as usize].next.write(i + 1);
+            desc[i as usize].next = i + 1;
         }
 
         Ok(VirtQueue {
@@ -93,23 +93,23 @@ impl<H: Hal> VirtQueue<'_, H> {
         for input in inputs.iter() {
             let desc = &mut self.desc[self.free_head as usize];
             desc.set_buf::<H>(input);
-            desc.flags.write(DescFlags::NEXT);
+            desc.flags = DescFlags::NEXT;
             last = self.free_head;
-            self.free_head = desc.next.read();
+            self.free_head = desc.next;
         }
         for output in outputs.iter() {
             let desc = &mut self.desc[self.free_head as usize];
             desc.set_buf::<H>(output);
-            desc.flags.write(DescFlags::NEXT | DescFlags::WRITE);
+            desc.flags = DescFlags::NEXT | DescFlags::WRITE;
             last = self.free_head;
-            self.free_head = desc.next.read();
+            self.free_head = desc.next;
         }
         // set last_elem.next = NULL
         {
             let desc = &mut self.desc[last as usize];
-            let mut flags = desc.flags.read();
+            let mut flags = desc.flags;
             flags.remove(DescFlags::NEXT);
-            desc.flags.write(flags);
+            desc.flags = flags;
         }
         self.num_used += (inputs.len() + outputs.len()) as u16;
 
@@ -143,12 +143,12 @@ impl<H: Hal> VirtQueue<'_, H> {
         self.free_head = head;
         loop {
             let desc = &mut self.desc[head as usize];
-            let flags = desc.flags.read();
+            let flags = desc.flags;
             self.num_used -= 1;
             if flags.contains(DescFlags::NEXT) {
-                head = desc.next.read();
+                head = desc.next;
             } else {
-                desc.next.write(origin_free_head);
+                desc.next = origin_free_head;
                 return;
             }
         }
@@ -210,17 +210,16 @@ impl VirtQueueLayout {
 #[repr(C, align(16))]
 #[derive(Debug)]
 struct Descriptor {
-    addr: Volatile<u64>,
-    len: Volatile<u32>,
-    flags: Volatile<DescFlags>,
-    next: Volatile<u16>,
+    addr: u64,
+    len: u32,
+    flags: DescFlags,
+    next: u16,
 }
 
 impl Descriptor {
     fn set_buf<H: Hal>(&mut self, buf: &[u8]) {
-        self.addr
-            .write(H::virt_to_phys(buf.as_ptr() as usize) as u64);
-        self.len.write(buf.len() as u32);
+        self.addr = H::virt_to_phys(buf.as_ptr() as usize) as u64;
+        self.len = buf.len() as u32;
     }
 }
 
@@ -239,11 +238,11 @@ bitflags! {
 #[repr(C)]
 #[derive(Debug)]
 struct AvailRing {
-    flags: Volatile<u16>,
+    _flags: u16,
     /// A driver MUST NOT decrement the idx.
     idx: Volatile<u16>,
     ring: [Volatile<u16>; 32], // actual size: queue_size
-    used_event: Volatile<u16>, // unused
+    _used_event: u16, // unused
 }
 
 /// The used ring is where the device returns buffers once it is done with them:
@@ -251,10 +250,10 @@ struct AvailRing {
 #[repr(C)]
 #[derive(Debug)]
 struct UsedRing {
-    flags: Volatile<u16>,
+    _flags: u16,
     idx: Volatile<u16>,
     ring: [UsedElem; 32],       // actual size: queue_size
-    avail_event: Volatile<u16>, // unused
+    _avail_event: u16, // unused
 }
 
 #[repr(C)]
