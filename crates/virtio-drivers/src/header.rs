@@ -41,7 +41,7 @@ pub struct VirtIOHeader {
     /// Writing to this register selects the virtual queue that the following
     /// operations on the QueueNumMax, QueueNum, QueueAlign and QueuePFN
     /// registers apply to. The index number of the first queue is zero (0x0).
-    queue_sel: WriteOnly<u32>,
+    queue_sel: u32,
 
     /// Maximum virtual queue size
     ///
@@ -50,21 +50,21 @@ pub struct VirtIOHeader {
     /// This applies to the queue selected by writing to QueueSel and is
     /// allowed only when QueuePFN is set to zero (0x0), so when the queue is
     /// not actively used.
-    queue_num_max: ReadOnly<u32>,
+    queue_num_max: u32,
 
     /// Virtual queue size
     ///
     /// Queue size is the number of elements in the queue. Writing to this
     /// register notifies the device what size of the queue the driver will use.
     /// This applies to the queue selected by writing to QueueSel.
-    queue_num: WriteOnly<u32>,
+    queue_num: u32,
 
     /// Used Ring alignment in the virtual queue
     ///
     /// Writing to this register notifies the device about alignment boundary
     /// of the Used Ring in bytes. This value should be a power of 2 and
     /// applies to the queue selected by writing to QueueSel.
-    queue_align: WriteOnly<u32>,
+    queue_align: u32,
 
     /// Guest physical page number of the virtual queue
     ///
@@ -168,15 +168,15 @@ impl VirtIOHeader {
 
     /// Set queue.
     pub fn queue_set(&mut self, queue: u32, size: u32, align: u32, pfn: u32) {
-        self.queue_sel.write(queue);
-        self.queue_num.write(size);
-        self.queue_align.write(align);
+        self.queue_sel = queue;
+        self.queue_num = size;
+        self.queue_align = align;
         self.queue_pfn.write(pfn);
     }
 
     /// Get guest physical page number of the virtual queue.
     pub fn queue_physical_page_number(&mut self, queue: u32) -> u32 {
-        self.queue_sel.write(queue);
+        self.queue_sel = queue;
         self.queue_pfn.read()
     }
 
@@ -187,7 +187,7 @@ impl VirtIOHeader {
 
     /// Get the max size of queue.
     pub fn max_queue_size(&self) -> u32 {
-        self.queue_num_max.read()
+        self.queue_num_max
     }
 
     /// Notify device.
