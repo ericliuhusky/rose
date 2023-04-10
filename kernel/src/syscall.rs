@@ -76,6 +76,15 @@ impl SysFunc for SysFuncImpl {
     fn semaphore_up(sem_id: usize) -> isize {
         semaphore_up(sem_id)
     }
+    fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
+        connect(raddr, lport, rport)
+    }
+    fn listen(port: u16) -> isize {
+        listen(port)
+    }
+    fn accept(port_index: usize) -> isize {
+        accept(port_index)
+    }
 }
 
 mod 系统调用_输出 {
@@ -352,4 +361,55 @@ fn semaphore_up(sem_id: usize) -> isize {
     let mut semaphore = process.semaphores.get(&sem_id).unwrap().clone();
     semaphore.up();
     0
+}
+
+
+
+use crate::net::port_table::{self, port_acceptable, PortFd};
+use crate::net::udp::UDP;
+use crate::net::{net_interrupt_handler, IPv4};
+
+// just support udp
+fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
+    let mut process = current_process();
+    let fd = process.alloc_fd();
+    let udp_node = UDP::new(IPv4::from_u32(raddr), lport, rport);
+    process.fd_table[fd] = Some(MutRc::new(udp_node));
+    fd as isize
+}
+
+// listen a port
+fn listen(port: u16) -> isize {
+    match port_table::listen(port) {
+        Some(port_index) => {
+            let mut process = current_process();
+            let fd = process.alloc_fd();
+            let port_fd = PortFd::new(port_index);
+            process.fd_table[fd] = Some(MutRc::new(port_fd));
+
+            // NOTICE: this return the port index, not the fd
+            port_index as isize
+        }
+        None => -1,
+    }
+}
+
+// accept a tcp connection
+fn accept(port_index: usize) -> isize {
+    println!("accepting port {}", port_index);
+
+    let task = current_task();
+    port_table::accept(port_index, task.clone());
+    // block_current_and_run_next();
+
+    // NOTICE: There does not have interrupt handler, just call it munually.
+    loop {
+        net_interrupt_handler();
+
+        if !port_acceptable(port_index) {
+            break;
+        }
+    }
+
+    task.cx.x[10] as isize
 }

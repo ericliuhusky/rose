@@ -15,6 +15,7 @@ mod drivers;
 mod fs;
 mod mutex;
 mod semaphore;
+mod net;
 
 use core::arch::global_asm;
 extern crate panic;

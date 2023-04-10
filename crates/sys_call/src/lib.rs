@@ -104,3 +104,15 @@ pub fn semaphore_down(sem_id: usize) -> isize {
 pub fn semaphore_up(sem_id: usize) -> isize {
     sys_call(SYS_SEMAPHORE_UP, [sem_id, 0, 0])
 }
+
+pub fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
+    sys_call(SYS_CONNECT, [raddr as usize, lport as usize, rport as usize])
+}
+
+pub fn listen(port: u16) -> isize {
+    sys_call(SYS_LISTEN, [port as usize, 0, 0])
+}
+
+pub fn accept(port_index: usize) -> isize {
+    sys_call(SYS_ACCEPT, [port_index, 0, 0])
+}

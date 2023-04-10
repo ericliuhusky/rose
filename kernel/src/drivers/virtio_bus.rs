@@ -1,5 +1,5 @@
 use crate::mm::memory_set::KERNEL_SPACE;
-use frame_allocator::{alloc, dealloc};
+use frame_allocator::{alloc, dealloc, alloc_more};
 use page_table::{Address, Page, PA, PPN, VA};
 use virtio_drivers::Hal;
 
@@ -7,14 +7,8 @@ pub struct VirtioHal;
 
 impl Hal for VirtioHal {
     fn dma_alloc(pages: usize) -> usize {
-        let mut ppn_base = PPN::new(0);
-        for i in 0..pages {
-            let frame = alloc();
-            if i == 0 {
-                ppn_base = PPN::new(frame);
-            }
-            assert_eq!(frame, ppn_base.number() + i);
-        }
+        let ppns = alloc_more(pages);
+        let ppn_base = PPN::new(*ppns.last().unwrap());
         ppn_base.start_addr().number()
     }
 
