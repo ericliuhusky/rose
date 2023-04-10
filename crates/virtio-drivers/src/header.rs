@@ -11,10 +11,10 @@ pub struct VirtIOHeader {
     _version: u32,
     _device_id: u32,
     _vendor_id: u32,
-    device_features: ReadOnly<u32>,
+    device_features: u32,
 
     /// Device (host) features word selection
-    device_features_sel: WriteOnly<u32>,
+    device_features_sel: u32,
 
     /// Reserved
     __r1: [u32; 2],
@@ -150,10 +150,11 @@ impl VirtIOHeader {
 
     /// Read device features.
     fn read_device_features(&mut self) -> u64 {
-        self.device_features_sel.write(0); // device features [0, 32)
-        let mut device_features_bits = self.device_features.read().into();
-        self.device_features_sel.write(1); // device features [32, 64)
-        device_features_bits += (self.device_features.read() as u64) << 32;
+        self.device_features_sel = 0; // device features [0, 32)
+        let bits_low32 = self.device_features as u64;
+        self.device_features_sel = 1; // device features [32, 64)
+        let bits_high32 = self.device_features as u64;
+        let device_features_bits = (bits_high32 << 32) + bits_low32;
         device_features_bits
     }
 
