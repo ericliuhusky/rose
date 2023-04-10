@@ -85,7 +85,7 @@ pub struct VirtIOHeader {
     __r3: [u32; 2],
 
     /// Queue notifier
-    queue_notify: WriteOnly<u32>,
+    queue_notify: u32,
 
     /// Reserved
     __r4: [u32; 3],
@@ -192,7 +192,7 @@ impl VirtIOHeader {
 
     /// Notify device.
     pub fn notify(&mut self, queue: u32) {
-        self.queue_notify.write(queue);
+        self.queue_notify = queue;
     }
 
     /// Acknowledge interrupt and return true if success.
