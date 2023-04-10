@@ -17,11 +17,8 @@ mod mutex;
 mod semaphore;
 mod net;
 
-use core::arch::global_asm;
 extern crate panic;
 extern crate entry;
-
-global_asm!(include_str!("link_app.s"));
 
 #[no_mangle]
 fn main() {

@@ -2,4 +2,3 @@ target
 Cargo.lock
 .DS_Store
 Makefile
-link_app.s
