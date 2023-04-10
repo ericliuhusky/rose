@@ -1,6 +1,6 @@
 use crate::PAGE_SIZE;
 use bitflags::*;
-use volatile::{ReadOnly, Volatile, WriteOnly};
+use crate::volatile::Volatile;
 
 /// MMIO Device Legacy Register Interface.
 ///

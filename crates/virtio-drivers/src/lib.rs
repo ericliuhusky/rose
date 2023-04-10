@@ -7,6 +7,7 @@ mod hal;
 mod header;
 mod net;
 mod queue;
+mod volatile;
 
 pub use self::blk::{BlkResp, RespStatus, VirtIOBlk};
 pub use self::hal::{Hal, PhysAddr, VirtAddr};

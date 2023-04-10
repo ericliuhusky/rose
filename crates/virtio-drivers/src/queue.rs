@@ -6,7 +6,7 @@ use super::*;
 use crate::header::VirtIOHeader;
 use bitflags::*;
 
-use volatile::Volatile;
+use crate::volatile::Volatile;
 
 /// The mechanism for bulk data transport on virtio devices.
 ///
