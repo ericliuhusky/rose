@@ -135,34 +135,9 @@ impl VirtIOHeader {
     /// Begin initializing the device.
     ///
     /// Ref: virtio 3.1.1 Device Initialization
-    pub fn begin_init(&mut self, negotiate_features: impl FnOnce(u64) -> u64) {
-        let features = self.read_device_features();
-        self.write_driver_features(negotiate_features(features));
-
+    pub fn init(&mut self) {
         self.guest_page_size = PAGE_SIZE as u32;
-    }
-
-    /// Finish initializing the device.
-    pub fn finish_init(&mut self) {
         self.status = DRIVER_OK;
-    }
-
-    /// Read device features.
-    fn read_device_features(&mut self) -> u64 {
-        self.device_features_sel = 0; // device features [0, 32)
-        let bits_low32 = self.device_features as u64;
-        self.device_features_sel = 1; // device features [32, 64)
-        let bits_high32 = self.device_features as u64;
-        let device_features_bits = (bits_high32 << 32) + bits_low32;
-        device_features_bits
-    }
-
-    /// Write device features.
-    fn write_driver_features(&mut self, driver_features: u64) {
-        self.driver_features_sel = 0; // driver features [0, 32)
-        self.driver_features = driver_features as u32;
-        self.driver_features_sel = 1; // driver features [32, 64)
-        self.driver_features = (driver_features >> 32) as u32;
     }
 
     /// Set queue.

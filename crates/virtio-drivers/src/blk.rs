@@ -15,13 +15,8 @@ pub struct VirtIOBlk<'a, H: Hal> {
 impl<H: Hal> VirtIOBlk<'_, H> {
     /// Create a new VirtIO-Blk driver.
     pub fn new(header: &'static mut VirtIOHeader) -> Result<Self> {
-        header.begin_init(|features| {
-            // negotiate these flags only
-            0
-        });
-
+        header.init();
         let queue = VirtQueue::new(header, 0, 16)?;
-        header.finish_init();
 
         Ok(VirtIOBlk {
             header,
