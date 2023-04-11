@@ -28,9 +28,8 @@ impl<H: Hal> VirtIONet<H> {
         let mac = config.mac;
         debug!("Got MAC={:?}, status={:?}", mac, config.status);
 
-        let queue_num = 2; // for simplicity
-        let recv_queue = VirtQueue::new(header, QUEUE_RECEIVE, queue_num)?;
-        let send_queue = VirtQueue::new(header, QUEUE_TRANSMIT, queue_num)?;
+        let recv_queue = VirtQueue::new(header, QUEUE_RECEIVE, 16)?;
+        let send_queue = VirtQueue::new(header, QUEUE_TRANSMIT, 16)?;
 
         Ok(VirtIONet {
             header,
