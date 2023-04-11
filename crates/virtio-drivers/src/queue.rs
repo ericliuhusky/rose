@@ -220,7 +220,6 @@ bitflags! {
     struct DescFlags: u16 {
         const NEXT = 1;
         const WRITE = 2;
-        const INDIRECT = 4;
     }
 }
 
