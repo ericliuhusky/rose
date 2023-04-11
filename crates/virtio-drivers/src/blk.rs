@@ -25,7 +25,7 @@ impl<H: Hal> VirtIOBlk<'_, H> {
     }
 
     /// Read a block.
-    pub fn read_block(&mut self, block_id: usize, buf: &mut [u8]) -> Result {
+    pub fn read_block(&mut self, block_id: usize, buf: &mut [u8]) {
         assert_eq!(buf.len(), BLK_SIZE);
         let req = BlkReq {
             type_: ReqType::In,
@@ -33,20 +33,19 @@ impl<H: Hal> VirtIOBlk<'_, H> {
             sector: block_id as u64,
         };
         let mut resp = BlkResp::default();
-        self.queue.add(&[req.as_buf()], &[buf, resp.as_buf_mut()])?;
+        self.queue.add(&[req.as_buf()], &[buf, resp.as_buf_mut()]).unwrap();
         self.header.notify(0);
         while !self.queue.can_pop() {
             spin_loop();
         }
-        self.queue.pop_used()?;
-        match resp.status {
-            RespStatus::Ok => Ok(()),
-            _ => Err(Error::IoError),
+        self.queue.pop_used().unwrap();
+        if resp.status != RespStatus::Ok {
+            panic!()
         }
     }
 
     /// Write a block.
-    pub fn write_block(&mut self, block_id: usize, buf: &[u8]) -> Result {
+    pub fn write_block(&mut self, block_id: usize, buf: &[u8]) {
         assert_eq!(buf.len(), BLK_SIZE);
         let req = BlkReq {
             type_: ReqType::Out,
@@ -54,15 +53,14 @@ impl<H: Hal> VirtIOBlk<'_, H> {
             sector: block_id as u64,
         };
         let mut resp = BlkResp::default();
-        self.queue.add(&[req.as_buf(), buf], &[resp.as_buf_mut()])?;
+        self.queue.add(&[req.as_buf(), buf], &[resp.as_buf_mut()]).unwrap();
         self.header.notify(0);
         while !self.queue.can_pop() {
             spin_loop();
         }
-        self.queue.pop_used()?;
-        match resp.status {
-            RespStatus::Ok => Ok(()),
-            _ => Err(Error::IoError),
+        self.queue.pop_used().unwrap();
+        if resp.status != RespStatus::Ok {
+            panic!()
         }
     }
 }
