@@ -233,7 +233,6 @@ struct AvailRing {
     /// A driver MUST NOT decrement the idx.
     idx: u16,
     ring: [u16; 32], // actual size: queue_size
-    _used_event: u16, // unused
 }
 
 /// The used ring is where the device returns buffers once it is done with them:
@@ -244,7 +243,6 @@ struct UsedRing {
     _flags: u16,
     idx: Volatile<u16>,
     ring: [UsedElem; 32],       // actual size: queue_size
-    _avail_event: u16, // unused
 }
 
 #[repr(C)]
