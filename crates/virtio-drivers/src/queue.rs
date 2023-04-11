@@ -89,14 +89,14 @@ impl<H: Hal> VirtQueue<H> {
         let mut last = self.free_head;
         for input in inputs.iter() {
             let desc = &mut self.desc[self.free_head as usize];
-            desc.set_buf::<H>(input);
+            desc.set_buf(input);
             desc.flags = DescFlags::NEXT;
             last = self.free_head;
             self.free_head = desc.next;
         }
         for output in outputs.iter() {
             let desc = &mut self.desc[self.free_head as usize];
-            desc.set_buf::<H>(output);
+            desc.set_buf(output);
             desc.flags = DescFlags::NEXT | DescFlags::WRITE;
             last = self.free_head;
             self.free_head = desc.next;
@@ -209,8 +209,8 @@ struct Descriptor {
 }
 
 impl Descriptor {
-    fn set_buf<H: Hal>(&mut self, buf: &[u8]) {
-        self.addr = H::virt_to_phys(buf.as_ptr() as usize) as u64;
+    fn set_buf(&mut self, buf: &[u8]) {
+        self.addr = buf.as_ptr() as usize as u64;
         self.len = buf.len() as u32;
     }
 }

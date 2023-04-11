@@ -36,7 +36,4 @@ impl<H: Hal> DMA<H> {
 pub trait Hal {
     /// Allocates the given number of contiguous physical pages of DMA memory for virtio use.
     fn dma_alloc(pages: usize) -> PhysAddr;
-    /// Converts a virtual address which the program can access to the corresponding physical
-    /// address to use for virtio.
-    fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr;
 }

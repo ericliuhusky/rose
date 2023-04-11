@@ -37,8 +37,4 @@ impl Hal for VirtioHal {
         let ppn = DMA_ALLOCATOR.borrow_mut().alloc(pages);
         PPN::new(ppn).start_addr().number()
     }
-
-    fn virt_to_phys(vaddr: usize) -> usize {
-        KERNEL_SPACE.page_table.translate_one_addr(vaddr)
-    }
 }
