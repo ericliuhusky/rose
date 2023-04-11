@@ -15,7 +15,7 @@ pub trait NetDevice {
     fn receive(&self, data: &mut [u8]) -> usize;
 }
 
-pub struct VirtIONetWrapper(RefCell<VirtIONet<'static, VirtioHal>>);
+pub struct VirtIONetWrapper(RefCell<VirtIONet<VirtioHal>>);
 
 impl NetDevice for VirtIONetWrapper {
     fn transmit(&self, data: &[u8]) {

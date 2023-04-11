@@ -12,15 +12,15 @@ use crate::volatile::Volatile;
 ///
 /// Each device can have zero or more virtqueues.
 #[derive(Debug)]
-pub struct VirtQueue<'a, H: Hal> {
+pub struct VirtQueue<H: Hal> {
     /// DMA guard
     dma: DMA<H>,
     /// Descriptor table
-    desc: &'a mut [Descriptor],
+    desc: &'static mut [Descriptor],
     /// Available ring
-    avail: &'a mut AvailRing,
+    avail: &'static mut AvailRing,
     /// Used ring
-    used: &'a mut UsedRing,
+    used: &'static mut UsedRing,
 
     /// The size of the queue.
     ///
@@ -35,7 +35,7 @@ pub struct VirtQueue<'a, H: Hal> {
     last_used_idx: u16,
 }
 
-impl<H: Hal> VirtQueue<'_, H> {
+impl<H: Hal> VirtQueue<H> {
     /// Create a new VirtQueue.
     pub fn new(header: &mut VirtIOHeader, idx: usize, size: u16) -> Result<Self> {
         if header.queue_used(idx as u32) {

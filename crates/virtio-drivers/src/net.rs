@@ -12,14 +12,14 @@ use log::*;
 /// Empty buffers are placed in one virtqueue for receiving packets, and
 /// outgoing packets are enqueued into another for transmission in that order.
 /// A third command queue is used to control advanced filtering features.
-pub struct VirtIONet<'a, H: Hal> {
+pub struct VirtIONet<H: Hal> {
     header: &'static mut VirtIOHeader,
     mac: EthernetAddress,
-    recv_queue: VirtQueue<'a, H>,
-    send_queue: VirtQueue<'a, H>,
+    recv_queue: VirtQueue<H>,
+    send_queue: VirtQueue<H>,
 }
 
-impl<H: Hal> VirtIONet<'_, H> {
+impl<H: Hal> VirtIONet<H> {
     /// Create a new VirtIO-Net driver.
     pub fn new(header: &'static mut VirtIOHeader) -> Result<Self> {
         header.init();
