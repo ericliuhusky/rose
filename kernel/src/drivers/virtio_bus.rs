@@ -12,16 +12,6 @@ impl Hal for VirtioHal {
         ppn_base.start_addr().number()
     }
 
-    fn dma_dealloc(pa: usize, pages: usize) -> i32 {
-        let pa = PA::new(pa);
-        let mut ppn_base = pa.page().number();
-        for _ in 0..pages {
-            dealloc(ppn_base);
-            ppn_base += 1;
-        }
-        0
-    }
-
     fn phys_to_virt(addr: usize) -> usize {
         addr
     }

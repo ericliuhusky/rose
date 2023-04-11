@@ -38,19 +38,10 @@ impl<H: Hal> DMA<H> {
     }
 }
 
-impl<H: Hal> Drop for DMA<H> {
-    fn drop(&mut self) {
-        let err = H::dma_dealloc(self.paddr as usize, self.pages as usize);
-        assert_eq!(err, 0, "failed to deallocate DMA");
-    }
-}
-
 /// The interface which a particular hardware implementation must implement.
 pub trait Hal {
     /// Allocates the given number of contiguous physical pages of DMA memory for virtio use.
     fn dma_alloc(pages: usize) -> PhysAddr;
-    /// Deallocates the given contiguous physical DMA memory pages.
-    fn dma_dealloc(paddr: PhysAddr, pages: usize) -> i32;
     /// Converts a physical address used for virtio to a virtual address which the program can
     /// access.
     fn phys_to_virt(paddr: PhysAddr) -> VirtAddr;
