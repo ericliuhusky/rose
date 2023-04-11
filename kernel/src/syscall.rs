@@ -88,8 +88,7 @@ impl SysFunc for SysFuncImpl {
 }
 
 mod 系统调用_输出 {
-    use crate::task::{TaskManager, current_task, current_process};
-    use page_table::VA;
+    use crate::task::current_process;
 
     pub fn write(fd: usize, buf: *const u8, len: usize) -> isize {
         let process = current_process();
@@ -116,7 +115,7 @@ mod 系统调用_输出 {
 }
 
 mod 系统调用_终止 {
-    use crate::task::{TaskManager, exit_and_run_next};
+    use crate::task::exit_and_run_next;
 
     pub fn exit(exit_code: i32) -> isize {
         println!("[kernel] Application exited with code {}", exit_code);
@@ -126,8 +125,7 @@ mod 系统调用_终止 {
 }
 
 mod 系统调用_读取 {
-    use crate::task::{TaskManager, current_task, current_process};
-    use page_table::VA;
+    use crate::task::current_process;
 
     pub fn read(fd: usize, buf: *const u8, len: usize) -> isize {
         let process = current_process();
@@ -153,7 +151,7 @@ mod 系统调用_读取 {
 }
 
 mod 系统调用_让出时间片 {
-    use crate::task::{TaskManager, suspend_and_run_next};
+    use crate::task::suspend_and_run_next;
 
     pub fn yield_() -> isize {
         suspend_and_run_next();
@@ -170,8 +168,7 @@ mod 系统调用_时钟计数器 {
 }
 
 mod 系统调用_进程 {
-    use crate::task::{TaskManager, current_task, add_task, current_process};
-    use alloc::string::String;
+    use crate::task::current_process;
 
     pub fn getpid() -> isize {
         current_process().pid.0 as isize
@@ -235,10 +232,7 @@ use crate::mutex::Mutex;
 use crate::semaphore::Semaphore;
 use mutrc::MutRc;
 use crate::task::{current_task, current_process, add_task};
-use crate::task::{task::Task, TaskManager};
-use alloc::string::String;
-use page_table::VA;
-use alloc::rc::Rc;
+use crate::task::task::Task;
 
 pub fn open(path: *const u8, len: usize, create: u32) -> isize {
     let mut process = current_process();

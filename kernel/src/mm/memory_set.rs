@@ -1,8 +1,6 @@
-use alloc::string::String;
 use alloc::vec::Vec;
 use core::ops::Range;
 use elf_reader::ElfFile;
-use exception::context::Context;
 use frame_allocator::FrameAllocator;
 use lazy_static::lazy_static;
 
@@ -33,7 +31,7 @@ extern "C" {
 }
 
 use page_table::{Address, Page, SV39PageTable, HIGH_START_ADDR, HIGH_END_ADDR};
-use page_table::{VA, VPN};
+use page_table::VA;
 
 trait Space {
     fn new_bare() -> Self;
@@ -172,14 +170,6 @@ pub struct Segment {
 }
 
 impl Segment {
-    fn new(va_range: Range<usize>) -> Self {
-        Self {
-            va_range,
-            identical: false,
-            user_accessible: false,
-        }
-    }
-
     fn new_identical(va_range: Range<usize>) -> Self {
         Self {
             va_range,

@@ -1,11 +1,9 @@
-use crate::{syscall::SysFuncImpl, task::task::Task};
-use crate::task::{TaskManager, current_task, suspend_and_run_next, exit_and_run_next, current_process};
+use crate::syscall::SysFuncImpl;
+use crate::task::{current_task, suspend_and_run_next, exit_and_run_next, current_process};
 use crate::timer::为下一次时钟中断定时;
-use core::arch::global_asm;
 use exception::restore::restore_context;
 use riscv_register::{
     scause::{self, Exception, Interrupt},
-    stvec,
 };
 use sys_func::sys_func;
 

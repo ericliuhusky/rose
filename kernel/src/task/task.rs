@@ -1,8 +1,7 @@
-use alloc::rc::Weak;
-use alloc::{rc::Rc, collections::BTreeMap};
+use alloc::collections::BTreeMap;
 use alloc::vec;
 use alloc::vec::Vec;
-use crate::mm::memory_set::{UserSpace, KERNEL_SPACE, USER_STACK_START_ADDR, USER_STACK_SIZE};
+use crate::mm::memory_set::{UserSpace, USER_STACK_START_ADDR, USER_STACK_SIZE};
 use crate::mutex::Mutex;
 use crate::semaphore::Semaphore;
 use mutrc::{MutRc, MutWeak};

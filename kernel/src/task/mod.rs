@@ -3,8 +3,8 @@ pub mod task;
 
 use mutrc::MutRc;
 use self::task::{Task, Process};
-use alloc::{rc::Rc, vec::Vec};
-use exception::{restore::restore_context, context::Context};
+use alloc::vec::Vec;
+use exception::restore::restore_context;
 use sbi_call::shutdown;
 
 pub struct TaskManager {

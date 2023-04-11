@@ -1,5 +1,5 @@
 use crate::task::{
-    block_and_run_next, current_task, suspend_and_run_next, task::Task, wakeup_task,
+    block_and_run_next, current_task, task::Task, wakeup_task,
 };
 use alloc::collections::VecDeque;
 use mutrc::MutRc;
