@@ -11,7 +11,6 @@ pub type PhysAddr = usize;
 #[derive(Debug)]
 pub struct DMA<H: Hal> {
     paddr: usize,
-    pages: usize,
     _phantom: PhantomData<H>,
 }
 
@@ -23,7 +22,6 @@ impl<H: Hal> DMA<H> {
         }
         Ok(DMA {
             paddr,
-            pages,
             _phantom: PhantomData::default(),
         })
     }
