@@ -189,8 +189,8 @@ impl VirtQueueLayout {
         );
         let queue_size = queue_size as usize;
         let desc = size_of::<Descriptor>() * queue_size;
-        let avail = size_of::<u16>() * (3 + queue_size);
-        let used = size_of::<u16>() * 3 + size_of::<UsedElem>() * queue_size;
+        let avail = size_of::<AvailRing>();
+        let used = size_of::<UsedRing>();
         VirtQueueLayout {
             avail_offset: desc,
             used_offset: align_up(desc + avail),
@@ -232,7 +232,7 @@ struct AvailRing {
     _flags: u16,
     /// A driver MUST NOT decrement the idx.
     idx: u16,
-    ring: [u16; 32], // actual size: queue_size
+    ring: [u16; 16],
 }
 
 /// The used ring is where the device returns buffers once it is done with them:
@@ -242,7 +242,7 @@ struct AvailRing {
 struct UsedRing {
     _flags: u16,
     idx: Volatile<u16>,
-    ring: [UsedElem; 32],       // actual size: queue_size
+    ring: [UsedElem; 16],
 }
 
 #[repr(C)]
