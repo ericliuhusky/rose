@@ -4,6 +4,7 @@ use core::sync::atomic::{fence, Ordering};
 
 use super::*;
 use crate::header::VirtIOHeader;
+use core::marker::PhantomData;
 use bitflags::*;
 
 use crate::volatile::Volatile;
@@ -13,8 +14,6 @@ use crate::volatile::Volatile;
 /// Each device can have zero or more virtqueues.
 #[derive(Debug)]
 pub struct VirtQueue<H: Hal> {
-    /// DMA guard
-    dma: DMA<H>,
     /// Descriptor table
     desc: &'static mut [Descriptor],
     /// Available ring
@@ -33,6 +32,7 @@ pub struct VirtQueue<H: Hal> {
     free_head: u16,
     avail_idx: u16,
     last_used_idx: u16,
+    _phantom: PhantomData<H>,
 }
 
 impl<H: Hal> VirtQueue<H> {
@@ -46,7 +46,7 @@ impl<H: Hal> VirtQueue<H> {
         }
         let layout = VirtQueueLayout::new(size);
         // Allocate contiguous pages.
-        let dma = DMA::new(layout.size / PAGE_SIZE)?;
+        let dma = DMA::<H>::new(layout.size / PAGE_SIZE)?;
 
         header.queue_set(idx as u32, size as u32, PAGE_SIZE as u32, dma.pfn());
 
@@ -61,7 +61,6 @@ impl<H: Hal> VirtQueue<H> {
         }
 
         Ok(VirtQueue {
-            dma,
             desc,
             avail,
             used,
@@ -70,6 +69,7 @@ impl<H: Hal> VirtQueue<H> {
             free_head: 0,
             avail_idx: 0,
             last_used_idx: 0,
+            _phantom: PhantomData,
         })
     }
 
