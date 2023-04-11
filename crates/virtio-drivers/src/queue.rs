@@ -48,12 +48,12 @@ impl<H: Hal> VirtQueue<H> {
         // Allocate contiguous pages.
         let dma = DMA::<H>::new(layout.size / PAGE_SIZE)?;
 
-        header.queue_set(idx as u32, size as u32, PAGE_SIZE as u32, dma.pfn());
+        header.queue_set(idx as u32, size as u32, PAGE_SIZE as u32, dma.ppn());
 
         let desc =
-            unsafe { slice::from_raw_parts_mut(dma.vaddr() as *mut Descriptor, size as usize) };
-        let avail = unsafe { &mut *((dma.vaddr() + layout.avail_offset) as *mut AvailRing) };
-        let used = unsafe { &mut *((dma.vaddr() + layout.used_offset) as *mut UsedRing) };
+            unsafe { slice::from_raw_parts_mut(dma.paddr as *mut Descriptor, size as usize) };
+        let avail = unsafe { &mut *((dma.paddr + layout.avail_offset) as *mut AvailRing) };
+        let used = unsafe { &mut *((dma.paddr + layout.used_offset) as *mut UsedRing) };
 
         // Link descriptors together.
         for i in 0..(size - 1) {

@@ -38,10 +38,6 @@ impl Hal for VirtioHal {
         PPN::new(ppn).start_addr().number()
     }
 
-    fn phys_to_virt(addr: usize) -> usize {
-        addr
-    }
-
     fn virt_to_phys(vaddr: usize) -> usize {
         KERNEL_SPACE.page_table.translate_one_addr(vaddr)
     }
