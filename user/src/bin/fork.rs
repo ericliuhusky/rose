@@ -12,12 +12,11 @@ pub fn main() -> i32 {
     println!("[fork]");
     if fork() == 0 {
         println!("child[{}]", getpid());
-        exit(0);
+        exit();
     }
 
     println!("parent[{}] waiting...", getpid());
-    let mut exit_code: i32 = 0;
-    let pid = wait(&mut exit_code);
-    println!("child[{}] exit({})", pid, exit_code);
+    let pid = wait();
+    println!("child[{}] exit", pid);
     0
 }

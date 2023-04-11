@@ -43,7 +43,7 @@ fn f() {
         asm!("sd t1, 0(t0)");
         unlock();
     }
-    exit(0)
+    exit()
 }
 
 #[no_mangle]

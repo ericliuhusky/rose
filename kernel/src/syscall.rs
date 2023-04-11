@@ -16,8 +16,8 @@ impl SysFunc for SysFuncImpl {
     fn write(fd: usize, buf: *const u8, len: usize) -> isize {
         write(fd, buf, len)
     }
-    fn exit(exit_code: i32) -> isize {
-        exit(exit_code)
+    fn exit() -> isize {
+        exit()
     }
     fn yield_() -> isize {
         yield_()
@@ -34,8 +34,8 @@ impl SysFunc for SysFuncImpl {
     fn exec(path: *const u8, len: usize) -> isize {
         exec(path, len)
     }
-    fn waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
-        waitpid(pid, exit_code_ptr)
+    fn waitpid(pid: isize) -> isize {
+        waitpid(pid)
     }
     fn putchar(c: usize) -> isize {
         putchar(c)
@@ -117,9 +117,9 @@ mod 系统调用_输出 {
 mod 系统调用_终止 {
     use crate::task::exit_and_run_next;
 
-    pub fn exit(exit_code: i32) -> isize {
-        println!("[kernel] Application exited with code {}", exit_code);
-        exit_and_run_next(exit_code);
+    pub fn exit() -> isize {
+        println!("[kernel] Application exited");
+        exit_and_run_next();
         -1
     }
 }
@@ -200,7 +200,7 @@ mod 系统调用_进程 {
         }
     }
 
-    pub fn waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
+    pub fn waitpid(pid: isize) -> isize {
         let mut process = current_process();
         if !process
             .children
@@ -216,10 +216,6 @@ mod 系统调用_进程 {
         if let Some((idx, _)) = pair {
             let child = process.children.remove(idx);
             let found_pid = child.pid.0;
-            // TODO: 终止代码
-            // let exit_code = child.borrow().终止代码;
-            // let refmut = task.memory_set.page_table.translated_refmut(exit_code_ptr);
-            // *refmut = exit_code;
             found_pid as isize
         } else {
             -2

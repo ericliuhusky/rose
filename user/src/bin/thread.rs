@@ -13,7 +13,7 @@ pub fn thread_a() -> ! {
         sleep(10);
         println!("A {}", i);
     }
-    exit(1)
+    exit()
 }
 
 pub fn thread_b() -> ! {
@@ -21,7 +21,7 @@ pub fn thread_b() -> ! {
         sleep(10);
         println!("B {}", i);
     }
-    exit(2)
+    exit()
 }
 
 pub fn thread_c() -> ! {
@@ -29,7 +29,7 @@ pub fn thread_c() -> ! {
         sleep(10);
         println!("C {}", i);
     }
-    exit(3)
+    exit()
 }
 
 #[no_mangle]
@@ -40,8 +40,8 @@ pub fn main() -> i32 {
         thread_create(thread_c as usize, 0),
     ];
     for tid in v.iter() {
-        let exit_code = waittid(*tid as usize);
-        println!("thread[{}] exit({})", tid, exit_code);
+        waittid(*tid as usize);
+        println!("thread[{}] exit", tid);
     }
     println!("main thread exited.");
     0

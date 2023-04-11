@@ -28,11 +28,11 @@ pub fn exception_handler() {
         }
         Exception::StoreFault | Exception::StorePageFault => {
             println!("[kernel] PageFault in application, kernel killed it.");
-            exit_and_run_next(-2);
+            exit_and_run_next();
         }
         Exception::IllegalInstruction => {
             println!("[kernel] IllegalInstruction in application, kernel killed it.");
-            exit_and_run_next(-3);
+            exit_and_run_next();
         }
         Exception::Interrupt(Interrupt::Timer) => {
             为下一次时钟中断定时();

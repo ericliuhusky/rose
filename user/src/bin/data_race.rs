@@ -25,7 +25,7 @@ fn f() {
         sleep(10);
         asm!("sd t1, 0(t0)");
     }
-    exit(0)
+    exit()
 }
 
 #[no_mangle]

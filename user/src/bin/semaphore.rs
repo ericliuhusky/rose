@@ -12,14 +12,14 @@ unsafe fn first() -> ! {
     sleep(10);
     println!("First work and wakeup Second");
     semaphore_up(0);
-    exit(0)
+    exit()
 }
 
 unsafe fn second() -> ! {
     println!("Second want to continue,but need to wait first");
     semaphore_down(0);
     println!("Second can work now");
-    exit(0)
+    exit()
 }
 
 #[no_mangle]

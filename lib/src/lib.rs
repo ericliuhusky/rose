@@ -14,7 +14,7 @@ fn _start() {
     // TODO: USER_HEAP_START_ADDR
     heap_allocator::init(0xFFFFFFFFFFF7F000, 0x80000);
     unsafe { main(); }
-    exit(0);
+    exit();
 }
 
 pub fn open(path: &str, create: bool) -> isize {
@@ -25,9 +25,9 @@ pub fn getchar() -> u8 {
     sys_call::getchar() as u8
 }
 
-pub fn wait(exit_code: &mut i32) -> isize {
+pub fn wait() -> isize {
     loop {
-        match sys_call::waitpid(-1, exit_code as *mut _) {
+        match sys_call::waitpid(-1) {
             -2 => {
                 yield_();
             }
@@ -37,9 +37,9 @@ pub fn wait(exit_code: &mut i32) -> isize {
     }
 }
 
-pub fn waitpid(pid: usize, exit_code: &mut i32) -> isize {
+pub fn waitpid(pid: usize) -> isize {
     loop {
-        match sys_call::waitpid(pid as isize, exit_code as *mut _) {
+        match sys_call::waitpid(pid as isize) {
             -2 => {
                 yield_();
             }
@@ -55,13 +55,8 @@ pub fn sleep(period_ms: usize) {
     }
 }
 
-pub fn waittid(tid: usize) -> isize {
-    loop {
-        match sys_call::waittid(tid) {
-            -2 => {
-                yield_();
-            }
-            exit_code => return exit_code,
-        }
+pub fn waittid(tid: usize) {
+    while sys_call::waittid(tid) == -2 {
+        yield_();
     }
 }

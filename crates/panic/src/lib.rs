@@ -19,7 +19,7 @@ fn panic(info: &PanicInfo) -> ! {
         println!("[kernel] Panicked: {}", info.message().unwrap());
     }
     #[cfg(feature = "user")]
-    sys_call::exit(-1);
+    sys_call::exit();
     #[cfg(not(feature = "user"))]
     sbi_call::shutdown()
 }

@@ -6,13 +6,13 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isi
     match id {
         SYS_READ => Ok(SysFuncImpl::read(args[0], args[1] as *const u8, args[2])),
         SYS_WRITE => Ok(SysFuncImpl::write(args[0], args[1] as *const u8, args[2])),
-        SYS_EXIT => Ok(SysFuncImpl::exit(args[0] as i32)),
+        SYS_EXIT => Ok(SysFuncImpl::exit()),
         SYS_YIELD => Ok(SysFuncImpl::yield_()),
         SYS_GET_TIME => Ok(SysFuncImpl::get_time()),
         SYS_GETPID => Ok(SysFuncImpl::getpid()),
         SYS_FORK => Ok(SysFuncImpl::fork()),
         SYS_EXEC => Ok(SysFuncImpl::exec(args[0] as *const u8, args[1])),
-        SYS_WAITPID => Ok(SysFuncImpl::waitpid(args[0] as isize, args[1] as *mut i32)),
+        SYS_WAITPID => Ok(SysFuncImpl::waitpid(args[0] as isize)),
         SYS_PUTCHAR => Ok(SysFuncImpl::putchar(args[0])),
         SYS_GETCHAR => Ok(SysFuncImpl::getchar()),
         SYS_OPEN => Ok(SysFuncImpl::open(
@@ -40,13 +40,13 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isi
 pub trait SysFunc {
     fn read(fd: usize, buf: *const u8, len: usize) -> isize;
     fn write(fd: usize, buf: *const u8, len: usize) -> isize;
-    fn exit(exit_code: i32) -> isize;
+    fn exit() -> isize;
     fn yield_() -> isize;
     fn get_time() -> isize;
     fn getpid() -> isize;
     fn fork() -> isize;
     fn exec(path: *const u8, len: usize) -> isize;
-    fn waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize;
+    fn waitpid(pid: isize) -> isize;
     fn putchar(c: usize) -> isize;
     fn getchar() -> isize;
     fn open(path: *const u8, len: usize, create: u32) -> isize;

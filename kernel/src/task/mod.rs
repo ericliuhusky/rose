@@ -28,7 +28,7 @@ impl TaskManager {
         self.run_next();
     }
 
-    fn exit_and_run_next(&mut self, exit_code: i32) {
+    fn exit_and_run_next(&mut self) {
         let mut previous = self.current.take().unwrap();
         previous.is_exited = true;
         let mut process = previous.process.upgrade().unwrap();
@@ -98,9 +98,9 @@ pub fn suspend_and_run_next() {
     }
 }
 
-pub fn exit_and_run_next(exit_code: i32) {
+pub fn exit_and_run_next() {
     unsafe {
-        TASK_MANAGER.exit_and_run_next(exit_code);
+        TASK_MANAGER.exit_and_run_next();
     }
 }
 

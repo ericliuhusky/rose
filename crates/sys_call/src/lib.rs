@@ -40,8 +40,8 @@ pub fn getchar() -> isize {
     sys_call(SYS_GETCHAR, [0, 0, 0])
 }
 
-pub fn exit(exit_code: isize) -> ! {
-    sys_call(SYS_EXIT, [exit_code as usize, 0, 0]);
+pub fn exit() -> ! {
+    sys_call(SYS_EXIT, [0, 0, 0]);
     panic!("exit")
 }
 
@@ -65,8 +65,8 @@ pub fn exec(path: &str) -> isize {
     sys_call(SYS_EXEC, [path.as_ptr() as usize, path.len(), 0])
 }
 
-pub fn waitpid(pid: isize, exit_code: *mut i32) -> isize {
-    sys_call(SYS_WAITPID, [pid as usize, exit_code as usize, 0])
+pub fn waitpid(pid: isize) -> isize {
+    sys_call(SYS_WAITPID, [pid as usize, 0, 0])
 }
 
 pub fn pipe(pipe: &mut [usize]) -> isize {

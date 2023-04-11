@@ -27,7 +27,7 @@ fn f() {
         asm!("sd t1, 0(t0)");
         mutex_unlock(0);
     }
-    exit(0)
+    exit()
 }
 
 #[no_mangle]
