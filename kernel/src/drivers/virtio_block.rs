@@ -32,7 +32,7 @@ impl VirtIOBlock {
     pub fn new() -> Self {
         unsafe {
             Self(RefCell::new(
-                VirtIOBlk::<VirtioHal>::new(&mut *(VIRTIO0 as *mut VirtIOHeader)).unwrap(),
+                VirtIOBlk::<VirtioHal>::new(&mut *(VIRTIO0 as *mut VirtIOHeader)),
             ))
         }
     }

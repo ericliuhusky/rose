@@ -21,22 +21,22 @@ pub struct VirtIONet<H: Hal> {
 
 impl<H: Hal> VirtIONet<H> {
     /// Create a new VirtIO-Net driver.
-    pub fn new(header: &'static mut VirtIOHeader) -> Result<Self> {
+    pub fn new(header: &'static mut VirtIOHeader) -> Self {
         header.init();
         // read configuration space
         let config = unsafe { &mut *(header.config_space() as *mut Config) };
         let mac = config.mac;
         debug!("Got MAC={:?}, status={:?}", mac, config.status);
 
-        let recv_queue = VirtQueue::new(header, QUEUE_RECEIVE, 16)?;
-        let send_queue = VirtQueue::new(header, QUEUE_TRANSMIT, 16)?;
+        let recv_queue = VirtQueue::new(header, QUEUE_RECEIVE, 16);
+        let send_queue = VirtQueue::new(header, QUEUE_TRANSMIT, 16);
 
-        Ok(VirtIONet {
+        Self {
             header,
             mac,
             recv_queue,
             send_queue,
-        })
+        }
     }
 
     /// Acknowledge interrupt.
@@ -60,30 +60,28 @@ impl<H: Hal> VirtIONet<H> {
     }
 
     /// Receive a packet.
-    pub fn recv(&mut self, buf: &mut [u8]) -> Result<usize> {
+    pub fn recv(&mut self, buf: &mut [u8]) -> usize {
         let mut header = MaybeUninit::<Header>::uninit();
         let header_buf = unsafe { (*header.as_mut_ptr()).as_buf_mut() };
-        self.recv_queue.add(&[], &[header_buf, buf])?;
+        self.recv_queue.add(&[], &[header_buf, buf]);
         self.header.notify(QUEUE_RECEIVE as u32);
         while !self.recv_queue.can_pop() {
             spin_loop();
         }
 
-        let (_, len) = self.recv_queue.pop_used()?;
-        // let header = unsafe { header.assume_init() };
-        Ok(len as usize - size_of::<Header>())
+        let (_, len) = self.recv_queue.pop_used();
+        len as usize - size_of::<Header>()
     }
 
     /// Send a packet.
-    pub fn send(&mut self, buf: &[u8]) -> Result {
+    pub fn send(&mut self, buf: &[u8]) {
         let header = unsafe { MaybeUninit::<Header>::zeroed().assume_init() };
-        self.send_queue.add(&[header.as_buf(), buf], &[])?;
+        self.send_queue.add(&[header.as_buf(), buf], &[]);
         self.header.notify(QUEUE_TRANSMIT as u32);
         while !self.send_queue.can_pop() {
             spin_loop();
         }
-        self.send_queue.pop_used()?;
-        Ok(())
+        self.send_queue.pop_used();
     }
 }
 

@@ -14,14 +14,14 @@ pub struct VirtIOBlk<H: Hal> {
 
 impl<H: Hal> VirtIOBlk<H> {
     /// Create a new VirtIO-Blk driver.
-    pub fn new(header: &'static mut VirtIOHeader) -> Result<Self> {
+    pub fn new(header: &'static mut VirtIOHeader) -> Self {
         header.init();
-        let queue = VirtQueue::new(header, 0, 16)?;
+        let queue = VirtQueue::new(header, 0, 16);
 
-        Ok(VirtIOBlk {
+        Self {
             header,
             queue,
-        })
+        }
     }
 
     /// Read a block.
@@ -33,12 +33,12 @@ impl<H: Hal> VirtIOBlk<H> {
             sector: block_id as u64,
         };
         let mut resp = BlkResp::default();
-        self.queue.add(&[req.as_buf()], &[buf, resp.as_buf_mut()]).unwrap();
+        self.queue.add(&[req.as_buf()], &[buf, resp.as_buf_mut()]);
         self.header.notify(0);
         while !self.queue.can_pop() {
             spin_loop();
         }
-        self.queue.pop_used().unwrap();
+        self.queue.pop_used();
         if resp.status != RespStatus::Ok {
             panic!()
         }
@@ -53,12 +53,12 @@ impl<H: Hal> VirtIOBlk<H> {
             sector: block_id as u64,
         };
         let mut resp = BlkResp::default();
-        self.queue.add(&[req.as_buf(), buf], &[resp.as_buf_mut()]).unwrap();
+        self.queue.add(&[req.as_buf(), buf], &[resp.as_buf_mut()]);
         self.header.notify(0);
         while !self.queue.can_pop() {
             spin_loop();
         }
-        self.queue.pop_used().unwrap();
+        self.queue.pop_used();
         if resp.status != RespStatus::Ok {
             panic!()
         }

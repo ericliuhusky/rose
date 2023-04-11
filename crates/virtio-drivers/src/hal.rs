@@ -15,15 +15,12 @@ pub struct DMA<H: Hal> {
 }
 
 impl<H: Hal> DMA<H> {
-    pub fn new(pages: usize) -> Result<Self> {
+    pub fn new(pages: usize) -> Self {
         let paddr = H::dma_alloc(pages);
-        if paddr == 0 {
-            return Err(Error::DmaError);
-        }
-        Ok(DMA {
+        Self {
             paddr,
             _phantom: PhantomData::default(),
-        })
+        }
     }
 
     /// Returns the physical page frame number.

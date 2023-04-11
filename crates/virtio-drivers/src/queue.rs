@@ -12,7 +12,6 @@ use crate::volatile::Volatile;
 /// The mechanism for bulk data transport on virtio devices.
 ///
 /// Each device can have zero or more virtqueues.
-#[derive(Debug)]
 pub struct VirtQueue<H: Hal> {
     /// Descriptor table
     desc: &'static mut [Descriptor],
@@ -37,16 +36,10 @@ pub struct VirtQueue<H: Hal> {
 
 impl<H: Hal> VirtQueue<H> {
     /// Create a new VirtQueue.
-    pub fn new(header: &mut VirtIOHeader, idx: usize, size: u16) -> Result<Self> {
-        if header.queue_used(idx as u32) {
-            return Err(Error::AlreadyUsed);
-        }
-        if !size.is_power_of_two() || header.max_queue_size() < size as u32 {
-            return Err(Error::InvalidParam);
-        }
+    pub fn new(header: &mut VirtIOHeader, idx: usize, size: u16) -> Self {
         let layout = VirtQueueLayout::new(size);
         // Allocate contiguous pages.
-        let dma = DMA::<H>::new(layout.size / PAGE_SIZE)?;
+        let dma = DMA::<H>::new(layout.size / PAGE_SIZE);
 
         header.queue_set(idx as u32, size as u32, PAGE_SIZE as u32, dma.ppn());
 
@@ -60,7 +53,7 @@ impl<H: Hal> VirtQueue<H> {
             desc[i as usize].next = i + 1;
         }
 
-        Ok(VirtQueue {
+        Self {
             desc,
             avail,
             used,
@@ -70,20 +63,13 @@ impl<H: Hal> VirtQueue<H> {
             avail_idx: 0,
             last_used_idx: 0,
             _phantom: PhantomData,
-        })
+        }
     }
 
     /// Add buffers to the virtqueue, return a token.
     ///
     /// Ref: linux virtio_ring.c virtqueue_add
-    pub fn add(&mut self, inputs: &[&[u8]], outputs: &[&mut [u8]]) -> Result<u16> {
-        if inputs.is_empty() && outputs.is_empty() {
-            return Err(Error::InvalidParam);
-        }
-        if inputs.len() + outputs.len() + self.num_used as usize > self.queue_size as usize {
-            return Err(Error::BufferTooSmall);
-        }
-
+    pub fn add(&mut self, inputs: &[&[u8]], outputs: &[&mut [u8]]) -> u16 {
         // allocate descriptors from free list
         let head = self.free_head;
         let mut last = self.free_head;
@@ -119,7 +105,7 @@ impl<H: Hal> VirtQueue<H> {
         // increase head of avail ring
         self.avail_idx = self.avail_idx.wrapping_add(1);
         self.avail.idx = self.avail_idx;
-        Ok(head)
+        head
     }
 
     /// Whether there is a used element that can pop.
@@ -154,10 +140,7 @@ impl<H: Hal> VirtQueue<H> {
     /// Get a token from device used buffers, return (token, len).
     ///
     /// Ref: linux virtio_ring.c virtqueue_get_buf_ctx
-    pub fn pop_used(&mut self) -> Result<(u16, u32)> {
-        if !self.can_pop() {
-            return Err(Error::NotReady);
-        }
+    pub fn pop_used(&mut self) -> (u16, u32) {
         // read barrier
         fence(Ordering::SeqCst);
 
@@ -168,7 +151,7 @@ impl<H: Hal> VirtQueue<H> {
         self.recycle_descriptors(index);
         self.last_used_idx = self.last_used_idx.wrapping_add(1);
 
-        Ok((index, len))
+        (index, len)
     }
 }
 
@@ -183,10 +166,6 @@ struct VirtQueueLayout {
 
 impl VirtQueueLayout {
     fn new(queue_size: u16) -> Self {
-        assert!(
-            queue_size.is_power_of_two(),
-            "queue size should be a power of 2"
-        );
         let queue_size = queue_size as usize;
         let desc = size_of::<Descriptor>() * queue_size;
         let avail = size_of::<AvailRing>();
@@ -200,7 +179,6 @@ impl VirtQueueLayout {
 }
 
 #[repr(C, align(16))]
-#[derive(Debug)]
 struct Descriptor {
     addr: u64,
     len: u32,
@@ -227,7 +205,6 @@ bitflags! {
 /// each ring entry refers to the head of a descriptor chain.
 /// It is only written by the driver and read by the device.
 #[repr(C)]
-#[derive(Debug)]
 struct AvailRing {
     _flags: u16,
     /// A driver MUST NOT decrement the idx.
@@ -238,7 +215,6 @@ struct AvailRing {
 /// The used ring is where the device returns buffers once it is done with them:
 /// it is only written to by the device, and read by the driver.
 #[repr(C)]
-#[derive(Debug)]
 struct UsedRing {
     _flags: u16,
     idx: Volatile<u16>,
@@ -246,7 +222,6 @@ struct UsedRing {
 }
 
 #[repr(C)]
-#[derive(Debug)]
 struct UsedElem {
     id: u32,
     len: u32,
