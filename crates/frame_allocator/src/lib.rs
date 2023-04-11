@@ -39,16 +39,6 @@ impl StackFrameAllocator {
         }
     }
 
-    fn alloc_more(&mut self, pages: usize) -> Vec<usize> {
-        if self.current + pages >= self.end {
-            panic!()
-        }
-        self.current += pages;
-        let arr: Vec<usize> = (1..pages + 1).collect();
-        let v = arr.iter().map(|x| (self.current - x).into()).collect();
-        v
-    }
-
     fn dealloc(&mut self, frame: PPN) {
         unsafe {
             *(frame.start_addr().number() as *mut [u8; 0x1000]) = [0; 0x1000];
@@ -79,12 +69,6 @@ pub fn alloc() -> usize {
 
 pub fn dealloc(frame: usize) {
     FrameAllocator::dealloc(PPN::new(frame));
-}
-
-pub fn alloc_more(pages: usize) -> Vec<usize> {
-    unsafe {
-        FRAME_ALLOCATOR.alloc_more(pages)
-    }
 }
 
 static mut FRAME_ALLOCATOR: StackFrameAllocator = StackFrameAllocator {
