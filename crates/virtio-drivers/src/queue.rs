@@ -22,8 +22,6 @@ pub struct VirtQueue<'a, H: Hal> {
     /// Used ring
     used: &'a mut UsedRing,
 
-    /// The index of queue
-    queue_idx: u32,
     /// The size of the queue.
     ///
     /// This is both the number of descriptors, and the number of slots in the available and used
@@ -68,7 +66,6 @@ impl<H: Hal> VirtQueue<'_, H> {
             avail,
             used,
             queue_size: size,
-            queue_idx: idx as u32,
             num_used: 0,
             free_head: 0,
             avail_idx: 0,
@@ -172,11 +169,6 @@ impl<H: Hal> VirtQueue<'_, H> {
         self.last_used_idx = self.last_used_idx.wrapping_add(1);
 
         Ok((index, len))
-    }
-
-    /// Return size of the queue.
-    pub fn size(&self) -> u16 {
-        self.queue_size
     }
 }
 

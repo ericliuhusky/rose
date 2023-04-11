@@ -184,7 +184,7 @@ type EthernetAddress = [u8; 6];
 #[derive(Debug)]
 struct Header {
     flags: Flags,
-    gso_type: GsoType,
+    gso_type: u8,
     hdr_len: u16, // cannot rely on this
     gso_size: u16,
     csum_start: u16,
@@ -200,16 +200,6 @@ bitflags! {
         const DATA_VALID = 2;
         const RSC_INFO   = 4;
     }
-}
-
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-enum GsoType {
-    NONE = 0,
-    TCPV4 = 1,
-    UDP = 3,
-    TCPV6 = 4,
-    ECN = 0x80,
 }
 
 const QUEUE_RECEIVE: usize = 0;

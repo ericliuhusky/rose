@@ -2,7 +2,6 @@ use super::*;
 use crate::header::VirtIOHeader;
 use crate::queue::VirtQueue;
 use core::hint::spin_loop;
-use log::*;
 
 /// The virtio block device is a simple virtual block device (ie. disk).
 ///
@@ -100,9 +99,6 @@ impl BlkResp {
 enum ReqType {
     In = 0,
     Out = 1,
-    Flush = 4,
-    Discard = 11,
-    WriteZeroes = 13,
 }
 
 /// Status of a VirtIOBlk request.

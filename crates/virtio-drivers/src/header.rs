@@ -1,5 +1,4 @@
 use crate::PAGE_SIZE;
-use bitflags::*;
 use crate::volatile::Volatile;
 
 /// MMIO Device Legacy Register Interface.

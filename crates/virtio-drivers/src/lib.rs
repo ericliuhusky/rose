@@ -45,11 +45,6 @@ fn align_up(size: usize) -> usize {
     (size + PAGE_SIZE) & !(PAGE_SIZE - 1)
 }
 
-/// The number of pages required to store `size` bytes, rounded up to a whole number of pages.
-fn pages(size: usize) -> usize {
-    (size + PAGE_SIZE - 1) / PAGE_SIZE
-}
-
 /// Convert a struct into a byte buffer.
 unsafe trait AsBuf: Sized {
     fn as_buf(&self) -> &[u8] {
