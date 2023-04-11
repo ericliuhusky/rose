@@ -155,13 +155,6 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
             .collect()
     }
 
-    pub fn translate_one_addr(&self, va: usize) -> usize {
-        let va = VA::new(va);
-        let vpn = va.align_to_lower().page().number();
-        let ppn = self.translate(vpn);
-        ppn.start_addr().offset(va.page_offset()).number()
-    }
-
     pub fn translate_type<T>(&self, va: usize) -> &'static mut T {
         let start_va = VA::new(va);
         let len = core::mem::size_of::<T>();

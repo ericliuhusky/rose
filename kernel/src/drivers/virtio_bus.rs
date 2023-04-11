@@ -1,4 +1,4 @@
-use crate::mm::memory_set::{DMA_END_ADDR, DMA_START_ADDR, KERNEL_SPACE};
+use crate::mm::memory_set::{DMA_END_ADDR, DMA_START_ADDR};
 use core::cell::RefCell;
 use page_table::{Address, Page, PA, PPN};
 use virtio_drivers::Hal;
