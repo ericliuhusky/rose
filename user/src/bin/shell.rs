@@ -17,7 +17,7 @@ use lib::getchar;
 use lib::{exec, fork, waitpid};
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     println!("[shell]");
     let mut line: String = String::new();
     print!(">> ");
@@ -27,12 +27,15 @@ pub fn main() -> i32 {
             LF | CR => {
                 println!("");
                 if !line.is_empty() {
+                    if line == "exit" {
+                        return;
+                    }
                     let pid = fork();
                     if pid == 0 {
                         // child process
                         if exec(line.as_str()) == -1 {
                             println!("[shell] Error when executing!");
-                            return -4;
+                            return;
                         }
                         unreachable!();
                     } else {
