@@ -93,10 +93,7 @@ mod 系统调用_输出 {
     pub fn write(fd: usize, buf: *const u8, len: usize) -> isize {
         let process = current_process();
         let fd_table = &process.fd_table;
-        if fd >= fd_table.len() {
-            return -1;
-        }
-        if let Some(file) = &fd_table[fd] {
+        if let Some(file) = fd_table.get(fd) {
             let mut file = file.clone();
             let buf = process
                 .memory_set
@@ -130,10 +127,7 @@ mod 系统调用_读取 {
     pub fn read(fd: usize, buf: *const u8, len: usize) -> isize {
         let process = current_process();
         let fd_table = &process.fd_table;
-        if fd >= fd_table.len() {
-            return -1;
-        }
-        if let Some(file) = &fd_table[fd] {
+        if let Some(file) = fd_table.get(fd) {
             let mut file = file.clone();
             let buf = process
                 .memory_set
@@ -238,8 +232,7 @@ pub fn open(path: *const u8, len: usize, create: u32) -> isize {
         .read_str(path as usize, len);
     let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {
-        let fd = process.alloc_fd();
-        process.fd_table[fd] = Some(inode);
+        let fd = process.fd_table.insert(inode);
         fd as isize
     } else {
         -1
@@ -249,13 +242,7 @@ pub fn open(path: *const u8, len: usize, create: u32) -> isize {
 pub fn close(fd: usize) -> isize {
     let mut process = current_process();
     let fd_table = &process.fd_table;
-    if fd >= fd_table.len() {
-        return -1;
-    }
-    if fd_table[fd].is_none() {
-        return -1;
-    }
-    process.fd_table[fd].take();
+    process.fd_table.remove(fd);
     0
 }
 
@@ -265,10 +252,8 @@ pub fn pipe(pipe_fd: *mut usize) -> isize {
     let mut process = current_process();
 
     let (pipe_read, pipe_write) = make_pipe();
-    let read_fd = process.alloc_fd();
-    process.fd_table[read_fd] = Some(pipe_read);
-    let write_fd = process.alloc_fd();
-    process.fd_table[write_fd] = Some(pipe_write);
+    let read_fd = process.fd_table.insert(pipe_read);
+    let write_fd = process.fd_table.insert(pipe_write);
     let pipe_fd = process.memory_set.page_table.translate_type::<[usize; 2]>(pipe_fd as usize);
     pipe_fd[0] = read_fd;
     pipe_fd[1] = write_fd;
@@ -360,9 +345,8 @@ use crate::net::{net_interrupt_handler, IPv4};
 // just support udp
 fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
     let mut process = current_process();
-    let fd = process.alloc_fd();
     let udp_node = UDP::new(IPv4::from_u32(raddr), lport, rport);
-    process.fd_table[fd] = Some(MutRc::new(udp_node));
+    let fd = process.fd_table.insert(MutRc::new(udp_node));
     fd as isize
 }
 
@@ -371,9 +355,8 @@ fn listen(port: u16) -> isize {
     match port_table::listen(port) {
         Some(port_index) => {
             let mut process = current_process();
-            let fd = process.alloc_fd();
             let port_fd = PortFd::new(port_index);
-            process.fd_table[fd] = Some(MutRc::new(port_fd));
+            process.fd_table.insert(MutRc::new(port_fd));
 
             // NOTICE: this return the port index, not the fd
             port_index as isize

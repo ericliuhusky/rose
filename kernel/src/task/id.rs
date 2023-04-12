@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 
+#[derive(Clone)]
 pub struct IDAllocator {
     current: usize,
     recycled: Vec<usize>,
@@ -45,6 +46,7 @@ impl Drop for Pid {
     }
 }
 
+#[derive(Clone)]
 pub struct IDAllocDict<V> {
     dict: BTreeMap<usize, V>,
     id_allocator: IDAllocator,
@@ -66,5 +68,9 @@ impl<V> IDAllocDict<V> {
 
     pub fn get(&self, id: usize) -> Option<&V> {
         self.dict.get(&id)
+    }
+
+    pub fn remove(&mut self, id: usize) {
+        self.dict.remove(&id);
     }
 }

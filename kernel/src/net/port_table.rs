@@ -89,7 +89,6 @@ pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<()> {
 
 pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket, mut task: MutRc<Task>) {
     let mut process = task.process.upgrade().unwrap();
-    let fd = process.alloc_fd();
 
     let tcp_socket = TCP::new(
         tcp_packet.source_ip,
@@ -99,7 +98,7 @@ pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket, mut task: MutRc<Tas
         tcp_packet.ack,
     );
 
-    process.fd_table[fd] = Some(MutRc::new(tcp_socket));
+    let fd = process.fd_table.insert(MutRc::new(tcp_socket));
 
     task.cx.x[10] = fd;
 }

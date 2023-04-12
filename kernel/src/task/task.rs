@@ -1,5 +1,3 @@
-use alloc::collections::BTreeMap;
-use alloc::vec;
 use alloc::vec::Vec;
 use crate::mm::memory_set::{UserSpace, USER_STACK_START_ADDR, USER_STACK_SIZE};
 use crate::mutex::Mutex;
@@ -7,7 +5,7 @@ use crate::semaphore::Semaphore;
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
 use super::add_task;
-use super::id::{Pid, pid_alloc, IDAllocator, IDAllocDict};
+use super::id::{Pid, pid_alloc, IDAllocDict};
 use crate::fs::{File, Stdin, Stdout};
 
 pub struct Process {
@@ -15,22 +13,13 @@ pub struct Process {
     pub is_exited: bool,
     pub memory_set: UserSpace,
     pub children: Vec<MutRc<Process>>,
-    pub fd_table: Vec<Option<MutRc<dyn File>>>,
+    pub fd_table: IDAllocDict<MutRc<dyn File>>,
     pub tasks: IDAllocDict<MutRc<Task>>,
     pub mutexs: IDAllocDict<MutRc<Mutex>>,
     pub semaphores: IDAllocDict<MutRc<Semaphore>>,
 }
 
 impl Process {
-    pub fn alloc_fd(&mut self) -> usize {
-        if let Some(fd) = (0..self.fd_table.len()).find(|fd| self.fd_table[*fd].is_none()) {
-            fd
-        } else {
-            self.fd_table.push(None);
-            self.fd_table.len() - 1
-        }
-    }
-
     pub fn main_task(&self) -> MutRc<Task> {
         self.tasks.get(0).unwrap().clone()
     }
@@ -39,16 +28,18 @@ impl Process {
 impl Process {
     pub fn new(elf_data: &[u8]) -> MutRc<Self> {
         let (memory_set, entry_address) = UserSpace::new(elf_data);
+
+        let mut fd_table: IDAllocDict<MutRc<dyn File>> = IDAllocDict::new();
+        fd_table.insert(MutRc::new(Stdin));
+        fd_table.insert(MutRc::new(Stdout));
+        fd_table.insert(MutRc::new(Stdout));
+
         let mut process = MutRc::new(Self{
             pid: pid_alloc(),
             is_exited: false,
             memory_set,
             children: Vec::new(),
-            fd_table: vec![
-                Some(MutRc::new(Stdin)),
-                Some(MutRc::new(Stdout)),
-                Some(MutRc::new(Stdout)),
-            ],
+            fd_table,
             tasks: IDAllocDict::new(),
             mutexs: IDAllocDict::new(),
             semaphores: IDAllocDict::new(),
@@ -80,20 +71,12 @@ impl Process {
 
     pub fn fork(&mut self) -> MutRc<Self> {
         let memory_set = self.memory_set.clone();
-        let mut new_fd_table: Vec<Option<MutRc<dyn File>>> = Vec::new();
-        for fd in self.fd_table.iter() {
-            if let Some(file) = fd {
-                new_fd_table.push(Some(file.clone()));
-            } else {
-                new_fd_table.push(None);
-            }
-        }
         let mut process = MutRc::new(Self {
             pid: pid_alloc(),
             is_exited: false,
             memory_set,
             children: Vec::new(),
-            fd_table: new_fd_table,
+            fd_table: self.fd_table.clone(),
             tasks: IDAllocDict::new(),
             mutexs: IDAllocDict::new(),
             semaphores: IDAllocDict::new(),
