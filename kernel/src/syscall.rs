@@ -281,11 +281,9 @@ pub fn thread_create(entry: usize, arg: usize) -> isize {
     let mut new_task = MutRc::new(Task::new(
         process.clone(),
     ));
-    let tid = process.alloc_tid();
-    new_task.tid = Some(tid);
+    let new_task_tid = process.tasks.insert(new_task.clone());
+    new_task.tid = Some(new_task_tid);
     add_task(new_task.clone());
-    let new_task_tid = new_task.tid.unwrap();
-    process.tasks.insert(new_task_tid, new_task.clone());
     let ustack_top = new_task.user_stack_top();
     new_task.cx = Context::app_init(
         entry,
@@ -299,7 +297,7 @@ pub fn waittid(tid: usize) -> isize {
     let task = current_task();
     let process = task.process.upgrade().unwrap();
 
-    let waited_task = process.tasks.get(&tid);
+    let waited_task = process.tasks.get(tid);
     if let Some(waited_task) = waited_task {
         if waited_task.is_exited {
             0
@@ -320,14 +318,14 @@ fn mutex_create() -> isize {
 
 fn mutex_lock(mutex_id: usize) -> isize {
     let process = current_process();
-    let mut mutex = process.mutexs.get(mutex_id).clone();
+    let mut mutex = process.mutexs.get(mutex_id).unwrap().clone();
     mutex.lock();
     0
 }
 
 fn mutex_unlock(mutex_id: usize) -> isize {
     let process = current_process();
-    let mut mutex = process.mutexs.get(mutex_id).clone();
+    let mut mutex = process.mutexs.get(mutex_id).unwrap().clone();
     mutex.unlock();
     0
 }
@@ -341,14 +339,14 @@ fn semaphore_create(res_count: usize) -> isize {
 
 fn semaphore_down(sem_id: usize) -> isize {
     let process = current_process();
-    let mut semaphore = process.semaphores.get(sem_id).clone();
+    let mut semaphore = process.semaphores.get(sem_id).unwrap().clone();
     semaphore.down();
     0
 }
 
 fn semaphore_up(sem_id: usize) -> isize {
     let process = current_process();
-    let mut semaphore = process.semaphores.get(sem_id).clone();
+    let mut semaphore = process.semaphores.get(sem_id).unwrap().clone();
     semaphore.up();
     0
 }

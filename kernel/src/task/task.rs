@@ -16,8 +16,7 @@ pub struct Process {
     pub memory_set: UserSpace,
     pub children: Vec<MutRc<Process>>,
     pub fd_table: Vec<Option<MutRc<dyn File>>>,
-    pub tasks: BTreeMap<usize, MutRc<Task>>,
-    pub tid_allocator: IDAllocator,
+    pub tasks: IDAllocDict<MutRc<Task>>,
     pub mutexs: IDAllocDict<MutRc<Mutex>>,
     pub semaphores: IDAllocDict<MutRc<Semaphore>>,
 }
@@ -32,12 +31,8 @@ impl Process {
         }
     }
 
-    pub fn alloc_tid(&mut self) -> usize {
-        self.tid_allocator.alloc()
-    }
-
     pub fn main_task(&self) -> MutRc<Task> {
-        self.tasks.get(&0).unwrap().clone()
+        self.tasks.get(0).unwrap().clone()
     }
 }
 
@@ -54,20 +49,18 @@ impl Process {
                 Some(MutRc::new(Stdout)),
                 Some(MutRc::new(Stdout)),
             ],
-            tasks: BTreeMap::new(),
-            tid_allocator: IDAllocator::new(),
+            tasks: IDAllocDict::new(),
             mutexs: IDAllocDict::new(),
             semaphores: IDAllocDict::new(),
         });
         let mut task = MutRc::new(Task::new(process.clone()));
-        let tid = process.alloc_tid();
+        let tid = process.tasks.insert(task.clone());
         task.tid = Some(tid);
         let user_stack_top = task.user_stack_top();
         task.cx = Context::app_init(
             entry_address,
             user_stack_top,
         );
-        process.tasks.insert(0, task.clone());
         add_task(task);
         process
     }
@@ -101,18 +94,15 @@ impl Process {
             memory_set,
             children: Vec::new(),
             fd_table: new_fd_table,
-            tasks: BTreeMap::new(),
-            tid_allocator: IDAllocator::new(),
+            tasks: IDAllocDict::new(),
             mutexs: IDAllocDict::new(),
             semaphores: IDAllocDict::new(),
         });
         self.children.push(process.clone());
         let mut task = self.main_task().as_ref().clone();
-        // MARK: 确保下一个分配的tid是1，是0会覆盖主线程
-        process.alloc_tid();
         task.process = process.downgrade();
         let task = MutRc::new(task);
-        process.tasks.insert(0, task.clone());
+        process.tasks.insert(task.clone());
 
         add_task(task);
         process

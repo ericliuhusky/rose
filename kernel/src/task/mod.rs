@@ -41,7 +41,6 @@ impl TaskManager {
     
             process.is_exited = true;
             process.children.clear();
-            process.tasks.clear();
         }
 
         drop(process);

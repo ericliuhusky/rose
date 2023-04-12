@@ -64,7 +64,7 @@ impl<V> IDAllocDict<V> {
         id
     }
 
-    pub fn get(&self, id: usize) -> &V {
-        self.dict.get(&id).unwrap()
+    pub fn get(&self, id: usize) -> Option<&V> {
+        self.dict.get(&id)
     }
 }
