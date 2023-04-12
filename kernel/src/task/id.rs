@@ -32,18 +32,12 @@ impl IDAllocator {
 
 static mut PID_ALLOCATOR: IDAllocator = IDAllocator::new();
 
-pub fn pid_alloc() -> Pid {
-    Pid(unsafe { PID_ALLOCATOR.alloc() })
+pub fn pid_alloc() -> usize {
+    unsafe { PID_ALLOCATOR.alloc() }
 }
 
-pub struct Pid(pub usize);
-
-impl Drop for Pid {
-    fn drop(&mut self) {
-        unsafe {
-            PID_ALLOCATOR.dealloc(self.0);
-        }
-    }
+pub fn pid_dealloc(id: usize) {
+    unsafe { PID_ALLOCATOR.dealloc(id); }
 }
 
 #[derive(Clone)]

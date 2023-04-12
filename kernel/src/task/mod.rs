@@ -1,4 +1,4 @@
-mod id;
+pub mod id;
 pub mod task;
 
 use mutrc::MutRc;
@@ -34,7 +34,7 @@ impl TaskManager {
         let mut process = previous.process.upgrade().unwrap();
 
         if previous.tid.unwrap() == 0 {
-            if process.pid.0 == 0 {
+            if process.pid == 0 {
                 println!("[Kernel] exit!");
                 shutdown();
             }

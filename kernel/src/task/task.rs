@@ -4,11 +4,11 @@ use crate::semaphore::Semaphore;
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
 use super::{add_task, PROCESSES};
-use super::id::{Pid, pid_alloc, IDAllocDict};
+use super::id::{pid_alloc, IDAllocDict};
 use crate::fs::{File, Stdin, Stdout};
 
 pub struct Process {
-    pub pid: Pid,
+    pub pid: usize,
     pub is_exited: bool,
     pub memory_set: UserSpace,
     pub fd_table: IDAllocDict<MutRc<dyn File>>,
@@ -78,7 +78,7 @@ impl Process {
             semaphores: IDAllocDict::new(),
         });
         unsafe {
-            PROCESSES.insert(process.pid.0, process.clone());
+            PROCESSES.insert(process.pid, process.clone());
         }
         let mut task = self.main_task().as_ref().clone();
         task.process = process.downgrade();
