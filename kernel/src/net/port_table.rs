@@ -19,7 +19,7 @@ lazy_static! {
     static ref LISTEN_TABLE: RefCell<Vec<Option<Port>>> = RefCell::new(Vec::new());
 }
 
-pub fn listen(port: u16) -> Option<usize> {
+pub fn listen(port: u16) -> usize {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
     let mut index = usize::MAX;
     for i in 0..listen_table.len() {
@@ -37,10 +37,10 @@ pub fn listen(port: u16) -> Option<usize> {
 
     if index == usize::MAX {
         listen_table.push(Some(listen_port));
-        Some(listen_table.len() - 1)
+        listen_table.len() - 1
     } else {
         listen_table[index] = Some(listen_port);
-        Some(index)
+        index
     }
 }
 

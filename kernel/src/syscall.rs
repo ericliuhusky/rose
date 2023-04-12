@@ -343,17 +343,13 @@ fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
 
 // listen a port
 fn listen(port: u16) -> isize {
-    match port_table::listen(port) {
-        Some(port_index) => {
-            let mut process = current_process();
-            let port_fd = PortFd::new(port_index);
-            process.fd_table.insert(MutRc::new(port_fd));
+    let port_id = port_table::listen(port);
+    let mut process = current_process();
+    let port_fd = PortFd::new(port_id);
+    process.fd_table.insert(MutRc::new(port_fd));
 
-            // NOTICE: this return the port index, not the fd
-            port_index as isize
-        }
-        None => -1,
-    }
+    // NOTICE: this return the port index, not the fd
+    port_id as isize
 }
 
 // accept a tcp connection
