@@ -112,9 +112,6 @@ pub fn wakeup_task(task: MutRc<Task>) {
     add_task(task);
 }
 
-// TODO: 必须持有根进程才不会被释放
-static mut ROOT_PROC: Option<MutRc<Process>> = None;
-
 pub static mut PROCESSES: BTreeMap<usize, MutRc<Process>> = BTreeMap::new();
 
 pub fn add_initproc() {
@@ -123,6 +120,6 @@ pub fn add_initproc() {
     let elf_data = inode.read_all();
     let initproc = Process::new(&elf_data);
     unsafe {
-        ROOT_PROC = Some(initproc);
+        PROCESSES.insert(0, initproc);
     }
 }
