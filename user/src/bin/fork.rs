@@ -4,19 +4,20 @@
 #[macro_use]
 extern crate lib;
 
-use lib::{fork, getpid, wait};
+use lib::{fork, getpid, waitpid};
 use lib::exit;
 
 #[no_mangle]
 pub fn main() -> i32 {
     println!("[fork]");
-    if fork() == 0 {
+    let pid = fork();
+    if pid == 0 {
         println!("child[{}]", getpid());
         exit();
     }
 
     println!("parent[{}] waiting...", getpid());
-    let pid = wait();
+    let pid = waitpid(pid as usize);
     println!("child[{}] exit", pid);
     0
 }

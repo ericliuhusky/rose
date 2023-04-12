@@ -196,23 +196,19 @@ mod 系统调用_进程 {
 
     pub fn waitpid(pid: isize) -> isize {
         let mut process = current_process();
-        if !process
-            .children
-            .iter()
-            .any(|p| pid == -1 || pid as usize == p.pid.0)
-        {
-            return -1;
-        }
-
         let pair = process.children.iter().enumerate().find(|(_, p)| {
-            p.is_exited && (pid == -1 || pid as usize == p.pid.0)
+            p.pid.0 == pid as usize
         });
-        if let Some((idx, _)) = pair {
-            let child = process.children.remove(idx);
-            let found_pid = child.pid.0;
-            found_pid as isize
+        if let Some((i, child)) = pair {
+            if child.is_exited {
+                let child = process.children.remove(i);
+                let found_pid = child.pid.0;
+                found_pid as isize
+            } else {
+                -2
+            }
         } else {
-            -2
+            -1
         }
     }
 }

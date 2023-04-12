@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate lib;
 
-use lib::{close, fork, pipe, read, wait, write};
+use lib::{close, fork, pipe, read, waitpid, write};
 
 static STR: &str = "Hello, world!";
 
@@ -17,7 +17,8 @@ pub fn main() -> i32 {
     assert_eq!(pipe_fd[0], 3);
     // write end
     assert_eq!(pipe_fd[1], 4);
-    if fork() == 0 {
+    let pid = fork();
+    if pid == 0 {
         // child process, read from parent
         // close write_end
         close(pipe_fd[1]);
@@ -35,7 +36,7 @@ pub fn main() -> i32 {
         assert_eq!(write(pipe_fd[1], STR.as_bytes()), STR.len() as isize);
         // close write end
         close(pipe_fd[1]);
-        wait();
+        waitpid(pid as usize);
         println!("pipetest passed!");
         0
     }

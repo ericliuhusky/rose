@@ -4,15 +4,16 @@
 #[macro_use]
 extern crate lib;
 
-use lib::{exec, fork, wait, yield_};
+use lib::{exec, fork, waitpid, yield_};
 
 #[no_mangle]
 fn main() -> i32 {
-    if fork() == 0 {
+    let pid = fork();
+    if pid == 0 {
         exec("shell");
     } else {
         loop {
-            let pid = wait();
+            let pid = waitpid(pid as usize);
             if pid == -1 {
                 yield_();
                 continue;

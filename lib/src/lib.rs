@@ -25,18 +25,6 @@ pub fn getchar() -> u8 {
     sys_call::getchar() as u8
 }
 
-pub fn wait() -> isize {
-    loop {
-        match sys_call::waitpid(-1) {
-            -2 => {
-                yield_();
-            }
-            // -1 or a real pid
-            exit_pid => return exit_pid,
-        }
-    }
-}
-
 pub fn waitpid(pid: usize) -> isize {
     loop {
         match sys_call::waitpid(pid as isize) {
