@@ -12,7 +12,7 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isi
         SYS_GETPID => Ok(SysFuncImpl::getpid()),
         SYS_FORK => Ok(SysFuncImpl::fork()),
         SYS_EXEC => Ok(SysFuncImpl::exec(args[0] as *const u8, args[1])),
-        SYS_WAITPID => Ok(SysFuncImpl::waitpid(args[0] as isize)),
+        SYS_WAITPID => Ok(SysFuncImpl::waitpid(args[0])),
         SYS_PUTCHAR => Ok(SysFuncImpl::putchar(args[0])),
         SYS_GETCHAR => Ok(SysFuncImpl::getchar()),
         SYS_OPEN => Ok(SysFuncImpl::open(
@@ -46,7 +46,7 @@ pub trait SysFunc {
     fn getpid() -> isize;
     fn fork() -> isize;
     fn exec(path: *const u8, len: usize) -> isize;
-    fn waitpid(pid: isize) -> isize;
+    fn waitpid(pid: usize) -> isize;
     fn putchar(c: usize) -> isize;
     fn getchar() -> isize;
     fn open(path: *const u8, len: usize, create: u32) -> isize;

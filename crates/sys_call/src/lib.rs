@@ -65,8 +65,8 @@ pub fn exec(path: &str) -> isize {
     sys_call(SYS_EXEC, [path.as_ptr() as usize, path.len(), 0])
 }
 
-pub fn waitpid(pid: isize) -> isize {
-    sys_call(SYS_WAITPID, [pid as usize, 0, 0])
+pub fn waitpid(pid: usize) -> isize {
+    sys_call(SYS_WAITPID, [pid, 0, 0])
 }
 
 pub fn pipe(pipe: &mut [usize]) -> isize {

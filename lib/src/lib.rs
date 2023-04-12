@@ -25,17 +25,12 @@ pub fn getchar() -> u8 {
     sys_call::getchar() as u8
 }
 
-pub fn waitpid(pid: usize) -> isize {
-    loop {
-        match sys_call::waitpid(pid as isize) {
-            -2 => {
-                yield_();
-            }
-            // -1 or a real pid
-            exit_pid => return exit_pid,
-        }
+pub fn waitpid(pid: usize) {
+    while sys_call::waitpid(pid) == -2 {
+        yield_();
     }
 }
+
 pub fn sleep(period_ms: usize) {
     let start = get_time();
     while get_time() < start + period_ms as isize {

@@ -36,8 +36,7 @@ pub fn main() -> i32 {
                         }
                         unreachable!();
                     } else {
-                        let exit_pid = waitpid(pid as usize);
-                        assert_eq!(pid, exit_pid);
+                        waitpid(pid as usize);
                         println!("[shell]: Process {} exited", pid);
                     }
                     line.clear();

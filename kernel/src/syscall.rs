@@ -34,7 +34,7 @@ impl SysFunc for SysFuncImpl {
     fn exec(path: *const u8, len: usize) -> isize {
         exec(path, len)
     }
-    fn waitpid(pid: isize) -> isize {
+    fn waitpid(pid: usize) -> isize {
         waitpid(pid)
     }
     fn putchar(c: usize) -> isize {
@@ -194,16 +194,12 @@ mod 系统调用_进程 {
         }
     }
 
-    pub fn waitpid(pid: isize) -> isize {
+    pub fn waitpid(pid: usize) -> isize {
         let mut process = current_process();
-        let pair = process.children.iter().enumerate().find(|(_, p)| {
-            p.pid.0 == pid as usize
-        });
-        if let Some((i, child)) = pair {
-            if child.is_exited {
-                let child = process.children.remove(i);
-                let found_pid = child.pid.0;
-                found_pid as isize
+        if let Some(waited_process) = process.children.get(&pid) {
+            if waited_process.is_exited {
+                process.children.remove(&pid);
+                0
             } else {
                 -2
             }

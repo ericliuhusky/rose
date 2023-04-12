@@ -13,11 +13,7 @@ fn main() -> i32 {
         exec("shell");
     } else {
         loop {
-            let pid = waitpid(pid as usize);
-            if pid == -1 {
-                yield_();
-                continue;
-            }
+            waitpid(pid as usize);
             println!(
                 "[initproc] Released a zombie process, pid={}",
                 pid,

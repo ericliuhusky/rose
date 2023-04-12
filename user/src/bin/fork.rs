@@ -17,7 +17,7 @@ pub fn main() -> i32 {
     }
 
     println!("parent[{}] waiting...", getpid());
-    let pid = waitpid(pid as usize);
+    waitpid(pid as usize);
     println!("child[{}] exit", pid);
     0
 }

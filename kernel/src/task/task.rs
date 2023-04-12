@@ -1,3 +1,4 @@
+use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use crate::mm::memory_set::{UserSpace, USER_STACK_START_ADDR, USER_STACK_SIZE};
 use crate::mutex::Mutex;
@@ -12,7 +13,7 @@ pub struct Process {
     pub pid: Pid,
     pub is_exited: bool,
     pub memory_set: UserSpace,
-    pub children: Vec<MutRc<Process>>,
+    pub children: BTreeMap<usize, MutRc<Process>>,
     pub fd_table: IDAllocDict<MutRc<dyn File>>,
     pub tasks: IDAllocDict<MutRc<Task>>,
     pub mutexs: IDAllocDict<MutRc<Mutex>>,
@@ -38,7 +39,7 @@ impl Process {
             pid: pid_alloc(),
             is_exited: false,
             memory_set,
-            children: Vec::new(),
+            children: BTreeMap::new(),
             fd_table,
             tasks: IDAllocDict::new(),
             mutexs: IDAllocDict::new(),
@@ -75,13 +76,13 @@ impl Process {
             pid: pid_alloc(),
             is_exited: false,
             memory_set,
-            children: Vec::new(),
+            children: BTreeMap::new(),
             fd_table: self.fd_table.clone(),
             tasks: IDAllocDict::new(),
             mutexs: IDAllocDict::new(),
             semaphores: IDAllocDict::new(),
         });
-        self.children.push(process.clone());
+        self.children.insert(process.pid.0, process.clone());
         let mut task = self.main_task().as_ref().clone();
         task.process = process.downgrade();
         let task = MutRc::new(task);
