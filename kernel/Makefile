@@ -8,7 +8,7 @@ TCP_PORT_80_MAP := 3000
 UDP_PORT_2000_MAP := 6000
 
 
-run: kernel-bin fs-img
+run: kernel-bin
 	@qemu-system-riscv64 \
 		-machine virt \
 		-nographic \
