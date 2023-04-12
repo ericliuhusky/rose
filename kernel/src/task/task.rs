@@ -1,11 +1,9 @@
-use alloc::collections::BTreeMap;
-use alloc::vec::Vec;
 use crate::mm::memory_set::{UserSpace, USER_STACK_START_ADDR, USER_STACK_SIZE};
 use crate::mutex::Mutex;
 use crate::semaphore::Semaphore;
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
-use super::add_task;
+use super::{add_task, PROCESSES};
 use super::id::{Pid, pid_alloc, IDAllocDict};
 use crate::fs::{File, Stdin, Stdout};
 
@@ -13,7 +11,6 @@ pub struct Process {
     pub pid: Pid,
     pub is_exited: bool,
     pub memory_set: UserSpace,
-    pub children: BTreeMap<usize, MutRc<Process>>,
     pub fd_table: IDAllocDict<MutRc<dyn File>>,
     pub tasks: IDAllocDict<MutRc<Task>>,
     pub mutexs: IDAllocDict<MutRc<Mutex>>,
@@ -39,7 +36,6 @@ impl Process {
             pid: pid_alloc(),
             is_exited: false,
             memory_set,
-            children: BTreeMap::new(),
             fd_table,
             tasks: IDAllocDict::new(),
             mutexs: IDAllocDict::new(),
@@ -76,13 +72,14 @@ impl Process {
             pid: pid_alloc(),
             is_exited: false,
             memory_set,
-            children: BTreeMap::new(),
             fd_table: self.fd_table.clone(),
             tasks: IDAllocDict::new(),
             mutexs: IDAllocDict::new(),
             semaphores: IDAllocDict::new(),
         });
-        self.children.insert(process.pid.0, process.clone());
+        unsafe {
+            PROCESSES.insert(process.pid.0, process.clone());
+        }
         let mut task = self.main_task().as_ref().clone();
         task.process = process.downgrade();
         let task = MutRc::new(task);

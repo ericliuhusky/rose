@@ -3,7 +3,7 @@ pub mod task;
 
 use mutrc::MutRc;
 use self::task::{Task, Process};
-use alloc::vec::Vec;
+use alloc::{vec::Vec, collections::BTreeMap};
 use exception::restore::restore_context;
 use sbi_call::shutdown;
 
@@ -40,7 +40,6 @@ impl TaskManager {
             }
     
             process.is_exited = true;
-            process.children.clear();
         }
 
         drop(process);
@@ -115,6 +114,8 @@ pub fn wakeup_task(task: MutRc<Task>) {
 
 // TODO: 必须持有根进程才不会被释放
 static mut ROOT_PROC: Option<MutRc<Process>> = None;
+
+pub static mut PROCESSES: BTreeMap<usize, MutRc<Process>> = BTreeMap::new();
 
 pub fn add_initproc() {
     use crate::fs::open_file;

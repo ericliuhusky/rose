@@ -162,7 +162,7 @@ mod 系统调用_时钟计数器 {
 }
 
 mod 系统调用_进程 {
-    use crate::task::current_process;
+    use crate::task::{current_process, PROCESSES};
 
     pub fn getpid() -> isize {
         current_process().pid.0 as isize
@@ -195,10 +195,9 @@ mod 系统调用_进程 {
     }
 
     pub fn waitpid(pid: usize) -> isize {
-        let mut process = current_process();
-        if let Some(waited_process) = process.children.get(&pid) {
+        if let Some(waited_process) = unsafe { &PROCESSES }.get(&pid) {
             if waited_process.is_exited {
-                process.children.remove(&pid);
+                unsafe { &mut PROCESSES }.remove(&pid);
                 0
             } else {
                 -2
