@@ -2,9 +2,8 @@ pub mod id;
 pub mod task;
 
 use mutrc::MutRc;
-use crate::task::id::pid_alloc;
-use self::task::{Task, Process};
-use alloc::{vec::Vec, collections::BTreeMap};
+use self::{task::{Task, Process}, id::IDAllocDict};
+use alloc::vec::Vec;
 use exception::restore::restore_context;
 use sbi_call::shutdown;
 
@@ -113,16 +112,15 @@ pub fn wakeup_task(task: MutRc<Task>) {
     add_task(task);
 }
 
-pub static mut PROCESSES: BTreeMap<usize, MutRc<Process>> = BTreeMap::new();
+pub static mut PROCESSES: IDAllocDict<MutRc<Process>> = IDAllocDict::new();
 
 pub fn add_initproc() {
     use crate::fs::open_file;
     let inode = open_file("initproc", false).unwrap();
     let elf_data = inode.read_all();
     let mut initproc = Process::new(&elf_data);
-    let pid = pid_alloc();
+    let pid = unsafe {
+        PROCESSES.insert(initproc.clone())
+    };
     initproc.pid = Some(pid);
-    unsafe {
-        PROCESSES.insert(0, initproc);
-    }
 }

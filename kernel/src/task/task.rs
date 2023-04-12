@@ -4,7 +4,7 @@ use crate::semaphore::Semaphore;
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
 use super::{add_task, PROCESSES};
-use super::id::{pid_alloc, IDAllocDict};
+use super::id::IDAllocDict;
 use crate::fs::{File, Stdin, Stdout};
 
 pub struct Process {
@@ -77,11 +77,10 @@ impl Process {
             mutexs: IDAllocDict::new(),
             semaphores: IDAllocDict::new(),
         });
-        let pid = pid_alloc();
+        let pid = unsafe {
+            PROCESSES.insert(process.clone())
+        };
         process.pid = Some(pid);
-        unsafe {
-            PROCESSES.insert(pid, process.clone());
-        }
         let mut task = self.main_task().as_ref().clone();
         task.process = process.downgrade();
         let task = MutRc::new(task);

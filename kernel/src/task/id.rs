@@ -30,16 +30,6 @@ impl IDAllocator {
     }
 }
 
-static mut PID_ALLOCATOR: IDAllocator = IDAllocator::new();
-
-pub fn pid_alloc() -> usize {
-    unsafe { PID_ALLOCATOR.alloc() }
-}
-
-pub fn pid_dealloc(id: usize) {
-    unsafe { PID_ALLOCATOR.dealloc(id); }
-}
-
 #[derive(Clone)]
 pub struct IDAllocDict<V> {
     dict: BTreeMap<usize, V>,
@@ -47,7 +37,7 @@ pub struct IDAllocDict<V> {
 }
 
 impl<V> IDAllocDict<V> {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { 
             dict: BTreeMap::new(),
             id_allocator: IDAllocator::new() 
@@ -66,5 +56,6 @@ impl<V> IDAllocDict<V> {
 
     pub fn remove(&mut self, id: usize) {
         self.dict.remove(&id);
+        self.id_allocator.dealloc(id);
     }
 }

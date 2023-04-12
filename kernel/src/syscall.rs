@@ -162,7 +162,6 @@ mod 系统调用_时钟计数器 {
 }
 
 mod 系统调用_进程 {
-    use crate::task::id::pid_dealloc;
     use crate::task::{current_process, PROCESSES};
 
     pub fn getpid() -> isize {
@@ -196,10 +195,9 @@ mod 系统调用_进程 {
     }
 
     pub fn waitpid(pid: usize) -> isize {
-        if let Some(waited_process) = unsafe { &PROCESSES }.get(&pid) {
+        if let Some(waited_process) = unsafe { &PROCESSES }.get(pid) {
             if waited_process.is_exited {
-                unsafe { &mut PROCESSES }.remove(&pid);
-                pid_dealloc(pid);
+                unsafe { &mut PROCESSES }.remove(pid);
                 0
             } else {
                 -2
