@@ -166,7 +166,7 @@ mod 系统调用_进程 {
     use crate::task::{current_process, PROCESSES};
 
     pub fn getpid() -> isize {
-        current_process().pid as isize
+        current_process().pid.unwrap() as isize
     }
 
     pub fn fork() -> isize {
@@ -174,7 +174,7 @@ mod 系统调用_进程 {
         let new_process = process.fork();
         let mut task = new_process.main_task();
         task.cx.x[10] = 0;
-        let new_pid = new_process.pid;
+        let new_pid = new_process.pid.unwrap();
         new_pid as isize
     }
 

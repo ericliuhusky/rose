@@ -2,6 +2,7 @@ pub mod id;
 pub mod task;
 
 use mutrc::MutRc;
+use crate::task::id::pid_alloc;
 use self::task::{Task, Process};
 use alloc::{vec::Vec, collections::BTreeMap};
 use exception::restore::restore_context;
@@ -34,7 +35,7 @@ impl TaskManager {
         let mut process = previous.process.upgrade().unwrap();
 
         if previous.tid.unwrap() == 0 {
-            if process.pid == 0 {
+            if process.pid.unwrap() == 0 {
                 println!("[Kernel] exit!");
                 shutdown();
             }
@@ -118,7 +119,9 @@ pub fn add_initproc() {
     use crate::fs::open_file;
     let inode = open_file("initproc", false).unwrap();
     let elf_data = inode.read_all();
-    let initproc = Process::new(&elf_data);
+    let mut initproc = Process::new(&elf_data);
+    let pid = pid_alloc();
+    initproc.pid = Some(pid);
     unsafe {
         PROCESSES.insert(0, initproc);
     }

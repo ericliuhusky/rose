@@ -8,7 +8,7 @@ use super::id::{pid_alloc, IDAllocDict};
 use crate::fs::{File, Stdin, Stdout};
 
 pub struct Process {
-    pub pid: usize,
+    pub pid: Option<usize>,
     pub is_exited: bool,
     pub memory_set: UserSpace,
     pub fd_table: IDAllocDict<MutRc<dyn File>>,
@@ -33,7 +33,7 @@ impl Process {
         fd_table.insert(MutRc::new(Stdout));
 
         let mut process = MutRc::new(Self{
-            pid: pid_alloc(),
+            pid: None,
             is_exited: false,
             memory_set,
             fd_table,
@@ -69,7 +69,7 @@ impl Process {
     pub fn fork(&mut self) -> MutRc<Self> {
         let memory_set = self.memory_set.clone();
         let mut process = MutRc::new(Self {
-            pid: pid_alloc(),
+            pid: None,
             is_exited: false,
             memory_set,
             fd_table: self.fd_table.clone(),
@@ -77,8 +77,10 @@ impl Process {
             mutexs: IDAllocDict::new(),
             semaphores: IDAllocDict::new(),
         });
+        let pid = pid_alloc();
+        process.pid = Some(pid);
         unsafe {
-            PROCESSES.insert(process.pid, process.clone());
+            PROCESSES.insert(pid, process.clone());
         }
         let mut task = self.main_task().as_ref().clone();
         task.process = process.downgrade();
