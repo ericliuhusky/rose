@@ -3,15 +3,13 @@ use alloc::collections::VecDeque;
 use mutrc::MutRc;
 
 pub struct Semaphore {
-    id: usize,
     count: isize,
     wait_queue: VecDeque<MutRc<Task>>,
 }
 
 impl Semaphore {
-    pub fn new(id: usize, res_count: usize) -> Self {
+    pub fn new(res_count: usize) -> Self {
         Self {
-            id,
             count: res_count as isize,
             wait_queue: VecDeque::new(),
         }

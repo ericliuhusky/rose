@@ -7,7 +7,7 @@ use crate::semaphore::Semaphore;
 use mutrc::{MutRc, MutWeak};
 use exception::context::Context;
 use super::add_task;
-use super::id::{Pid, pid_alloc, IDAllocator};
+use super::id::{Pid, pid_alloc, IDAllocator, IDAllocDict};
 use crate::fs::{File, Stdin, Stdout};
 
 pub struct Process {
@@ -18,10 +18,8 @@ pub struct Process {
     pub fd_table: Vec<Option<MutRc<dyn File>>>,
     pub tasks: BTreeMap<usize, MutRc<Task>>,
     pub tid_allocator: IDAllocator,
-    pub mutexs: BTreeMap<usize, MutRc<Mutex>>,
-    pub mutex_id_allocator: IDAllocator,
-    pub semaphores: BTreeMap<usize, MutRc<Semaphore>>,
-    pub semaphore_id_allocator: IDAllocator,
+    pub mutexs: IDAllocDict<MutRc<Mutex>>,
+    pub semaphores: IDAllocDict<MutRc<Semaphore>>,
 }
 
 impl Process {
@@ -58,10 +56,8 @@ impl Process {
             ],
             tasks: BTreeMap::new(),
             tid_allocator: IDAllocator::new(),
-            mutexs: BTreeMap::new(),
-            mutex_id_allocator: IDAllocator::new(),
-            semaphores: BTreeMap::new(),
-            semaphore_id_allocator: IDAllocator::new(),
+            mutexs: IDAllocDict::new(),
+            semaphores: IDAllocDict::new(),
         });
         let mut task = MutRc::new(Task::new(process.clone()));
         let user_stack_top = task.user_stack_top();
@@ -105,10 +101,8 @@ impl Process {
             fd_table: new_fd_table,
             tasks: BTreeMap::new(),
             tid_allocator: IDAllocator::new(),
-            mutexs: BTreeMap::new(),
-            mutex_id_allocator: IDAllocator::new(),
-            semaphores: BTreeMap::new(),
-            semaphore_id_allocator: IDAllocator::new(),
+            mutexs: IDAllocDict::new(),
+            semaphores: IDAllocDict::new(),
         });
         self.children.push(process.clone());
         let mut task = self.main_task().as_ref().clone();

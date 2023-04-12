@@ -5,15 +5,13 @@ use alloc::collections::VecDeque;
 use mutrc::MutRc;
 
 pub struct Mutex {
-    id: usize,
     locked: bool,
     wait_queue: VecDeque<MutRc<Task>>,
 }
 
 impl Mutex {
-    pub fn new(id: usize) -> Self {
+    pub fn new() -> Self {
         Self {
-            id,
             locked: false,
             wait_queue: VecDeque::new(),
         }

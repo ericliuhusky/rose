@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use alloc::collections::BTreeMap;
 
 pub struct IDAllocator {
     current: usize,
@@ -41,5 +42,29 @@ impl Drop for Pid {
         unsafe {
             PID_ALLOCATOR.dealloc(self.0);
         }
+    }
+}
+
+pub struct IDAllocDict<V> {
+    dict: BTreeMap<usize, V>,
+    id_allocator: IDAllocator,
+}
+
+impl<V> IDAllocDict<V> {
+    pub fn new() -> Self {
+        Self { 
+            dict: BTreeMap::new(),
+            id_allocator: IDAllocator::new() 
+        }
+    }
+
+    pub fn insert(&mut self, value: V) -> usize {
+        let id = self.id_allocator.alloc();
+        self.dict.insert(id, value);
+        id
+    }
+
+    pub fn get(&self, id: usize) -> &V {
+        self.dict.get(&id).unwrap()
     }
 }

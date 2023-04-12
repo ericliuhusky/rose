@@ -311,44 +311,42 @@ pub fn waittid(tid: usize) -> isize {
 
 fn mutex_create() -> isize {
     let mut process = current_process();
-    let id = process.mutex_id_allocator.alloc();
-    let mutex = MutRc::new(Mutex::new(id));
-    process.mutexs.insert(id, mutex);
+    let mutex = MutRc::new(Mutex::new());
+    let id = process.mutexs.insert(mutex);
     id as isize
 }
 
 fn mutex_lock(mutex_id: usize) -> isize {
     let process = current_process();
-    let mut mutex = process.mutexs.get(&mutex_id).unwrap().clone();
+    let mut mutex = process.mutexs.get(mutex_id).clone();
     mutex.lock();
     0
 }
 
 fn mutex_unlock(mutex_id: usize) -> isize {
     let process = current_process();
-    let mut mutex = process.mutexs.get(&mutex_id).unwrap().clone();
+    let mut mutex = process.mutexs.get(mutex_id).clone();
     mutex.unlock();
     0
 }
 
 fn semaphore_create(res_count: usize) -> isize {
     let mut process = current_process();
-    let id = process.semaphore_id_allocator.alloc();
-    let semaphore = MutRc::new(Semaphore::new(id, res_count));
-    process.semaphores.insert(id, semaphore);
+    let semaphore = MutRc::new(Semaphore::new(res_count));
+    let id = process.semaphores.insert(semaphore);
     id as isize
 }
 
 fn semaphore_down(sem_id: usize) -> isize {
     let process = current_process();
-    let mut semaphore = process.semaphores.get(&sem_id).unwrap().clone();
+    let mut semaphore = process.semaphores.get(sem_id).clone();
     semaphore.down();
     0
 }
 
 fn semaphore_up(sem_id: usize) -> isize {
     let process = current_process();
-    let mut semaphore = process.semaphores.get(&sem_id).unwrap().clone();
+    let mut semaphore = process.semaphores.get(sem_id).clone();
     semaphore.up();
     0
 }
