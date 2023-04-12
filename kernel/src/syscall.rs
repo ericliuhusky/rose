@@ -281,8 +281,10 @@ pub fn thread_create(entry: usize, arg: usize) -> isize {
     let mut new_task = MutRc::new(Task::new(
         process.clone(),
     ));
+    let tid = process.alloc_tid();
+    new_task.tid = Some(tid);
     add_task(new_task.clone());
-    let new_task_tid = new_task.tid;
+    let new_task_tid = new_task.tid.unwrap();
     process.tasks.insert(new_task_tid, new_task.clone());
     let ustack_top = new_task.user_stack_top();
     new_task.cx = Context::app_init(

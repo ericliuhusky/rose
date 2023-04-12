@@ -33,7 +33,7 @@ impl TaskManager {
         previous.is_exited = true;
         let mut process = previous.process.upgrade().unwrap();
 
-        if previous.tid == 0 {
+        if previous.tid.unwrap() == 0 {
             if process.pid.0 == 0 {
                 println!("[Kernel] exit!");
                 shutdown();

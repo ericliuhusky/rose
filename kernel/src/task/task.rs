@@ -60,6 +60,8 @@ impl Process {
             semaphores: IDAllocDict::new(),
         });
         let mut task = MutRc::new(Task::new(process.clone()));
+        let tid = process.alloc_tid();
+        task.tid = Some(tid);
         let user_stack_top = task.user_stack_top();
         task.cx = Context::app_init(
             entry_address,
@@ -120,23 +122,22 @@ impl Process {
 pub struct Task {
     pub process: MutWeak<Process>,
     pub is_exited: bool,
-    pub tid: usize,
+    pub tid: Option<usize>,
     pub cx: Context,
 }
 
 impl Task {
-    pub fn new(mut process: MutRc<Process>) -> Self {
-        let tid = process.alloc_tid();
+    pub fn new(process: MutRc<Process>) -> Self {
         Self { 
             process: process.downgrade(),
             is_exited: false,
-            tid,
+            tid: None,
             cx: Context { x: [0; 32], sepc: 0 },
         }
     }
 
     pub fn user_stack_top(&self) -> usize {
-        USER_STACK_START_ADDR + (self.tid + 1) * USER_STACK_SIZE
+        USER_STACK_START_ADDR + (self.tid.unwrap() + 1) * USER_STACK_SIZE
     }
 }
 
