@@ -13,7 +13,7 @@ use core::cell::RefCell;
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
-use self::{port_table::{check_accept, Port}, socket::set_s_a_by_index};
+use self::{port_table::{check_accept, Port}, socket::set_s_a_by_index, tcp::TCP};
 
 pub struct NetStack(RefCell<LoseStack>);
 
@@ -109,7 +109,7 @@ pub fn net_arp() {
     }
 }
 
-pub fn net_accept(port: MutRc<Port>) {
+pub fn net_accept(port: MutRc<Port>) -> Option<TCP> {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -124,15 +124,18 @@ pub fn net_accept(port: MutRc<Port>) {
 
             if flags.contains(TcpFlags::S) {
                 // if it has a port to accept, then response the request
-                if check_accept(lport, &tcp_packet).is_some() {
+                let tcp_socket = check_accept(lport, &tcp_packet);
+                if tcp_socket.is_some() {
                     let mut reply_packet = tcp_packet.ack();
                     reply_packet.flags = TcpFlags::S | TcpFlags::A;
                     NET_DEVICE.transmit(&reply_packet.build_data());
                 }
-                return;
+                tcp_socket
+            } else {
+                None
             }
         }
-        _ => {}
+        _ => None
     }
 }
 

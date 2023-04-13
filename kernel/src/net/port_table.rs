@@ -29,22 +29,18 @@ pub fn listen(port: u16) -> MutRc<Port> {
 }
 
 // check whether it can accept request
-pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<()> {
+pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<TCP> {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
     let listen_port = listen_table.iter_mut().find(|p| p.port == port);
     if let Some(listen_port) = listen_port {
 
-        accept_connection(port, tcp_packet);
-        Some(())
+        Some(accept_connection(port, tcp_packet))
     } else {
         None
     }
 }
 
-pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket) {
-    let mut task = current_task();
-    let mut process = task.process.upgrade().unwrap();
-
+pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket) -> TCP {
     let tcp_socket = TCP::new(
         tcp_packet.source_ip,
         tcp_packet.dest_port,
@@ -52,10 +48,7 @@ pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket) {
         tcp_packet.seq,
         tcp_packet.ack,
     );
-
-    let fd = process.fd_table.insert(MutRc::new(tcp_socket));
-
-    task.cx.x[10] = fd;
+    tcp_socket
 }
 
 impl File for Port {

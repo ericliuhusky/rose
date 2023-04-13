@@ -351,14 +351,14 @@ fn listen(port: u16) -> isize {
 
 // accept a tcp connection
 fn accept(fd: usize) -> isize {
-    let process = current_process();
+    let mut process = current_process();
     let port = process.fd_table.get(fd).unwrap().clone();
     let port = unsafe { &*(&port as *const _ as *const MutRc<Port>) };
-    let task = current_task();
-    // block_current_and_run_next();
 
     net_arp();
-    net_accept(port.clone());
+    let tcp_socket = net_accept(port.clone()).unwrap();
 
-    task.cx.x[10] as isize
+    let fd = process.fd_table.insert(MutRc::new(tcp_socket));
+
+    fd as isize
 }
