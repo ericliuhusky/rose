@@ -5,6 +5,7 @@ use lose_net_stack::packets::tcp::TCPPacket;
 use mutrc::MutRc;
 
 use crate::fs::File;
+use crate::task::current_task;
 use crate::task::task::Task;
 
 use super::tcp::TCP;
@@ -40,20 +41,21 @@ pub fn port_acceptable(port: MutRc<Port>) -> bool {
 }
 
 // check whether it can accept request
-pub fn check_accept(port: u16, tcp_packet: &TCPPacket, task: MutRc<Task>) -> Option<()> {
+pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<()> {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
     let listen_port = listen_table.iter_mut().find(|p| p.port == port && p.receivable == true);
     if let Some(listen_port) = listen_port {
         listen_port.receivable = false;
 
-        accept_connection(port, tcp_packet, task);
+        accept_connection(port, tcp_packet);
         Some(())
     } else {
         None
     }
 }
 
-pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket, mut task: MutRc<Task>) {
+pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket) {
+    let mut task = current_task();
     let mut process = task.process.upgrade().unwrap();
 
     let tcp_socket = TCP::new(

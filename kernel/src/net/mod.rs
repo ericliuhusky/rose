@@ -89,7 +89,7 @@ pub fn net_interrupt_handler() {
     }
 }
 
-pub fn net_accept(task: MutRc<Task>) {
+pub fn net_accept() {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -112,7 +112,7 @@ pub fn net_accept(task: MutRc<Task>) {
 
             if flags.contains(TcpFlags::S) {
                 // if it has a port to accept, then response the request
-                if check_accept(lport, &tcp_packet, task).is_some() {
+                if check_accept(lport, &tcp_packet).is_some() {
                     let mut reply_packet = tcp_packet.ack();
                     reply_packet.flags = TcpFlags::S | TcpFlags::A;
                     NET_DEVICE.transmit(&reply_packet.build_data());

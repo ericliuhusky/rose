@@ -360,7 +360,7 @@ fn accept(fd: usize) -> isize {
 
     // NOTICE: There does not have interrupt handler, just call it munually.
     loop {
-        net_accept(task.clone());
+        net_accept();
 
         if !port_acceptable(port.clone()) {
             break;
