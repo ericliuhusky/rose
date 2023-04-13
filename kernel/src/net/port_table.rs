@@ -5,7 +5,6 @@ use lose_net_stack::packets::tcp::TCPPacket;
 use mutrc::MutRc;
 
 use crate::fs::File;
-use crate::task::current_task;
 
 use super::tcp::TCP;
 
@@ -34,21 +33,16 @@ pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<TCP> {
     let listen_port = listen_table.iter_mut().find(|p| p.port == port);
     if let Some(listen_port) = listen_port {
 
-        Some(accept_connection(port, tcp_packet))
+        Some(TCP::new(
+            tcp_packet.source_ip,
+            tcp_packet.dest_port,
+            tcp_packet.source_port,
+            tcp_packet.seq,
+            tcp_packet.ack,
+        ))
     } else {
         None
     }
-}
-
-pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket) -> TCP {
-    let tcp_socket = TCP::new(
-        tcp_packet.source_ip,
-        tcp_packet.dest_port,
-        tcp_packet.source_port,
-        tcp_packet.seq,
-        tcp_packet.ack,
-    );
-    tcp_socket
 }
 
 impl File for Port {
