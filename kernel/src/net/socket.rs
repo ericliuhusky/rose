@@ -4,6 +4,8 @@ use alloc::vec::Vec;
 use lazy_static::lazy_static;
 use lose_net_stack::IPv4;
 
+use crate::task::id::IDAllocDict;
+
 // TODO: specify the protocol, TCP or UDP
 pub struct Socket {
     pub raddr: IPv4,                // remote address
@@ -15,28 +17,20 @@ pub struct Socket {
 }
 
 lazy_static! {
-    static ref SOCKET_TABLE: RefCell<Vec<Option<Socket>>> = RefCell::new(Vec::new());
+    static ref SOCKET_TABLE: RefCell<IDAllocDict<Socket>> = RefCell::new(IDAllocDict::new());
 }
 
 /// get the seq and ack by socket index
 pub fn get_s_a_by_index(index: usize) -> Option<(u32, u32)> {
     let socket_table = SOCKET_TABLE.borrow_mut();
 
-    assert!(index < socket_table.len());
-
-    socket_table.get(index).map_or(None, |x| match x {
-        Some(x) => Some((x.seq, x.ack)),
-        None => None,
-    })
+    socket_table.get(index).map_or(None, |x| Some((x.seq, x.ack)))
 }
 
 pub fn set_s_a_by_index(index: usize, seq: u32, ack: u32) {
     let mut socket_table = SOCKET_TABLE.borrow_mut();
 
-    assert!(socket_table.len() > index);
-    assert!(socket_table[index].is_some());
-
-    let sock = socket_table[index].as_mut().unwrap();
+    let sock = socket_table.get_mut(index).unwrap();
 
     sock.ack = ack;
     sock.seq = seq;
@@ -44,18 +38,10 @@ pub fn set_s_a_by_index(index: usize, seq: u32, ack: u32) {
 
 pub fn get_socket(raddr: IPv4, lport: u16, rport: u16) -> Option<usize> {
     let socket_table = SOCKET_TABLE.borrow_mut();
-    for i in 0..socket_table.len() {
-        let sock = &socket_table[i];
-        if sock.is_none() {
-            continue;
-        }
-
-        let sock = sock.as_ref().unwrap();
-        if sock.raddr == raddr && sock.lport == lport && sock.rport == rport {
-            return Some(i);
-        }
-    }
-    None
+    socket_table
+        .iter()
+        .find(|(_, sock)| sock.raddr == raddr && sock.lport == lport && sock.rport == rport)
+        .map_or(None, |(id, _)| Some(*id))
 }
 
 pub fn add_socket(raddr: IPv4, lport: u16, rport: u16) -> Option<usize> {
@@ -64,13 +50,6 @@ pub fn add_socket(raddr: IPv4, lport: u16, rport: u16) -> Option<usize> {
     }
 
     let mut socket_table = SOCKET_TABLE.borrow_mut();
-    let mut index = usize::MAX;
-    for i in 0..socket_table.len() {
-        if socket_table[i].is_none() {
-            index = i;
-            break;
-        }
-    }
 
     let socket = Socket {
         raddr,
@@ -81,31 +60,19 @@ pub fn add_socket(raddr: IPv4, lport: u16, rport: u16) -> Option<usize> {
         ack: 0,
     };
 
-    if index == usize::MAX {
-        socket_table.push(Some(socket));
-        Some(socket_table.len() - 1)
-    } else {
-        socket_table[index] = Some(socket);
-        Some(index)
-    }
+    Some(socket_table.insert(socket))
 }
 
 pub fn remove_socket(index: usize) {
     let mut socket_table = SOCKET_TABLE.borrow_mut();
 
-    assert!(socket_table.len() > index);
-
-    socket_table[index] = None;
+    socket_table.remove(index);
 }
 
 pub fn push_data(index: usize, data: Vec<u8>) {
     let mut socket_table = SOCKET_TABLE.borrow_mut();
 
-    assert!(socket_table.len() > index);
-    assert!(socket_table[index].is_some());
-
-    socket_table[index]
-        .as_mut()
+    socket_table.get_mut(index)
         .unwrap()
         .buffers
         .push_back(data);
@@ -114,8 +81,8 @@ pub fn push_data(index: usize, data: Vec<u8>) {
 pub fn pop_data(index: usize) -> Option<Vec<u8>> {
     let mut socket_table = SOCKET_TABLE.borrow_mut();
 
-    assert!(socket_table.len() > index);
-    assert!(socket_table[index].is_some());
-
-    socket_table[index].as_mut().unwrap().buffers.pop_front()
+    socket_table.get_mut(index)
+        .unwrap()
+        .buffers
+        .pop_front()
 }
