@@ -6,13 +6,11 @@ use mutrc::MutRc;
 
 use crate::fs::File;
 use crate::task::current_task;
-use crate::task::task::Task;
 
 use super::tcp::TCP;
 
 pub struct Port {
     pub port: u16,
-    pub receivable: bool,
 }
 
 lazy_static! {
@@ -24,28 +22,17 @@ pub fn listen(port: u16) -> MutRc<Port> {
 
     let listen_port = MutRc::new(Port {
         port,
-        receivable: false,
     });
 
     listen_table.push(listen_port.clone());
     listen_port
 }
 
-// can accept request
-pub fn accept(mut port: MutRc<Port>) {
-    port.receivable = true;
-}
-
-pub fn port_acceptable(port: MutRc<Port>) -> bool {
-    port.receivable
-}
-
 // check whether it can accept request
 pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<()> {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
-    let listen_port = listen_table.iter_mut().find(|p| p.port == port && p.receivable == true);
+    let listen_port = listen_table.iter_mut().find(|p| p.port == port);
     if let Some(listen_port) = listen_port {
-        listen_port.receivable = false;
 
         accept_connection(port, tcp_packet);
         Some(())
