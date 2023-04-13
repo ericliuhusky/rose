@@ -5,7 +5,6 @@ use lose_net_stack::packets::tcp::TCPPacket;
 use mutrc::MutRc;
 
 use crate::fs::File;
-use crate::task::id::IDAllocDict;
 use crate::task::task::Task;
 
 use super::tcp::TCP;
@@ -17,7 +16,7 @@ pub struct Port {
 }
 
 lazy_static! {
-    static ref LISTEN_TABLE: RefCell<IDAllocDict<MutRc<Port>>> = RefCell::new(IDAllocDict::new());
+    static ref LISTEN_TABLE: RefCell<Vec<MutRc<Port>>> = RefCell::new(Vec::new());
 }
 
 pub fn listen(port: u16) -> MutRc<Port> {
@@ -29,7 +28,7 @@ pub fn listen(port: u16) -> MutRc<Port> {
         schedule: None,
     });
 
-    listen_table.insert(listen_port.clone());
+    listen_table.push(listen_port.clone());
     listen_port
 }
 
@@ -46,7 +45,7 @@ pub fn port_acceptable(port: MutRc<Port>) -> bool {
 // check whether it can accept request
 pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<()> {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
-    let listen_port = listen_table.values_mut().find(|p| p.port == port && p.receivable == true);
+    let listen_port = listen_table.iter_mut().find(|p| p.port == port && p.receivable == true);
     if let Some(listen_port) = listen_port {
         let task = listen_port.schedule.clone().unwrap();
         // wakeup_task(MutRc::clone(&listen_port.schedule.clone().unwrap()));
