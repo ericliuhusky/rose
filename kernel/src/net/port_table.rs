@@ -12,7 +12,6 @@ use super::tcp::TCP;
 pub struct Port {
     pub port: u16,
     pub receivable: bool,
-    pub schedule: Option<MutRc<Task>>,
 }
 
 lazy_static! {
@@ -25,7 +24,6 @@ pub fn listen(port: u16) -> MutRc<Port> {
     let listen_port = MutRc::new(Port {
         port,
         receivable: false,
-        schedule: None,
     });
 
     listen_table.push(listen_port.clone());
@@ -33,9 +31,8 @@ pub fn listen(port: u16) -> MutRc<Port> {
 }
 
 // can accept request
-pub fn accept(mut port: MutRc<Port>, task: MutRc<Task>) {
+pub fn accept(mut port: MutRc<Port>) {
     port.receivable = true;
-    port.schedule = Some(task);
 }
 
 pub fn port_acceptable(port: MutRc<Port>) -> bool {
@@ -43,13 +40,10 @@ pub fn port_acceptable(port: MutRc<Port>) -> bool {
 }
 
 // check whether it can accept request
-pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<()> {
+pub fn check_accept(port: u16, tcp_packet: &TCPPacket, task: MutRc<Task>) -> Option<()> {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
     let listen_port = listen_table.iter_mut().find(|p| p.port == port && p.receivable == true);
     if let Some(listen_port) = listen_port {
-        let task = listen_port.schedule.clone().unwrap();
-        // wakeup_task(MutRc::clone(&listen_port.schedule.clone().unwrap()));
-        listen_port.schedule = None;
         listen_port.receivable = false;
 
         accept_connection(port, tcp_packet, task);

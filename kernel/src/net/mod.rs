@@ -5,9 +5,10 @@ pub mod udp;
 
 use crate::{
     drivers::virtio_net::NET_DEVICE,
-    net::socket::{get_socket, push_data},
+    net::socket::{get_socket, push_data}, task::task::Task,
 };
 use alloc::{rc::Rc, vec};
+use mutrc::MutRc;
 use core::cell::RefCell;
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
@@ -88,7 +89,7 @@ pub fn net_interrupt_handler() {
     }
 }
 
-pub fn net_accept() {
+pub fn net_accept(task: MutRc<Task>) {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -111,7 +112,7 @@ pub fn net_accept() {
 
             if flags.contains(TcpFlags::S) {
                 // if it has a port to accept, then response the request
-                if check_accept(lport, &tcp_packet).is_some() {
+                if check_accept(lport, &tcp_packet, task).is_some() {
                     let mut reply_packet = tcp_packet.ack();
                     reply_packet.flags = TcpFlags::S | TcpFlags::A;
                     NET_DEVICE.transmit(&reply_packet.build_data());
