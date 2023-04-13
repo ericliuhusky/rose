@@ -1,5 +1,6 @@
-use alloc::vec::Vec;
+use alloc::collections::btree_map::ValuesMut;
 use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 
 #[derive(Clone)]
 pub struct IDAllocator {
@@ -9,9 +10,9 @@ pub struct IDAllocator {
 
 impl IDAllocator {
     pub const fn new() -> Self {
-        Self { 
-            current: 0, 
-            recycled: Vec::new() 
+        Self {
+            current: 0,
+            recycled: Vec::new(),
         }
     }
 
@@ -38,9 +39,9 @@ pub struct IDAllocDict<V> {
 
 impl<V> IDAllocDict<V> {
     pub const fn new() -> Self {
-        Self { 
+        Self {
             dict: BTreeMap::new(),
-            id_allocator: IDAllocator::new() 
+            id_allocator: IDAllocator::new(),
         }
     }
 
@@ -54,8 +55,16 @@ impl<V> IDAllocDict<V> {
         self.dict.get(&id)
     }
 
+    pub fn get_mut(&mut self, id: usize) -> Option<&mut V> {
+        self.dict.get_mut(&id)
+    }
+
     pub fn remove(&mut self, id: usize) {
         self.dict.remove(&id);
         self.id_allocator.dealloc(id);
+    }
+
+    pub fn values_mut(&mut self) -> ValuesMut<usize, V> {
+        self.dict.values_mut()
     }
 }

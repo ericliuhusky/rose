@@ -5,6 +5,7 @@ use lose_net_stack::packets::tcp::TCPPacket;
 use mutrc::MutRc;
 
 use crate::fs::File;
+use crate::task::id::IDAllocDict;
 use crate::task::task::Task;
 
 use super::tcp::TCP;
@@ -16,18 +17,11 @@ pub struct Port {
 }
 
 lazy_static! {
-    static ref LISTEN_TABLE: RefCell<Vec<Option<Port>>> = RefCell::new(Vec::new());
+    static ref LISTEN_TABLE: RefCell<IDAllocDict<Port>> = RefCell::new(IDAllocDict::new());
 }
 
 pub fn listen(port: u16) -> usize {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
-    let mut index = usize::MAX;
-    for i in 0..listen_table.len() {
-        if listen_table[i].is_none() {
-            index = i;
-            break;
-        }
-    }
 
     let listen_port = Port {
         port,
@@ -35,48 +29,30 @@ pub fn listen(port: u16) -> usize {
         schedule: None,
     };
 
-    if index == usize::MAX {
-        listen_table.push(Some(listen_port));
-        listen_table.len() - 1
-    } else {
-        listen_table[index] = Some(listen_port);
-        index
-    }
+    listen_table.insert(listen_port)
 }
 
 // can accept request
 pub fn accept(listen_index: usize, task: MutRc<Task>) {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
-    assert!(listen_index < listen_table.len());
-    let listen_port = listen_table[listen_index].as_mut();
-    assert!(listen_port.is_some());
+    let listen_port = listen_table.get_mut(listen_index);
     let listen_port = listen_port.unwrap();
     listen_port.receivable = true;
     listen_port.schedule = Some(task);
 }
 
 pub fn port_acceptable(listen_index: usize) -> bool {
-    let mut listen_table = LISTEN_TABLE.borrow_mut();
-    assert!(listen_index < listen_table.len());
+    let listen_table = LISTEN_TABLE.borrow_mut();
 
-    let listen_port = listen_table[listen_index].as_mut();
+    let listen_port = listen_table.get(listen_index);
     listen_port.map_or(false, |x| x.receivable)
 }
 
 // check whether it can accept request
 pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<()> {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
-    let mut listen_ports: Vec<&mut Option<Port>> = listen_table
-        .iter_mut()
-        .filter(|x| match x {
-            Some(t) => t.port == port && t.receivable == true,
-            None => false,
-        })
-        .collect();
-    if listen_ports.len() == 0 {
-        None
-    } else {
-        let listen_port = listen_ports[0].as_mut().unwrap();
+    let listen_port = listen_table.values_mut().find(|p| p.port == port && p.receivable == true);
+    if let Some(listen_port) = listen_port {
         let task = listen_port.schedule.clone().unwrap();
         // wakeup_task(MutRc::clone(&listen_port.schedule.clone().unwrap()));
         listen_port.schedule = None;
@@ -84,6 +60,8 @@ pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<()> {
 
         accept_connection(port, tcp_packet, task);
         Some(())
+    } else {
+        None
     }
 }
 
@@ -114,7 +92,7 @@ impl PortFd {
 
 impl Drop for PortFd {
     fn drop(&mut self) {
-        LISTEN_TABLE.borrow_mut()[self.0] = None
+        LISTEN_TABLE.borrow_mut().remove(self.0);
     }
 }
 
