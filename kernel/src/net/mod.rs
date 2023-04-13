@@ -8,6 +8,7 @@ use crate::{
     net::socket::{get_socket, push_data}, task::task::Task,
 };
 use alloc::{rc::Rc, vec};
+use alloc::vec::Vec;
 use mutrc::MutRc;
 use core::cell::RefCell;
 pub use lose_net_stack::IPv4;
@@ -136,7 +137,7 @@ pub fn net_accept() -> Option<TCP> {
     }
 }
 
-pub fn net_tcp_read() {
+pub fn net_tcp_read() -> Option<Vec<u8>> {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -151,15 +152,27 @@ pub fn net_tcp_read() {
 
             if tcp_packet.flags.contains(TcpFlags::A) {
                 if tcp_packet.data_len == 0 {
-                    return;
+                    return None;
                 }
                 if let Some(socket_index) = get_socket(target, lport, rport) {
-                    push_data(socket_index, tcp_packet.data.to_vec());
                     set_s_a_by_index(socket_index, tcp_packet.seq, tcp_packet.ack);
+                    Some(tcp_packet.data.to_vec())
+                } else {
+                    None
                 }
+            } else {
+                None
             }
         }
-        _ => {}
+        _ => None
+    }
+}
+
+pub fn busy_wait_tcp_read() -> Vec<u8> {
+    loop {
+        if let Some(data) = net_tcp_read() {
+            return data;
+        }
     }
 }
 

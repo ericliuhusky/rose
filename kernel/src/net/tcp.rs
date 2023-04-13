@@ -7,11 +7,10 @@ use lose_net_stack::TcpFlags;
 
 use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
 
-use super::net_tcp_read;
+use super::busy_wait_tcp_read;
 use super::socket::get_s_a_by_index;
 use super::{
-    net_interrupt_handler,
-    socket::{add_socket, pop_data, remove_socket},
+    socket::{add_socket, remove_socket},
     LOSE_NET_STACK,
 };
 
@@ -42,26 +41,21 @@ impl TCP {
 
 impl File for TCP {
     fn read(&mut self, mut buf: Vec<&'static mut [u8]>) -> usize {
-        loop {
-            if let Some(data) = pop_data(self.socket_index) {
-                let data_len = data.len();
-                let mut left = 0;
-                for i in 0..buf.len() {
-                    let buffer_i_len = buf[i].len().min(data_len - left);
+        let data = busy_wait_tcp_read();
+        let data_len = data.len();
+        let mut left = 0;
+        for i in 0..buf.len() {
+            let buffer_i_len = buf[i].len().min(data_len - left);
 
-                    buf[i][..buffer_i_len]
-                        .copy_from_slice(&data[left..(left + buffer_i_len)]);
+            buf[i][..buffer_i_len]
+                .copy_from_slice(&data[left..(left + buffer_i_len)]);
 
-                    left += buffer_i_len;
-                    if left == data_len {
-                        break;
-                    }
-                }
-                return left;
-            } else {
-                net_tcp_read();
+            left += buffer_i_len;
+            if left == data_len {
+                break;
             }
         }
+        left
     }
 
     fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
