@@ -76,8 +76,6 @@ pub fn net_interrupt_handler() {
                 let mut end_packet = reply_packet.ack();
                 end_packet.flags |= TcpFlags::F;
                 NET_DEVICE.transmit(&end_packet.build_data());
-            } else if tcp_packet.flags.contains(TcpFlags::A) && tcp_packet.data_len == 0 {
-                return;
             }
 
             if let Some(socket_index) = get_socket(target, lport, rport) {
@@ -135,6 +133,33 @@ pub fn net_accept() -> Option<TCP> {
             }
         }
         _ => None
+    }
+}
+
+pub fn net_tcp_read() {
+    let mut recv_buf = vec![0u8; 1024];
+
+    let len = NET_DEVICE.receive(&mut recv_buf);
+
+    let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
+
+    match packet {
+        Packet::TCP(tcp_packet) => {
+            let target = tcp_packet.source_ip;
+            let lport = tcp_packet.dest_port;
+            let rport = tcp_packet.source_port;
+
+            if tcp_packet.flags.contains(TcpFlags::A) {
+                if tcp_packet.data_len == 0 {
+                    return;
+                }
+                if let Some(socket_index) = get_socket(target, lport, rport) {
+                    push_data(socket_index, tcp_packet.data.to_vec());
+                    set_s_a_by_index(socket_index, tcp_packet.seq, tcp_packet.ack);
+                }
+            }
+        }
+        _ => {}
     }
 }
 

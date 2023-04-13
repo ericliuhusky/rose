@@ -7,6 +7,7 @@ use lose_net_stack::TcpFlags;
 
 use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
 
+use super::net_tcp_read;
 use super::socket::get_s_a_by_index;
 use super::{
     net_interrupt_handler,
@@ -58,7 +59,7 @@ impl File for TCP {
                 }
                 return left;
             } else {
-                net_interrupt_handler();
+                net_tcp_read();
             }
         }
     }
