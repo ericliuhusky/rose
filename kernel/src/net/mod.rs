@@ -109,7 +109,7 @@ pub fn net_arp() {
     }
 }
 
-pub fn net_accept(port: MutRc<Port>) -> Option<TCP> {
+pub fn net_accept() -> Option<TCP> {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -120,7 +120,6 @@ pub fn net_accept(port: MutRc<Port>) -> Option<TCP> {
         Packet::TCP(tcp_packet) => {
             let lport = tcp_packet.dest_port;
             let flags = tcp_packet.flags;
-            assert_eq!(port.port, lport);
 
             if flags.contains(TcpFlags::S) {
                 // if it has a port to accept, then response the request

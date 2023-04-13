@@ -8,9 +8,7 @@ use crate::fs::File;
 
 use super::tcp::TCP;
 
-pub struct Port {
-    pub port: u16,
-}
+pub struct Port;
 
 lazy_static! {
     static ref LISTEN_PORTS: RefCell<BTreeSet<u16>> = RefCell::new(BTreeSet::new());
@@ -20,9 +18,7 @@ pub fn listen(port: u16) -> MutRc<Port> {
     let mut listen_table = LISTEN_PORTS.borrow_mut();
     listen_table.insert(port);
 
-    let listen_port = MutRc::new(Port {
-        port,
-    });
+    let listen_port = MutRc::new(Port);
     listen_port
 }
 

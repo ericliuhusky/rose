@@ -356,7 +356,7 @@ fn accept(fd: usize) -> isize {
     let port = unsafe { &*(&port as *const _ as *const MutRc<Port>) };
 
     net_arp();
-    let tcp_socket = net_accept(port.clone()).unwrap();
+    let tcp_socket = net_accept().unwrap();
 
     let fd = process.fd_table.insert(MutRc::new(tcp_socket));
 
