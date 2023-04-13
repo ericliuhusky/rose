@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::{vec::Vec, collections::BTreeSet};
 use core::cell::RefCell;
 use lazy_static::lazy_static;
 use lose_net_stack::packets::tcp::TCPPacket;
@@ -13,26 +13,23 @@ pub struct Port {
 }
 
 lazy_static! {
-    static ref LISTEN_TABLE: RefCell<Vec<MutRc<Port>>> = RefCell::new(Vec::new());
+    static ref LISTEN_PORTS: RefCell<BTreeSet<u16>> = RefCell::new(BTreeSet::new());
 }
 
 pub fn listen(port: u16) -> MutRc<Port> {
-    let mut listen_table = LISTEN_TABLE.borrow_mut();
+    let mut listen_table = LISTEN_PORTS.borrow_mut();
+    listen_table.insert(port);
 
     let listen_port = MutRc::new(Port {
         port,
     });
-
-    listen_table.push(listen_port.clone());
     listen_port
 }
 
 // check whether it can accept request
 pub fn check_accept(port: u16, tcp_packet: &TCPPacket) -> Option<TCP> {
-    let mut listen_table = LISTEN_TABLE.borrow_mut();
-    let listen_port = listen_table.iter_mut().find(|p| p.port == port);
-    if let Some(listen_port) = listen_port {
-
+    let listen_table = LISTEN_PORTS.borrow();
+    if listen_table.contains(&port) {
         Some(TCP::new(
             tcp_packet.source_ip,
             tcp_packet.dest_port,
