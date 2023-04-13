@@ -331,7 +331,7 @@ fn semaphore_up(sem_id: usize) -> isize {
 
 use crate::net::port_table::{self, port_acceptable, Port};
 use crate::net::udp::UDP;
-use crate::net::{net_interrupt_handler, IPv4};
+use crate::net::{net_interrupt_handler, IPv4, net_accept};
 
 // just support udp
 fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
@@ -360,7 +360,7 @@ fn accept(fd: usize) -> isize {
 
     // NOTICE: There does not have interrupt handler, just call it munually.
     loop {
-        net_interrupt_handler();
+        net_accept();
 
         if !port_acceptable(port.clone()) {
             break;

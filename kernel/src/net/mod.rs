@@ -67,15 +67,7 @@ pub fn net_interrupt_handler() {
             let rport = tcp_packet.source_port;
             let flags = tcp_packet.flags;
 
-            if flags.contains(TcpFlags::S) {
-                // if it has a port to accept, then response the request
-                if check_accept(lport, &tcp_packet).is_some() {
-                    let mut reply_packet = tcp_packet.ack();
-                    reply_packet.flags = TcpFlags::S | TcpFlags::A;
-                    NET_DEVICE.transmit(&reply_packet.build_data());
-                }
-                return;
-            } else if tcp_packet.flags.contains(TcpFlags::F) {
+            if flags.contains(TcpFlags::F) {
                 // tcp disconnected
                 let reply_packet = tcp_packet.ack();
                 NET_DEVICE.transmit(&reply_packet.build_data());
@@ -90,6 +82,41 @@ pub fn net_interrupt_handler() {
             if let Some(socket_index) = get_socket(target, lport, rport) {
                 push_data(socket_index, tcp_packet.data.to_vec());
                 set_s_a_by_index(socket_index, tcp_packet.seq, tcp_packet.ack);
+            }
+        }
+        _ => {}
+    }
+}
+
+pub fn net_accept() {
+    let mut recv_buf = vec![0u8; 1024];
+
+    let len = NET_DEVICE.receive(&mut recv_buf);
+
+    let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
+
+    match packet {
+        Packet::ARP(arp_packet) => {
+            let lose_stack = LOSE_NET_STACK.0.borrow_mut();
+            let reply_packet = arp_packet
+                .reply_packet(lose_stack.ip, lose_stack.mac)
+                .expect("can't build reply");
+            let reply_data = reply_packet.build_data();
+            NET_DEVICE.transmit(&reply_data)
+        }
+
+        Packet::TCP(tcp_packet) => {
+            let lport = tcp_packet.dest_port;
+            let flags = tcp_packet.flags;
+
+            if flags.contains(TcpFlags::S) {
+                // if it has a port to accept, then response the request
+                if check_accept(lport, &tcp_packet).is_some() {
+                    let mut reply_packet = tcp_packet.ack();
+                    reply_packet.flags = TcpFlags::S | TcpFlags::A;
+                    NET_DEVICE.transmit(&reply_packet.build_data());
+                }
+                return;
             }
         }
         _ => {}
