@@ -176,6 +176,14 @@ pub fn busy_wait_tcp_read() -> Vec<u8> {
     }
 }
 
+pub fn busy_wait_accept() -> TCP {
+    loop {
+        if let Some(socket) = net_accept() {
+            return socket;
+        }
+    }
+}
+
 #[allow(unused)]
 pub fn hexdump(data: &[u8]) {
     const PRELAND_WIDTH: usize = 70;

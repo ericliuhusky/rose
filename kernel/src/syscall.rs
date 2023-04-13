@@ -331,7 +331,7 @@ fn semaphore_up(sem_id: usize) -> isize {
 
 use crate::net::port_table::{self, Port};
 use crate::net::udp::UDP;
-use crate::net::{IPv4, net_accept, net_arp};
+use crate::net::{IPv4, net_arp, busy_wait_accept};
 
 // just support udp
 fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
@@ -356,7 +356,7 @@ fn accept(fd: usize) -> isize {
     let port = unsafe { &*(&port as *const _ as *const MutRc<Port>) };
 
     net_arp();
-    let tcp_socket = net_accept().unwrap();
+    let tcp_socket = busy_wait_accept();
 
     let fd = process.fd_table.insert(MutRc::new(tcp_socket));
 
