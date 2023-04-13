@@ -17,35 +17,30 @@ pub struct Port {
 }
 
 lazy_static! {
-    static ref LISTEN_TABLE: RefCell<IDAllocDict<Port>> = RefCell::new(IDAllocDict::new());
+    static ref LISTEN_TABLE: RefCell<IDAllocDict<MutRc<Port>>> = RefCell::new(IDAllocDict::new());
 }
 
-pub fn listen(port: u16) -> usize {
+pub fn listen(port: u16) -> MutRc<Port> {
     let mut listen_table = LISTEN_TABLE.borrow_mut();
 
-    let listen_port = Port {
+    let listen_port = MutRc::new(Port {
         port,
         receivable: false,
         schedule: None,
-    };
+    });
 
-    listen_table.insert(listen_port)
+    listen_table.insert(listen_port.clone());
+    listen_port
 }
 
 // can accept request
-pub fn accept(listen_index: usize, task: MutRc<Task>) {
-    let mut listen_table = LISTEN_TABLE.borrow_mut();
-    let listen_port = listen_table.get_mut(listen_index);
-    let listen_port = listen_port.unwrap();
-    listen_port.receivable = true;
-    listen_port.schedule = Some(task);
+pub fn accept(mut port: MutRc<Port>, task: MutRc<Task>) {
+    port.receivable = true;
+    port.schedule = Some(task);
 }
 
-pub fn port_acceptable(listen_index: usize) -> bool {
-    let listen_table = LISTEN_TABLE.borrow_mut();
-
-    let listen_port = listen_table.get(listen_index);
-    listen_port.map_or(false, |x| x.receivable)
+pub fn port_acceptable(port: MutRc<Port>) -> bool {
+    port.receivable
 }
 
 // check whether it can accept request
@@ -81,27 +76,12 @@ pub fn accept_connection(_port: u16, tcp_packet: &TCPPacket, mut task: MutRc<Tas
     task.cx.x[10] = fd;
 }
 
-// store in the fd_table, delete the listen table when close the application.
-pub struct PortFd(usize);
-
-impl PortFd {
-    pub fn new(port_index: usize) -> Self {
-        PortFd(port_index)
-    }
-}
-
-impl Drop for PortFd {
-    fn drop(&mut self) {
-        LISTEN_TABLE.borrow_mut().remove(self.0);
-    }
-}
-
-impl File for PortFd {
+impl File for Port {
     fn read(&mut self, _buf: Vec<&'static mut [u8]>) -> usize {
-        0
+        unimplemented!()
     }
 
     fn write(&mut self, _buf: Vec<&'static mut [u8]>) -> usize {
-        0
+        unimplemented!()
     }
 }

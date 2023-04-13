@@ -329,7 +329,7 @@ fn semaphore_up(sem_id: usize) -> isize {
 
 
 
-use crate::net::port_table::{self, port_acceptable, PortFd};
+use crate::net::port_table::{self, port_acceptable, Port};
 use crate::net::udp::UDP;
 use crate::net::{net_interrupt_handler, IPv4};
 
@@ -343,28 +343,26 @@ fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
 
 // listen a port
 fn listen(port: u16) -> isize {
-    let port_id = port_table::listen(port);
+    let port = port_table::listen(port);
     let mut process = current_process();
-    let port_fd = PortFd::new(port_id);
-    process.fd_table.insert(MutRc::new(port_fd));
-
-    // NOTICE: this return the port index, not the fd
-    port_id as isize
+    let fd = process.fd_table.insert(port.clone());
+    fd as isize
 }
 
 // accept a tcp connection
-fn accept(port_index: usize) -> isize {
-    println!("accepting port {}", port_index);
-
+fn accept(fd: usize) -> isize {
+    let process = current_process();
+    let port = process.fd_table.get(fd).unwrap().clone();
+    let port = unsafe { &*(&port as *const _ as *const MutRc<Port>) };
     let task = current_task();
-    port_table::accept(port_index, task.clone());
+    port_table::accept(port.clone(), task.clone());
     // block_current_and_run_next();
 
     // NOTICE: There does not have interrupt handler, just call it munually.
     loop {
         net_interrupt_handler();
 
-        if !port_acceptable(port_index) {
+        if !port_acceptable(port.clone()) {
             break;
         }
     }
