@@ -40,29 +40,7 @@ pub fn net_interrupt_handler() {
 
     let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
 
-    // println!("[kernel] receive a packet");
-    // hexdump(&recv_buf[..len]);
-
     match packet {
-        Packet::ARP(arp_packet) => {
-            let lose_stack = LOSE_NET_STACK.0.borrow_mut();
-            let reply_packet = arp_packet
-                .reply_packet(lose_stack.ip, lose_stack.mac)
-                .expect("can't build reply");
-            let reply_data = reply_packet.build_data();
-            NET_DEVICE.transmit(&reply_data)
-        }
-
-        Packet::UDP(udp_packet) => {
-            let target = udp_packet.source_ip;
-            let lport = udp_packet.dest_port;
-            let rport = udp_packet.source_port;
-
-            if let Some(socket_index) = get_socket(target, lport, rport) {
-                push_data(socket_index, udp_packet.data.to_vec());
-            }
-        }
-
         Packet::TCP(tcp_packet) => {
             let target = tcp_packet.source_ip;
             let lport = tcp_packet.dest_port;
@@ -168,6 +146,25 @@ pub fn net_tcp_read() -> Option<Vec<u8>> {
     }
 }
 
+pub fn net_udp_read(lport: u16) -> Option<(Vec<u8>, IPv4, u16)> {
+    let mut recv_buf = vec![0u8; 1024];
+
+    let len = NET_DEVICE.receive(&mut recv_buf);
+
+    let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
+
+    match packet {
+        Packet::UDP(udp_packet) => {
+            if lport == udp_packet.dest_port {
+                Some((udp_packet.data.to_vec(), udp_packet.source_ip, udp_packet.source_port))
+            } else {
+                None
+            }
+        }
+        _ => None
+    }
+}
+
 pub fn busy_wait_tcp_read() -> Vec<u8> {
     loop {
         if let Some(data) = net_tcp_read() {
@@ -180,6 +177,14 @@ pub fn busy_wait_accept() -> TCP {
     loop {
         if let Some(socket) = net_accept() {
             return socket;
+        }
+    }
+}
+
+pub fn busy_wait_udp_read(lport: u16) -> (Vec<u8>, IPv4, u16) {
+    loop {
+        if let Some(data) = net_udp_read(lport) {
+            return data;
         }
     }
 }

@@ -1,8 +1,9 @@
-use super::net_interrupt_handler;
+use super::{net_interrupt_handler, busy_wait_udp_read};
 use super::socket::{add_socket, pop_data, remove_socket};
 use super::LOSE_NET_STACK;
 use super::NET_DEVICE;
 use crate::fs::File;
+use crate::net::net_arp;
 use alloc::vec;
 use alloc::vec::Vec;
 use lose_net_stack::packets::udp::UDPPacket;
@@ -31,26 +32,27 @@ impl UDP {
 
 impl File for UDP {
     fn read(&mut self, mut buf: Vec<&'static mut [u8]>) -> usize {
-        loop {
-            if let Some(data) = pop_data(self.socket_index) {
-                let data_len = data.len();
-                let mut left = 0;
-                for i in 0..buf.len() {
-                    let buffer_i_len = buf[i].len().min(data_len - left);
+        net_arp();
+        let (data, source_ip, source_port) = busy_wait_udp_read(self.sport);
+        self.target = source_ip;
+        self.dport = source_port;
 
-                    buf[i][..buffer_i_len]
-                        .copy_from_slice(&data[left..(left + buffer_i_len)]);
+        println!("{}, {}", source_ip, source_port);
 
-                    left += buffer_i_len;
-                    if left == data_len {
-                        break;
-                    }
-                }
-                return left;
-            } else {
-                net_interrupt_handler();
+        let data_len = data.len();
+        let mut left = 0;
+        for i in 0..buf.len() {
+            let buffer_i_len = buf[i].len().min(data_len - left);
+
+            buf[i][..buffer_i_len]
+                .copy_from_slice(&data[left..(left + buffer_i_len)]);
+
+            left += buffer_i_len;
+            if left == data_len {
+                break;
             }
         }
+        left
     }
 
     fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
