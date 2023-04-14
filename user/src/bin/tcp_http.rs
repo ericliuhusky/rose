@@ -126,15 +126,10 @@ fn handle_tcp_client(client_fd: usize) -> bool {
 pub fn main() -> i32 {
     println!("This is a very simple http server");
 
-    let tcp_fd = listen(80);
-
-    if tcp_fd < 0 {
-        println!("Failed to listen on port 80");
-        return -1;
-    }
+    listen(80);
 
     loop {
-        let client = accept(tcp_fd as usize);
+        let client = accept(0 as usize);
         println!("client connected: {}", client);
 
         if client < 1 {

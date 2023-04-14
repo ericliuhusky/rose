@@ -329,7 +329,7 @@ fn semaphore_up(sem_id: usize) -> isize {
 
 
 
-use crate::net::port_table::{self, Port};
+use crate::net::port_table;
 use crate::net::udp::UDP;
 use crate::net::{IPv4, net_arp, busy_wait_accept};
 
@@ -343,17 +343,13 @@ fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
 
 // listen a port
 fn listen(port: u16) -> isize {
-    let port = port_table::listen(port);
-    let mut process = current_process();
-    let fd = process.fd_table.insert(port.clone());
-    fd as isize
+    port_table::listen(port);
+    0
 }
 
 // accept a tcp connection
 fn accept(fd: usize) -> isize {
     let mut process = current_process();
-    let port = process.fd_table.get(fd).unwrap().clone();
-    let port = unsafe { &*(&port as *const _ as *const MutRc<Port>) };
 
     net_arp();
     let tcp_socket = busy_wait_accept();
