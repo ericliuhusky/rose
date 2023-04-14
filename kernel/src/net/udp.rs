@@ -1,5 +1,5 @@
-use super::{net_interrupt_handler, busy_wait_udp_read};
-use super::socket::{add_socket, pop_data, remove_socket};
+use super::busy_wait_udp_read;
+use super::socket::{add_socket, remove_socket};
 use super::LOSE_NET_STACK;
 use super::NET_DEVICE;
 use crate::fs::File;

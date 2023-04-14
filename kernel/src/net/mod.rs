@@ -5,16 +5,15 @@ pub mod udp;
 
 use crate::{
     drivers::virtio_net::NET_DEVICE,
-    net::socket::{get_socket, push_data}, task::task::Task,
+    net::socket::get_socket,
 };
 use alloc::{rc::Rc, vec};
 use alloc::vec::Vec;
-use mutrc::MutRc;
 use core::cell::RefCell;
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
-use self::{port_table::{check_accept, Port}, socket::set_s_a_by_index, tcp::TCP};
+use self::{port_table::check_accept, socket::set_s_a_by_index, tcp::TCP};
 
 pub struct NetStack(RefCell<LoseStack>);
 
@@ -58,7 +57,6 @@ pub fn net_interrupt_handler() {
             }
 
             if let Some(socket_index) = get_socket(target, lport, rport) {
-                push_data(socket_index, tcp_packet.data.to_vec());
                 set_s_a_by_index(socket_index, tcp_packet.seq, tcp_packet.ack);
             }
         }

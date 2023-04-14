@@ -1,6 +1,4 @@
 use core::cell::RefCell;
-use alloc::collections::VecDeque;
-use alloc::vec::Vec;
 use lazy_static::lazy_static;
 use lose_net_stack::IPv4;
 
@@ -11,7 +9,6 @@ pub struct Socket {
     pub raddr: IPv4,                // remote address
     pub lport: u16,                 // local port
     pub rport: u16,                 // rempote port
-    pub buffers: VecDeque<Vec<u8>>, // datas
     pub seq: u32,
     pub ack: u32,
 }
@@ -55,7 +52,6 @@ pub fn add_socket(raddr: IPv4, lport: u16, rport: u16) -> Option<usize> {
         raddr,
         lport,
         rport,
-        buffers: VecDeque::new(),
         seq: 0,
         ack: 0,
     };
@@ -67,22 +63,4 @@ pub fn remove_socket(index: usize) {
     let mut socket_table = SOCKET_TABLE.borrow_mut();
 
     socket_table.remove(index);
-}
-
-pub fn push_data(index: usize, data: Vec<u8>) {
-    let mut socket_table = SOCKET_TABLE.borrow_mut();
-
-    socket_table.get_mut(index)
-        .unwrap()
-        .buffers
-        .push_back(data);
-}
-
-pub fn pop_data(index: usize) -> Option<Vec<u8>> {
-    let mut socket_table = SOCKET_TABLE.borrow_mut();
-
-    socket_table.get_mut(index)
-        .unwrap()
-        .buffers
-        .pop_front()
 }
