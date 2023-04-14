@@ -8,7 +8,6 @@ use lose_net_stack::TcpFlags;
 use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
 
 use super::busy_wait_tcp_read;
-use super::socket::get_s_a_by_index;
 use super::{
     socket::{add_socket, remove_socket},
     LOSE_NET_STACK,
@@ -41,7 +40,9 @@ impl TCP {
 
 impl File for TCP {
     fn read(&mut self, mut buf: Vec<&'static mut [u8]>) -> usize {
-        let data = busy_wait_tcp_read();
+        let (data, seq, ack) = busy_wait_tcp_read();
+        self.seq = seq;
+        self.ack = ack;
         let data_len = data.len();
         let mut left = 0;
         for i in 0..buf.len() {
@@ -71,8 +72,7 @@ impl File for TCP {
 
         let len = data.len();
 
-        // get sock and sequence
-        let (ack, seq) = get_s_a_by_index(self.socket_index).map_or((0, 0), |x| x);
+        let (ack, seq) = (self.seq, self.ack);
 
         let tcp_packet = TCPPacket {
             source_ip: lose_net_stack.ip,

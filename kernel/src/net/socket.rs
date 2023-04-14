@@ -9,28 +9,10 @@ pub struct Socket {
     pub raddr: IPv4,                // remote address
     pub lport: u16,                 // local port
     pub rport: u16,                 // rempote port
-    pub seq: u32,
-    pub ack: u32,
 }
 
 lazy_static! {
     static ref SOCKET_TABLE: RefCell<IDAllocDict<Socket>> = RefCell::new(IDAllocDict::new());
-}
-
-/// get the seq and ack by socket index
-pub fn get_s_a_by_index(index: usize) -> Option<(u32, u32)> {
-    let socket_table = SOCKET_TABLE.borrow_mut();
-
-    socket_table.get(index).map_or(None, |x| Some((x.seq, x.ack)))
-}
-
-pub fn set_s_a_by_index(index: usize, seq: u32, ack: u32) {
-    let mut socket_table = SOCKET_TABLE.borrow_mut();
-
-    let sock = socket_table.get_mut(index).unwrap();
-
-    sock.ack = ack;
-    sock.seq = seq;
 }
 
 pub fn get_socket(raddr: IPv4, lport: u16, rport: u16) -> Option<usize> {
@@ -52,8 +34,6 @@ pub fn add_socket(raddr: IPv4, lport: u16, rport: u16) -> Option<usize> {
         raddr,
         lport,
         rport,
-        seq: 0,
-        ack: 0,
     };
 
     Some(socket_table.insert(socket))

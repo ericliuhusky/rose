@@ -13,7 +13,7 @@ use core::cell::RefCell;
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
-use self::{port_table::check_accept, socket::set_s_a_by_index, tcp::TCP};
+use self::{port_table::check_accept, tcp::TCP};
 
 pub struct NetStack(RefCell<LoseStack>);
 
@@ -57,7 +57,6 @@ pub fn net_interrupt_handler() {
             }
 
             if let Some(socket_index) = get_socket(target, lport, rport) {
-                set_s_a_by_index(socket_index, tcp_packet.seq, tcp_packet.ack);
             }
         }
         _ => {}
@@ -113,7 +112,7 @@ pub fn net_accept() -> Option<TCP> {
     }
 }
 
-pub fn net_tcp_read() -> Option<Vec<u8>> {
+pub fn net_tcp_read() -> Option<(Vec<u8>, u32, u32)> {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -131,8 +130,7 @@ pub fn net_tcp_read() -> Option<Vec<u8>> {
                     return None;
                 }
                 if let Some(socket_index) = get_socket(target, lport, rport) {
-                    set_s_a_by_index(socket_index, tcp_packet.seq, tcp_packet.ack);
-                    Some(tcp_packet.data.to_vec())
+                    Some((tcp_packet.data.to_vec(), tcp_packet.seq, tcp_packet.ack))
                 } else {
                     None
                 }
@@ -163,7 +161,7 @@ pub fn net_udp_read(lport: u16) -> Option<(Vec<u8>, IPv4, u16)> {
     }
 }
 
-pub fn busy_wait_tcp_read() -> Vec<u8> {
+pub fn busy_wait_tcp_read() -> (Vec<u8>, u32, u32) {
     loop {
         if let Some(data) = net_tcp_read() {
             return data;
