@@ -8,13 +8,15 @@ extern crate lib;
 #[macro_use]
 extern crate alloc;
 
-use lib::{connect, read, write};
+use lib::{connect, read, write, socket, bind};
 
 #[no_mangle]
 pub fn main() -> i32 {
     println!("udp test open!");
 
-    let udp_fd = connect(10 << 24 | 0 << 16 | 2 << 8 | 2, 2000, 26099);
+    let udp_fd = socket(false);
+
+    bind(udp_fd as usize, 2000);
 
     let mut buf = vec![0u8; 1024];
 

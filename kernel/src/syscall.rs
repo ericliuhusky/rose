@@ -390,6 +390,10 @@ fn bind(fd: usize, port: u16) -> isize {
             let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
             socket.sport = port;
         },
+        crate::fs::FileType::UDP => {
+            let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<UDP>) };
+            socket.sport = port;
+        }
         _ => {}
     }
     0
