@@ -1,11 +1,9 @@
 pub mod port_table;
-pub mod socket;
 pub mod tcp;
 pub mod udp;
 
 use crate::{
     drivers::virtio_net::NET_DEVICE,
-    net::socket::get_socket,
 };
 use alloc::{rc::Rc, vec};
 use alloc::vec::Vec;
@@ -54,9 +52,6 @@ pub fn net_interrupt_handler() {
                 let mut end_packet = reply_packet.ack();
                 end_packet.flags |= TcpFlags::F;
                 NET_DEVICE.transmit(&end_packet.build_data());
-            }
-
-            if let Some(socket_index) = get_socket(target, lport, rport) {
             }
         }
         _ => {}
@@ -112,7 +107,7 @@ pub fn net_accept() -> Option<TCP> {
     }
 }
 
-pub fn net_tcp_read() -> Option<(Vec<u8>, u32, u32)> {
+pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32, u32)> {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -121,15 +116,11 @@ pub fn net_tcp_read() -> Option<(Vec<u8>, u32, u32)> {
 
     match packet {
         Packet::TCP(tcp_packet) => {
-            let target = tcp_packet.source_ip;
-            let lport = tcp_packet.dest_port;
-            let rport = tcp_packet.source_port;
-
             if tcp_packet.flags.contains(TcpFlags::A) {
                 if tcp_packet.data_len == 0 {
                     return None;
                 }
-                if let Some(socket_index) = get_socket(target, lport, rport) {
+                if lport == tcp_packet.dest_port && raddr == tcp_packet.source_ip && rport == tcp_packet.source_port {
                     Some((tcp_packet.data.to_vec(), tcp_packet.seq, tcp_packet.ack))
                 } else {
                     None
@@ -161,9 +152,9 @@ pub fn net_udp_read(lport: u16) -> Option<(Vec<u8>, IPv4, u16)> {
     }
 }
 
-pub fn busy_wait_tcp_read() -> (Vec<u8>, u32, u32) {
+pub fn busy_wait_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> (Vec<u8>, u32, u32) {
     loop {
-        if let Some(data) = net_tcp_read() {
+        if let Some(data) = net_tcp_read(lport, raddr, rport) {
             return data;
         }
     }

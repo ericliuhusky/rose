@@ -1,5 +1,4 @@
 use super::busy_wait_udp_read;
-use super::socket::{add_socket, remove_socket};
 use super::LOSE_NET_STACK;
 use super::NET_DEVICE;
 use crate::fs::File;
@@ -14,18 +13,14 @@ pub struct UDP {
     pub target: IPv4,
     pub sport: u16,
     pub dport: u16,
-    pub socket_index: usize,
 }
 
 impl UDP {
     pub fn new(target: IPv4, sport: u16, dport: u16) -> Self {
-        let index = add_socket(target, sport, dport).expect("can't add socket");
-
         Self {
             target,
             sport,
             dport,
-            socket_index: index,
         }
     }
 }
@@ -80,11 +75,5 @@ impl File for UDP {
         );
         NET_DEVICE.transmit(&udp_packet.build_data());
         len
-    }
-}
-
-impl Drop for UDP {
-    fn drop(&mut self) {
-        remove_socket(self.socket_index)
     }
 }

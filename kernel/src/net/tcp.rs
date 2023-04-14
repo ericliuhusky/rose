@@ -9,7 +9,6 @@ use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
 
 use super::busy_wait_tcp_read;
 use super::{
-    socket::{add_socket, remove_socket},
     LOSE_NET_STACK,
 };
 
@@ -20,27 +19,23 @@ pub struct TCP {
     pub dport: u16,
     pub seq: u32,
     pub ack: u32,
-    pub socket_index: usize,
 }
 
 impl TCP {
     pub fn new(target: IPv4, sport: u16, dport: u16, seq: u32, ack: u32) -> Self {
-        let index = add_socket(target, sport, dport).expect("can't add socket");
-
         Self {
             target,
             sport,
             dport,
             seq,
             ack,
-            socket_index: index,
         }
     }
 }
 
 impl File for TCP {
     fn read(&mut self, mut buf: Vec<&'static mut [u8]>) -> usize {
-        let (data, seq, ack) = busy_wait_tcp_read();
+        let (data, seq, ack) = busy_wait_tcp_read(self.sport, self.target, self.dport);
         self.seq = seq;
         self.ack = ack;
         let data_len = data.len();
@@ -94,8 +89,3 @@ impl File for TCP {
     }
 }
 
-impl Drop for TCP {
-    fn drop(&mut self) {
-        remove_socket(self.socket_index)
-    }
-}
