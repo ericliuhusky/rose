@@ -79,11 +79,17 @@ impl SysFunc for SysFuncImpl {
     fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
         connect(raddr, lport, rport)
     }
-    fn listen(port: u16) -> isize {
-        listen(port)
+    fn listen(fd: usize) -> isize {
+        listen(fd)
     }
     fn accept(port_index: usize) -> isize {
         accept(port_index)
+    }
+    fn socket(tcp: bool) -> isize {
+        socket(tcp)
+    }
+    fn bind(fd: usize, port: u16) -> isize {
+        bind(fd, port)
     }
 }
 
@@ -208,8 +214,9 @@ mod 系统调用_进程 {
     }
 }
 
-use crate::fs::open_file;
+use crate::fs::{open_file, File};
 use crate::mutex::Mutex;
+use crate::net::tcp::TCP;
 use crate::semaphore::Semaphore;
 use mutrc::MutRc;
 use crate::task::{current_task, current_process, add_task};
@@ -342,19 +349,43 @@ fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
 }
 
 // listen a port
-fn listen(port: u16) -> isize {
-    port_table::listen(port);
+fn listen(fd: usize) -> isize {
+    let mut process = current_process();
+    let mut socket = process.fd_table.get(fd).unwrap().clone();
+    let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
+    port_table::listen(socket.sport);
     0
 }
 
 // accept a tcp connection
 fn accept(fd: usize) -> isize {
     let mut process = current_process();
+    let mut socket = process.fd_table.get(fd).unwrap().clone();
+    let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
 
     net_arp();
-    let tcp_socket = busy_wait_accept();
+    let tcp_socket = busy_wait_accept(socket.sport);
 
     let fd = process.fd_table.insert(MutRc::new(tcp_socket));
 
     fd as isize
+}
+
+fn socket(tcp: bool) -> isize {
+    let mut process = current_process();
+    let socket: MutRc<dyn File> = if tcp {
+        MutRc::new(TCP::new(IPv4::from_u32(0), 0, 0, 0, 0))
+    } else {
+        MutRc::new(UDP::new(IPv4::from_u32(0), 0, 0))
+    };
+    let fd = process.fd_table.insert(socket);
+    fd as isize
+}
+
+fn bind(fd: usize, port: u16) -> isize {
+    let process = current_process();
+    let mut socket = process.fd_table.get(fd).unwrap().clone();
+    let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
+    socket.sport = port;
+    0
 }

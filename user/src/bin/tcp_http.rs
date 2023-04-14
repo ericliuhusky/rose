@@ -10,7 +10,7 @@ extern crate alloc;
 
 // use http://localhost:6201/ to access the http server
 
-use lib::{accept, listen, read, write};
+use lib::{accept, listen, read, write, socket, bind};
 
 // get url from the tcp request list.
 fn get_url_from_tcp_request(req: &[u8]) -> String {
@@ -126,7 +126,10 @@ fn handle_tcp_client(client_fd: usize) -> bool {
 pub fn main() -> i32 {
     println!("This is a very simple http server");
 
-    listen(80);
+    let fd = socket(true);
+    bind(fd as usize, 80);
+
+    listen(fd as usize);
 
     loop {
         let client = accept(0 as usize);

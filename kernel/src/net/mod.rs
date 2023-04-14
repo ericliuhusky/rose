@@ -11,7 +11,7 @@ use core::cell::RefCell;
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
-use self::{port_table::check_accept, tcp::TCP};
+use self::tcp::TCP;
 
 pub struct NetStack(RefCell<LoseStack>);
 
@@ -78,7 +78,7 @@ pub fn net_arp() {
     }
 }
 
-pub fn net_accept() -> Option<TCP> {
+pub fn net_accept(lport: u16) -> Option<TCP> {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -92,13 +92,21 @@ pub fn net_accept() -> Option<TCP> {
 
             if flags.contains(TcpFlags::S) {
                 // if it has a port to accept, then response the request
-                let tcp_socket = check_accept(lport, &tcp_packet);
-                if tcp_socket.is_some() {
+                if lport == tcp_packet.dest_port {
                     let mut reply_packet = tcp_packet.ack();
                     reply_packet.flags = TcpFlags::S | TcpFlags::A;
                     NET_DEVICE.transmit(&reply_packet.build_data());
+
+                    Some(TCP::new(
+                        tcp_packet.source_ip,
+                        tcp_packet.dest_port,
+                        tcp_packet.source_port,
+                        tcp_packet.seq,
+                        tcp_packet.ack,
+                    ))
+                } else {
+                    None
                 }
-                tcp_socket
             } else {
                 None
             }
@@ -160,9 +168,9 @@ pub fn busy_wait_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> (Vec<u8>, u32,
     }
 }
 
-pub fn busy_wait_accept() -> TCP {
+pub fn busy_wait_accept(lport: u16) -> TCP {
     loop {
-        if let Some(socket) = net_accept() {
+        if let Some(socket) = net_accept(lport) {
             return socket;
         }
     }
