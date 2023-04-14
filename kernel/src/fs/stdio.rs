@@ -30,6 +30,10 @@ impl File for Stdin {
     fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
         panic!("Cannot write to stdin!");
     }
+
+    fn file_type(&self) -> super::FileType {
+        super::FileType::STDIN
+    }
 }
 
 impl File for Stdout {
@@ -41,5 +45,9 @@ impl File for Stdout {
             print!("{}", core::str::from_utf8(buffer).unwrap());
         }
         buf.len()
+    }
+
+    fn file_type(&self) -> super::FileType {
+        super::FileType::STDOUT
     }
 }

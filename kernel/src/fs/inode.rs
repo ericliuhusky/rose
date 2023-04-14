@@ -95,4 +95,8 @@ impl File for OSInode {
         }
         total_write_size
     }
+
+    fn file_type(&self) -> super::FileType {
+        super::FileType::INODE    
+    }
 }

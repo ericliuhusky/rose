@@ -114,4 +114,8 @@ impl File for Pipe {
             }
         }
     }
+
+    fn file_type(&self) -> super::FileType {
+        super::FileType::PIPE
+    }
 }

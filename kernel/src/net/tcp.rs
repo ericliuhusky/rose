@@ -87,5 +87,9 @@ impl File for TCP {
         NET_DEVICE.transmit(&tcp_packet.build_data());
         len
     }
+
+    fn file_type(&self) -> crate::fs::FileType {
+        crate::fs::FileType::TCP
+    }
 }
 

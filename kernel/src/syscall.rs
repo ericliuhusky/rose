@@ -385,7 +385,12 @@ fn socket(tcp: bool) -> isize {
 fn bind(fd: usize, port: u16) -> isize {
     let process = current_process();
     let mut socket = process.fd_table.get(fd).unwrap().clone();
-    let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
-    socket.sport = port;
+    match socket.file_type() {
+        crate::fs::FileType::TCP => {
+            let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
+            socket.sport = port;
+        },
+        _ => {}
+    }
     0
 }

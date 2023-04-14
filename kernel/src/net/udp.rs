@@ -76,4 +76,8 @@ impl File for UDP {
         NET_DEVICE.transmit(&udp_packet.build_data());
         len
     }
+
+    fn file_type(&self) -> crate::fs::FileType {
+        crate::fs::FileType::UDP
+    }
 }
