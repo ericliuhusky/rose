@@ -171,15 +171,6 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
         }
     }
 
-    pub fn read_str(&self, va: usize, len: usize) -> String {
-        let buffer = self.translate_buffer(va, len);
-        let mut s = String::new();
-        for byte in buffer {
-            s.push(byte as char);
-        }
-        s
-    }
-
     pub fn write(&self, va: usize, len: usize, data: &[u8]) {
         let mut buffer = self.translate_buffer(va, len);
         let mut i = 0;
