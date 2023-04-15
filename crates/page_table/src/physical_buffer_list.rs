@@ -1,4 +1,8 @@
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
+use core::{
+    ops::{Index, IndexMut},
+    str::from_utf8,
+};
 
 pub struct PhysicalBufferList {
     pub list: Vec<&'static mut [u8]>,
@@ -17,6 +21,53 @@ impl PhysicalBufferList {
         for i in 0..self.list.len() {
             self.list[i].copy_from_slice(src.list[i]);
         }
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut string = String::new();
+        for buf in &self.list {
+            let s = from_utf8(buf).unwrap();
+            string.push_str(s);
+        }
+        string
+    }
+}
+
+impl Index<usize> for PhysicalBufferList {
+    type Output = u8;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        let mut current_index = index;
+        for buffer in &self.list {
+            let buffer_len = buffer.len();
+            if current_index < buffer_len {
+                return &buffer[current_index];
+            }
+            current_index -= buffer_len;
+        }
+        panic!(
+            "Index out of bounds: the len is {} but the index is {}.",
+            self.len(),
+            index
+        );
+    }
+}
+
+impl IndexMut<usize> for PhysicalBufferList {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        let len = self.len();
+        let mut current_index = index;
+        for buffer in &mut self.list {
+            let buffer_len = buffer.len();
+            if current_index < buffer_len {
+                return &mut buffer[current_index];
+            }
+            current_index -= buffer_len;
+        }
+        panic!(
+            "Index out of bounds: the len is {} but the index is {}.",
+            len, index
+        );
     }
 }
 
