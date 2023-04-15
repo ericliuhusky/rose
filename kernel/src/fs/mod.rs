@@ -25,4 +25,4 @@ pub enum FileType {
 pub use inode::{list_apps, open_file, OSInode};
 use page_table::PhysicalBufferList;
 pub use stdio::{Stdin, Stdout};
-pub use pipe::make_pipe;
+pub use pipe::Pipe;

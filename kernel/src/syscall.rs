@@ -244,12 +244,12 @@ pub fn close(fd: usize) -> isize {
     0
 }
 
-use crate::fs::make_pipe;
+use crate::fs::Pipe;
 
 pub fn pipe(pipe_fd: *mut usize) -> isize {
     let mut process = current_process();
 
-    let (pipe_read, pipe_write) = make_pipe();
+    let (pipe_read, pipe_write) = Pipe::new_pair();
     let read_fd = process.fd_table.insert(pipe_read);
     let write_fd = process.fd_table.insert(pipe_write);
     let pipe_fd = process.memory_set.page_table.translate_type::<[usize; 2]>(pipe_fd as usize);

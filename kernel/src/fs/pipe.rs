@@ -1,119 +1,73 @@
 use super::File;
+use crate::task::suspend_and_run_next;
 use alloc::collections::VecDeque;
-use alloc::vec::Vec;
-use alloc::rc::{Rc, Weak};
-
-use mutrc::{MutRc, MutWeak};
+use mutrc::MutRc;
 use page_table::PhysicalBufferList;
-use crate::task::{TaskManager, suspend_and_run_next};
+
+const PIPE_BUFFER_SIZE: usize = 32;
 
 pub struct Pipe {
-    buffer: MutRc<PipeBuffer>,
+    buffer: MutRc<VecDeque<u8>>,
 }
 
 impl Pipe {
-    pub fn new(buffer: MutRc<PipeBuffer>) -> Self {
-        Self {
-            buffer,
-        }
+    pub fn new(buffer: MutRc<VecDeque<u8>>) -> Self {
+        Self { buffer }
     }
-}
 
-const BUFFER_SIZE: usize = 32;
-
-pub struct PipeBuffer {
-    buffer: VecDeque<u8>,
-    write_end: Option<MutWeak<Pipe>>,
-}
-
-impl PipeBuffer {
-    pub fn new() -> Self {
-        Self {
-            buffer: VecDeque::new(),
-            write_end: None,
-        }
+    pub fn new_pair() -> (MutRc<Self>, MutRc<Self>) {
+        let buffer = MutRc::new(VecDeque::new());
+        let read_end = MutRc::new(Pipe::new(buffer.clone()));
+        let write_end = MutRc::new(Pipe::new(buffer.clone()));
+        (read_end, write_end)
     }
-    pub fn set_write_end(&mut self, write_end: &MutRc<Pipe>) {
-        self.write_end = Some(write_end.downgrade());
-    }
+
     pub fn write_byte(&mut self, byte: u8) {
         self.buffer.push_back(byte);
     }
-    pub fn read_byte(&mut self) -> u8 {
-        let c = self.buffer.pop_front().unwrap();
-        c
-    }
-    pub fn available_read(&self) -> usize {
-        self.buffer.len()
-    }
-    pub fn available_write(&self) -> usize {
-        BUFFER_SIZE - self.available_read()
-    }
-    pub fn all_write_ends_closed(&self) -> bool {
-        self.write_end.as_ref().unwrap().upgrade().is_none()
-    }
-}
 
-/// Return (read_end, write_end)
-pub fn make_pipe() -> (MutRc<Pipe>, MutRc<Pipe>) {
-    let mut buffer = MutRc::new(PipeBuffer::new());
-    let read_end = MutRc::new(Pipe::new(buffer.clone()));
-    let write_end = MutRc::new(Pipe::new(buffer.clone()));
-    buffer.set_write_end(&write_end);
-    (read_end, write_end)
+    pub fn read_byte(&mut self) -> u8 {
+        self.buffer.pop_front().unwrap()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buffer.is_empty()
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.buffer.len() == PIPE_BUFFER_SIZE
+    }
 }
 
 impl File for Pipe {
-    fn read(&mut self, buf: PhysicalBufferList) -> usize {
-        let mut v = Vec::new();
-        for b in buf.list {
-            for bb in b {
-                v.push(bb);
-            }
+    fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
+        if self.buffer.is_empty() {
+            suspend_and_run_next();
         }
-        let mut already_read = 0usize;
-        loop {
-            let loop_read = self.buffer.available_read();
-            if loop_read == 0 {
-                if self.buffer.all_write_ends_closed() {
-                    return already_read;
-                }
-                suspend_and_run_next();
-                continue;
+        let mut already_read = 0;
+        for byte in &mut buf {
+            if self.is_empty() {
+                break;
             }
-            for i in 0..loop_read {
-                if i >= v.len() {
-                    break;
-                }
-                unsafe {
-                    *v[i] = self.buffer.read_byte();
-                }
-                already_read += 1;
-            }
+            *byte = self.read_byte();
+            already_read += 1;
         }
+        already_read
     }
+
     fn write(&mut self, buf: PhysicalBufferList) -> usize {
-        let mut v = Vec::new();
-        for b in buf.list {
-            for bb in b {
-                v.push(bb);
-            }
+        if self.is_full() {
+            suspend_and_run_next();
         }
-        loop {
-            let loop_write = self.buffer.available_write();
-            if loop_write == 0 {
-                suspend_and_run_next();
-                continue;
+        let mut already_write = 0;
+        for byte in buf {
+            if self.is_full() {
+                break;
             }
-            // write at most loop_write bytes
-            for i in 0..loop_write {
-                if i >= v.len() {
-                    return  i;
-                }
-                let byte = &v[i];
-                self.buffer.write_byte(unsafe { **byte });
-            }
+            self.write_byte(byte);
+            already_write += 1;
         }
+        already_write
     }
 
     fn file_type(&self) -> super::FileType {
