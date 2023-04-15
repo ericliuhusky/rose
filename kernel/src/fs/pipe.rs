@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use alloc::rc::{Rc, Weak};
 
 use mutrc::{MutRc, MutWeak};
+use page_table::PhysicalBufferList;
 use crate::task::{TaskManager, suspend_and_run_next};
 
 pub struct Pipe {
@@ -63,9 +64,9 @@ pub fn make_pipe() -> (MutRc<Pipe>, MutRc<Pipe>) {
 }
 
 impl File for Pipe {
-    fn read(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, buf: PhysicalBufferList) -> usize {
         let mut v = Vec::new();
-        for b in buf {
+        for b in buf.list {
             for bb in b {
                 v.push(bb);
             }
@@ -91,9 +92,9 @@ impl File for Pipe {
             }
         }
     }
-    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn write(&mut self, buf: PhysicalBufferList) -> usize {
         let mut v = Vec::new();
-        for b in buf {
+        for b in buf.list {
             for bb in b {
                 v.push(bb);
             }

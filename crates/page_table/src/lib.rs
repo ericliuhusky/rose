@@ -4,12 +4,14 @@ extern crate alloc;
 
 mod address;
 mod page_table;
+mod physical_buffer_list;
 
 pub use address::{Page, Address};
 use alloc::string::String;
 use page_table::PageTableEntryFlags;
 pub use address::{VPN, PPN, VA, PA};
 use page_table::{PageTableEntry, PageTable};
+pub use physical_buffer_list::PhysicalBufferList;
 use core::marker::PhantomData;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -142,17 +144,18 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
             .collect()
     }
 
-    pub fn translate_buffer(&self, va: usize, len: usize) -> Vec<&'static mut [u8]> {
+    pub fn translate_buffer(&self, va: usize, len: usize) -> PhysicalBufferList {
         let start_va = VA::new(va);
         let end_va = VA::new(va + len);
-        self.translate_addr(start_va, end_va)
+        let buffer_list = self.translate_addr(start_va, end_va)
             .iter()
             .map(|(start_pa, end_pa)| {
                 unsafe {
                     core::slice::from_raw_parts_mut(start_pa.number() as *mut u8, end_pa.number() - start_pa.number())
                 }
             })
-            .collect()
+            .collect();
+        PhysicalBufferList::new(buffer_list)
     }
 
     pub fn translate_type<T>(&self, va: usize) -> &'static mut T {
@@ -169,31 +172,23 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
     }
 
     pub fn read_str(&self, va: usize, len: usize) -> String {
-        let buffer_list = self.translate_buffer(va, len);
+        let buffer = self.translate_buffer(va, len);
         let mut s = String::new();
-        for buffer in buffer_list {
-            for byte in buffer {
-                s.push(byte.clone() as char);
-            }
+        for byte in buffer {
+            s.push(byte as char);
         }
         s
     }
 
     pub fn write(&self, va: usize, len: usize, data: &[u8]) {
-        let buffer_list = self.translate_buffer(va, len);
+        let mut buffer = self.translate_buffer(va, len);
         let mut i = 0;
-        let mut remain_len = data.len();
-        for buffer in buffer_list {
+        for byte in &mut buffer {
             if i >= data.len() {
                 break;
             }
-            let len = buffer.len().min(remain_len);
-            remain_len -= len;
-            let src = &data[i..i+len];
-            i += len;
-            for j in 0..len {
-                buffer[j] = src[j];
-            }
+            *byte = data[i];
+            i += 1;
         }
     }
 }

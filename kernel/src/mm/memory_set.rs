@@ -106,13 +106,9 @@ impl Clone for UserSpace {
             memory_space.map(segment.clone());
             let va = segment.va_range.start;
             let len = segment.va_range.len();
-            let src_bufs = self.page_table.translate_buffer(va, len);
-            let mut dst_bufs = memory_space.page_table.translate_buffer(va, len);
-            for i in 0..src_bufs.len() {
-                for j in 0..src_bufs[i].len() {
-                    dst_bufs[i][j] = src_bufs[i][j];
-                }
-            }
+            let src = self.page_table.translate_buffer(va, len);
+            let mut dst = memory_space.page_table.translate_buffer(va, len);
+            dst.copy_from_slice(&src);        
         }
         memory_space
     }

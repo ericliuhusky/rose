@@ -1,6 +1,7 @@
 //!Stdin & Stdout
 use super::File;
 use alloc::vec::Vec;
+use page_table::PhysicalBufferList;
 use crate::task::{TaskManager, suspend_and_run_next};
 ///Standard input
 pub struct Stdin;
@@ -8,7 +9,7 @@ pub struct Stdin;
 pub struct Stdout;
 
 impl File for Stdin {
-    fn read(&mut self, mut buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         assert_eq!(buf.len(), 1);
         // busy loop
         let mut c: usize;
@@ -23,11 +24,11 @@ impl File for Stdin {
         }
         let ch = c as u8;
         unsafe {
-            buf[0].as_mut_ptr().write_volatile(ch);
+            buf.list[0].as_mut_ptr().write_volatile(ch);
         }
         1
     }
-    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn write(&mut self, buf: PhysicalBufferList) -> usize {
         panic!("Cannot write to stdin!");
     }
 
@@ -37,11 +38,11 @@ impl File for Stdin {
 }
 
 impl File for Stdout {
-    fn read(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, buf: PhysicalBufferList) -> usize {
         panic!("Cannot read from stdout!");
     }
-    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
-        for buffer in &buf {
+    fn write(&mut self, buf: PhysicalBufferList) -> usize {
+        for buffer in &buf.list {
             print!("{}", core::str::from_utf8(buffer).unwrap());
         }
         buf.len()

@@ -4,6 +4,7 @@ use lose_net_stack::packets::tcp::TCPPacket;
 use lose_net_stack::IPv4;
 use lose_net_stack::MacAddress;
 use lose_net_stack::TcpFlags;
+use page_table::PhysicalBufferList;
 
 use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
 
@@ -34,7 +35,8 @@ impl TCP {
 }
 
 impl File for TCP {
-    fn read(&mut self, mut buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, buf: PhysicalBufferList) -> usize {
+        let mut buf = buf.list;
         let (data, seq, ack) = busy_wait_tcp_read(self.sport, self.target, self.dport);
         self.seq = seq;
         self.ack = ack;
@@ -54,7 +56,8 @@ impl File for TCP {
         left
     }
 
-    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn write(&mut self, buf: PhysicalBufferList) -> usize {
+        let buf = buf.list;
         let lose_net_stack = LOSE_NET_STACK.0.borrow_mut();
 
         let mut data = vec![0u8; buf.concat().len()];

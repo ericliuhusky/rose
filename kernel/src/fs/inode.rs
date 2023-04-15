@@ -1,6 +1,7 @@
 use super::File;
 use crate::drivers::BLOCK_DEVICE;
 use mutrc::MutRc;
+use page_table::PhysicalBufferList;
 use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
@@ -71,10 +72,10 @@ pub fn open_file(name: &str, create: bool) -> Option<MutRc<OSInode>> {
 }
 
 impl File for OSInode {
-    fn read(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn read(&mut self, buf: PhysicalBufferList) -> usize {
         let mut offset = self.offset.borrow_mut();
         let mut total_read_size = 0usize;
-        for slice in buf {
+        for slice in buf.list {
             let read_size = FILE_SYSTEM.borrow().read_at(self.inode, *offset, slice);
             if read_size == 0 {
                 break;
@@ -84,10 +85,10 @@ impl File for OSInode {
         }
         total_read_size
     }
-    fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
+    fn write(&mut self, buf: PhysicalBufferList) -> usize {
         let mut offset = self.offset.borrow_mut();
         let mut total_write_size = 0usize;
-        for slice in buf {
+        for slice in buf.list {
             let write_size = FILE_SYSTEM.borrow_mut().write_at(self.inode, *offset, slice);
             assert_eq!(write_size, slice.len());
             *offset += write_size;
