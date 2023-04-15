@@ -87,7 +87,6 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
 
     match packet {
         Packet::TCP(tcp_packet) => {
-            let lport = tcp_packet.dest_port;
             let flags = tcp_packet.flags;
 
             if flags.contains(TcpFlags::S) {
