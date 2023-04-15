@@ -1,5 +1,6 @@
+use super::LOCALHOST_IP;
+use super::LOCALHOST_MAC;
 use super::busy_wait_udp_read;
-use super::LOSE_NET_STACK;
 use super::NET_DEVICE;
 use crate::fs::File;
 use crate::net::net_arp;
@@ -10,17 +11,23 @@ use lose_net_stack::IPv4;
 use lose_net_stack::MacAddress;
 
 pub struct UDP {
-    pub target: IPv4,
-    pub sport: u16,
-    pub dport: u16,
+    pub source_ip: IPv4,
+    pub source_mac: MacAddress,
+    pub source_port: u16,
+    pub dest_ip: IPv4,
+    pub dest_mac: MacAddress,
+    pub dest_port: u16,
 }
 
 impl UDP {
-    pub fn new(target: IPv4, sport: u16, dport: u16) -> Self {
+    pub fn new() -> Self {
         Self {
-            target,
-            sport,
-            dport,
+            source_ip: *LOCALHOST_IP,
+            source_mac: *LOCALHOST_MAC,
+            source_port: 0,
+            dest_ip: IPv4::from_u32(0),
+            dest_mac: MacAddress::new([0; 6]),
+            dest_port: 0,
         }
     }
 }
@@ -28,9 +35,10 @@ impl UDP {
 impl File for UDP {
     fn read(&mut self, mut buf: Vec<&'static mut [u8]>) -> usize {
         net_arp();
-        let (data, source_ip, source_port) = busy_wait_udp_read(self.sport);
-        self.target = source_ip;
-        self.dport = source_port;
+        let (data, source_ip, source_mac, source_port) = busy_wait_udp_read(self.source_port);
+        self.dest_ip = source_ip;
+        self.dest_mac = source_mac;
+        self.dest_port = source_port;
 
         println!("{}, {}", source_ip, source_port);
 
@@ -51,8 +59,6 @@ impl File for UDP {
     }
 
     fn write(&mut self, buf: Vec<&'static mut [u8]>) -> usize {
-        let lose_net_stack = LOSE_NET_STACK.0.borrow_mut();
-
         let mut data = vec![0u8; buf.concat().len()];
 
         let mut left = 0;
@@ -64,12 +70,12 @@ impl File for UDP {
         let len = data.len();
 
         let udp_packet = UDPPacket::new(
-            lose_net_stack.ip,
-            lose_net_stack.mac,
-            self.sport,
-            self.target,
-            MacAddress::new([0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
-            self.dport,
+            self.source_ip,
+            self.source_mac,
+            self.source_port,
+            self.dest_ip,
+            self.dest_mac,
+            self.dest_port,
             len,
             data.as_ref(),
         );

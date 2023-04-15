@@ -15,14 +15,21 @@ use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
 use self::tcp::TCP;
 
+lazy_static::lazy_static! {
+    pub static ref LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
+}
+lazy_static::lazy_static! {
+    pub static ref LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
+}
+
 pub struct NetStack(RefCell<LoseStack>);
 
 impl NetStack {
     pub fn new() -> Self {
         unsafe {
             NetStack(RefCell::new(LoseStack::new(
-                IPv4::new(10, 0, 2, 15),
-                MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]),
+                *LOCALHOST_IP,
+                *LOCALHOST_MAC,
             )))
         }
     }
@@ -207,7 +214,7 @@ pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32
     }
 }
 
-pub fn net_udp_read(lport: u16) -> Option<(Vec<u8>, IPv4, u16)> {
+pub fn net_udp_read(lport: u16) -> Option<(Vec<u8>, IPv4, MacAddress, u16)> {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
@@ -217,7 +224,7 @@ pub fn net_udp_read(lport: u16) -> Option<(Vec<u8>, IPv4, u16)> {
     match packet {
         Packet::UDP(udp_packet) => {
             if lport == udp_packet.dest_port {
-                Some((udp_packet.data.to_vec(), udp_packet.source_ip, udp_packet.source_port))
+                Some((udp_packet.data.to_vec(), udp_packet.source_ip, udp_packet.source_mac, udp_packet.source_port))
             } else {
                 None
             }
@@ -242,7 +249,7 @@ pub fn busy_wait_accept(lport: u16) -> TCP {
     }
 }
 
-pub fn busy_wait_udp_read(lport: u16) -> (Vec<u8>, IPv4, u16) {
+pub fn busy_wait_udp_read(lport: u16) -> (Vec<u8>, IPv4, MacAddress, u16) {
     loop {
         if let Some(data) = net_udp_read(lport) {
             return data;

@@ -379,7 +379,7 @@ fn socket(tcp: bool) -> isize {
     let socket: MutRc<dyn File> = if tcp {
         MutRc::new(TCP::new(IPv4::from_u32(0), 0, 0, 0, 0))
     } else {
-        MutRc::new(UDP::new(IPv4::from_u32(0), 0, 0))
+        MutRc::new(UDP::new())
     };
     let fd = process.fd_table.insert(socket);
     fd as isize
@@ -395,7 +395,7 @@ fn bind(fd: usize, port: u16) -> isize {
         },
         crate::fs::FileType::UDP => {
             let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<UDP>) };
-            socket.sport = port;
+            socket.source_port = port;
         }
         _ => {}
     }
