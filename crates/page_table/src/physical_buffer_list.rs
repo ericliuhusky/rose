@@ -17,6 +17,22 @@ impl PhysicalBufferList {
         self.list.iter().map(|buf| buf.len()).sum()
     }
 
+    pub fn iter(&self) -> PhysicalBufferListIterator {
+        PhysicalBufferListIterator {
+            list: &self.list,
+            buffer_i: 0,
+            byte_i: 0,
+        }
+    }
+
+    pub fn iter_mut(&mut self) -> PhysicalBufferListMutIterator {
+        PhysicalBufferListMutIterator {
+            list: &mut self.list,
+            buffer_i: 0,
+            byte_i: 0,
+        }
+    }
+
     pub fn copy_from_slice(&mut self, src: &PhysicalBufferList) {
         for i in 0..self.list.len() {
             self.list[i].copy_from_slice(src.list[i]);
@@ -71,26 +87,22 @@ impl IndexMut<usize> for PhysicalBufferList {
     }
 }
 
-impl IntoIterator for PhysicalBufferList {
+impl<'a> IntoIterator for &'a PhysicalBufferList {
     type Item = u8;
-    type IntoIter = PhysicalBufferListIterator;
+    type IntoIter = PhysicalBufferListIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        PhysicalBufferListIterator {
-            list: self.list,
-            buffer_i: 0,
-            byte_i: 0,
-        }
+        self.iter()
     }
 }
 
-pub struct PhysicalBufferListIterator {
-    list: Vec<&'static mut [u8]>,
+pub struct PhysicalBufferListIterator<'a> {
+    list: &'a Vec<&'static mut [u8]>,
     buffer_i: usize,
     byte_i: usize,
 }
 
-impl Iterator for PhysicalBufferListIterator {
+impl<'a> Iterator for PhysicalBufferListIterator<'a> {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -98,7 +110,7 @@ impl Iterator for PhysicalBufferListIterator {
             return None;
         }
 
-        let current_buffer = &mut self.list[self.buffer_i];
+        let current_buffer = &self.list[self.buffer_i];
 
         if self.byte_i >= current_buffer.len() {
             self.buffer_i += 1;
@@ -119,11 +131,7 @@ impl<'a> IntoIterator for &'a mut PhysicalBufferList {
     type IntoIter = PhysicalBufferListMutIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        PhysicalBufferListMutIterator {
-            list: &mut self.list,
-            buffer_i: 0,
-            byte_i: 0,
-        }
+        self.iter_mut()
     }
 }
 

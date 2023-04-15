@@ -60,7 +60,7 @@ impl File for Pipe {
             suspend_and_run_next();
         }
         let mut already_write = 0;
-        for byte in buf {
+        for byte in &buf {
             if self.is_full() {
                 break;
             }
