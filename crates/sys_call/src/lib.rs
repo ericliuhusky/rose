@@ -105,16 +105,16 @@ pub fn semaphore_up(sem_id: usize) -> isize {
     sys_call(SYS_SEMAPHORE_UP, [sem_id, 0, 0])
 }
 
-pub fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
-    sys_call(SYS_CONNECT, [raddr as usize, lport as usize, rport as usize])
+pub fn connect(fd: usize, ip: u32, port: u16) -> isize {
+    sys_call(SYS_CONNECT, [fd, ip as usize, port as usize])
 }
 
 pub fn listen(fd: usize) -> isize {
     sys_call(SYS_LISTEN, [fd as usize, 0, 0])
 }
 
-pub fn accept(port_index: usize) -> isize {
-    sys_call(SYS_ACCEPT, [port_index, 0, 0])
+pub fn accept(fd: usize) -> isize {
+    sys_call(SYS_ACCEPT, [fd, 0, 0])
 }
 
 pub fn socket(tcp: bool) -> isize {

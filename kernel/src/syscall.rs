@@ -76,14 +76,14 @@ impl SysFunc for SysFuncImpl {
     fn semaphore_up(sem_id: usize) -> isize {
         semaphore_up(sem_id)
     }
-    fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
-        connect(raddr, lport, rport)
+    fn connect(fd: usize, ip: u32, port: u16) -> isize {
+        connect(fd, ip, port)
     }
     fn listen(fd: usize) -> isize {
         listen(fd)
     }
-    fn accept(port_index: usize) -> isize {
-        accept(port_index)
+    fn accept(fd: usize) -> isize {
+        accept(fd)
     }
     fn socket(tcp: bool) -> isize {
         socket(tcp)
@@ -336,16 +336,19 @@ fn semaphore_up(sem_id: usize) -> isize {
 
 
 
-use crate::net::port_table;
+use crate::net::{port_table, net_arp_request, net_connect};
 use crate::net::udp::UDP;
 use crate::net::{IPv4, net_arp, busy_wait_accept};
 
 // just support udp
-fn connect(raddr: u32, lport: u16, rport: u16) -> isize {
+fn connect(fd: usize, ip: u32, port: u16) -> isize {
     let mut process = current_process();
-    let udp_node = UDP::new(IPv4::from_u32(raddr), lport, rport);
-    let fd = process.fd_table.insert(MutRc::new(udp_node));
-    fd as isize
+    let mut socket = process.fd_table.get(fd).unwrap().clone();
+    let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
+
+    net_arp_request(IPv4::from_u32(ip));
+    *socket = MutRc::new(net_connect(IPv4::from_u32(ip), port).unwrap());
+    0
 }
 
 // listen a port

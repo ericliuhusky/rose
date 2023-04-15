@@ -30,7 +30,7 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isi
         SYS_SEMAPHORE_CREATE => Ok(SysFuncImpl::semaphore_create(args[0])),
         SYS_SEMAPHORE_DOWN => Ok(SysFuncImpl::semaphore_down(args[0])),
         SYS_SEMAPHORE_UP => Ok(SysFuncImpl::semaphore_up(args[0])),
-        SYS_CONNECT => Ok(SysFuncImpl::connect(args[0] as u32, args[1] as u16, args[2] as u16)),
+        SYS_CONNECT => Ok(SysFuncImpl::connect(args[0], args[1] as u32, args[2] as u16)),
         SYS_LISTEN => Ok(SysFuncImpl::listen(args[0])),
         SYS_ACCEPT => Ok(SysFuncImpl::accept(args[0])),
         SYS_SOCKET => Ok(SysFuncImpl::socket(args[0] == 1)),
@@ -62,9 +62,9 @@ pub trait SysFunc {
     fn semaphore_create(res_count: usize) -> isize;
     fn semaphore_down(sem_id: usize) -> isize;
     fn semaphore_up(sem_id: usize) -> isize;
-    fn connect(raddr: u32, lport: u16, rport: u16) -> isize;
+    fn connect(fd: usize, ip: u32, port: u16) -> isize;
     fn listen(fd: usize) -> isize;
-    fn accept(port_index: usize) -> isize;
+    fn accept(fd: usize) -> isize;
     fn socket(tcp: bool) -> isize;
     fn bind(fd: usize, port: u16) -> isize;
 }

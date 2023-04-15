@@ -7,6 +7,8 @@ use crate::{
 };
 use alloc::{rc::Rc, vec};
 use alloc::vec::Vec;
+use lose_net_stack::packets::arp::ArpPacket;
+use lose_net_stack::packets::tcp::TCPPacket;
 use core::cell::RefCell;
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
@@ -67,6 +69,8 @@ pub fn net_arp() {
 
     match packet {
         Packet::ARP(arp_packet) => {
+            println!("source {} {}", arp_packet.sender_ip, arp_packet.sender_mac);
+            println!("dest {} {}", arp_packet.target_ip, arp_packet.target_mac);
             let lose_stack = LOSE_NET_STACK.0.borrow_mut();
             let reply_packet = arp_packet
                 .reply_packet(lose_stack.ip, lose_stack.mac)
@@ -75,6 +79,69 @@ pub fn net_arp() {
             NET_DEVICE.transmit(&reply_data)
         }
         _ => {}
+    }
+}
+
+pub fn net_arp_request(raddr: IPv4) {
+    let net_stack = LOSE_NET_STACK.0.borrow_mut();
+    let arp_packet = ArpPacket::new(net_stack.ip, net_stack.mac, raddr, MacAddress::new([0; 6]), lose_net_stack::packets::arp::ArpType::Request);
+    NET_DEVICE.transmit(&arp_packet.build_data());
+
+    let mut recv_buf = vec![0u8; 1024];
+
+    let len = NET_DEVICE.receive(&mut recv_buf);
+
+    let packet = net_stack.analysis(&recv_buf[..len]);
+
+    match packet {
+        Packet::ARP(arp_packet) => {
+            println!("source {} {}", arp_packet.sender_ip, arp_packet.sender_mac);
+            println!("dest {} {}", arp_packet.target_ip, arp_packet.target_mac);
+        }
+        _ => {}
+    }
+}
+
+pub fn net_connect(ip: IPv4, port: u16) -> Option<TCP> {
+    let net_stack = LOSE_NET_STACK.0.borrow_mut();
+    // TODO: 自动分配端口号
+    let tcp_packet = TCPPacket {
+        source_ip: net_stack.ip,
+        source_mac: net_stack.mac,
+        source_port: 5000,
+        dest_ip: ip,
+        dest_mac: MacAddress::new([0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+        dest_port: port,
+        data_len: 0,
+        seq: 0,
+        ack: 0,
+        flags: TcpFlags::S,
+        win: 65535,
+        urg: 0,
+        data: &[],
+    };
+    NET_DEVICE.transmit(&tcp_packet.build_data());
+
+
+    let mut recv_buf = vec![0u8; 1024];
+
+    let len = NET_DEVICE.receive(&mut recv_buf);
+
+    let packet = net_stack.analysis(&recv_buf[..len]);
+
+    match packet {
+        Packet::TCP(tcp_packet) => {
+            println!("{} {}", tcp_packet.seq, tcp_packet.ack);
+
+            Some(TCP::new(
+                tcp_packet.source_ip,
+                tcp_packet.dest_port,
+                tcp_packet.source_port,
+                tcp_packet.seq,
+                tcp_packet.ack,
+            ))
+        }
+        _ => None
     }
 }
 
