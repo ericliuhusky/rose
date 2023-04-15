@@ -173,13 +173,11 @@ impl<FrameAllocator: FrameAlloc> SV39PageTable<FrameAllocator> {
 
     pub fn write(&self, va: usize, len: usize, data: &[u8]) {
         let mut buffer = self.translate_buffer(va, len);
-        let mut i = 0;
-        for byte in &mut buffer {
+        for (i, byte) in &mut buffer.iter_mut().enumerate() {
             if i >= data.len() {
                 break;
             }
             *byte = data[i];
-            i += 1;
         }
     }
 }
