@@ -1,17 +1,12 @@
+use super::busy_wait_tcp_read;
+use super::LOSE_NET_STACK;
+use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
 use alloc::vec;
-use alloc::vec::Vec;
 use lose_net_stack::packets::tcp::TCPPacket;
 use lose_net_stack::IPv4;
 use lose_net_stack::MacAddress;
 use lose_net_stack::TcpFlags;
 use page_table::PhysicalBufferList;
-
-use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
-
-use super::busy_wait_tcp_read;
-use super::{
-    LOSE_NET_STACK,
-};
 
 // add tcp packet info to this structure
 pub struct TCP {
@@ -35,37 +30,27 @@ impl TCP {
 }
 
 impl File for TCP {
-    fn read(&mut self, buf: PhysicalBufferList) -> usize {
-        let mut buf = buf.list;
+    fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         let (data, seq, ack) = busy_wait_tcp_read(self.sport, self.target, self.dport);
         self.seq = seq;
         self.ack = ack;
-        let data_len = data.len();
-        let mut left = 0;
-        for i in 0..buf.len() {
-            let buffer_i_len = buf[i].len().min(data_len - left);
 
-            buf[i][..buffer_i_len]
-                .copy_from_slice(&data[left..(left + buffer_i_len)]);
-
-            left += buffer_i_len;
-            if left == data_len {
-                break;
+        for (i, byte) in buf.iter_mut().enumerate() {
+            if i >= data.len() {
+                return i;
             }
+            *byte = data[i];
         }
-        left
+        buf.len()
     }
 
     fn write(&mut self, buf: PhysicalBufferList) -> usize {
-        let buf = buf.list;
         let lose_net_stack = LOSE_NET_STACK.0.borrow_mut();
 
-        let mut data = vec![0u8; buf.concat().len()];
+        let mut data = vec![0u8; buf.len()];
 
-        let mut left = 0;
-        for i in 0..buf.len() {
-            data[left..(left + buf[i].len())].copy_from_slice(buf[i]);
-            left += buf[i].len();
+        for (i, byte) in buf.iter().enumerate() {
+            data[i] = byte;
         }
 
         let len = data.len();
@@ -95,4 +80,3 @@ impl File for TCP {
         crate::fs::FileType::TCP
     }
 }
-
