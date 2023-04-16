@@ -8,8 +8,6 @@ pub(crate) const ETH_RTYPE_ARP: u16 = 0x0806; // Address resolution protocol
 // arp
 pub(crate) const ARP_HRD_ETHER: u16 = 1;
 pub(crate) const ARP_ETHADDR_LEN: usize = 6;
-pub(crate) const ARP_OP_REQUEST: u16 = 1;
-pub(crate) const ARP_OP_REPLY: u16 = 2;
 
 // ip packet
 pub(crate) const IP_PROTOCAL_TCP: u8 = 6;

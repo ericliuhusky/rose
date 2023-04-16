@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use crate::net::{Arp, Eth, ARP_LEN, ETH_LEN};
 use crate::results::NetStackErrors;
-use crate::consts::{ARP_OP_REQUEST, ARP_OP_REPLY, ARP_HRD_ETHER, ETH_RTYPE_IP, ARP_ETHADDR_LEN, ETH_RTYPE_ARP, BROADCAST_MAC};
+use crate::consts::{ARP_HRD_ETHER, ETH_RTYPE_IP, ARP_ETHADDR_LEN, ETH_RTYPE_ARP, BROADCAST_MAC};
 use crate::MacAddress;
 use crate::IPv4;
 use crate::utils::UnsafeRefIter;
@@ -11,25 +11,6 @@ use crate::utils::UnsafeRefIter;
 pub enum ArpType {
     Request,
     Reply,
-    Unsupported
-}
-
-impl ArpType {
-    pub fn form_u16(rtype: u16) -> Self {
-        match rtype {
-            ARP_OP_REQUEST => ArpType::Request,
-            ARP_OP_REPLY => ArpType::Reply,
-            _ => ArpType::Unsupported
-        }
-    }
-
-    pub fn to_u16(&self) -> u16 {
-        match self {
-            ArpType::Request => 1,
-            ArpType::Reply => 2,
-            ArpType::Unsupported => 0,
-        }
-    }
 }
 
 pub struct ArpPacket {
@@ -62,7 +43,7 @@ impl ArpPacket {
         arp_header.pttype = ETH_RTYPE_IP.to_be();
         arp_header.hlen = ARP_ETHADDR_LEN as u8;    // mac address len
         arp_header.plen = 4;    // ipv4
-        arp_header.op = self.rtype.to_u16().to_be();
+        arp_header.set_type(self.rtype);
         
         arp_header.sha = self.sender_mac.to_bytes();
         arp_header.spa = self.sender_ip.to_u32().to_be();

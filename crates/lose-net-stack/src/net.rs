@@ -1,4 +1,5 @@
 use core::mem::size_of;
+use crate::packets::arp::ArpType;
 
 
 #[repr(C)]
@@ -18,10 +19,11 @@ impl Eth {
     }
 
     pub fn set_type(&mut self, type_: EthType) {
-        match type_ {
-            EthType::IP => self.rtype = 0x800u16.to_be(),
-            EthType::ARP => self.rtype = 0x806u16.to_be(),
-        }
+        let type_: u16 = match type_ {
+            EthType::IP => 0x800,
+            EthType::ARP => 0x806,
+        };
+        self.rtype = type_.to_be();
     }
 }
 
@@ -37,11 +39,29 @@ pub struct Arp {
     pub(crate) pttype: u16, // Protocol type, For IPv4, this has the value 0x0800.
     pub(crate) hlen: u8,    // Hardware length: Ethernet address length is 6.
     pub(crate) plen: u8,    // Protocol length: IPv4 address length is 4.
-    pub(crate) op: u16,     // Operation: 1 for request, 2 for reply.
+    op: u16,     // Operation: 1 for request, 2 for reply.
     pub(crate) sha: [u8; 6],// Sender hardware address
     pub(crate) spa: u32,    // Sender protocol address
     pub(crate) tha: [u8; 6],// Target hardware address
     pub(crate) tpa: u32     // Target protocol address
+}
+
+impl Arp {
+    pub fn type_(&self) -> ArpType {
+        match self.op.to_be() {
+            1 => ArpType::Request,
+            2 => ArpType::Reply,
+            _ => panic!()
+        }
+    }
+
+    pub fn set_type(&mut self, type_: ArpType) {
+        let op: u16 = match type_ {
+            ArpType::Request => 1,
+            ArpType::Reply => 2,
+        };
+        self.op = op.to_be();
+    }
 }
 
 #[allow(dead_code)]

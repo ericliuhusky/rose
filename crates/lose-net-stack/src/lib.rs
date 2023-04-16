@@ -104,19 +104,13 @@ impl LoseStack {
 
     fn analysis_arp(&self, mut data_ptr_iter: UnsafeRefIter) -> Packet {
         let arp_header = unsafe{data_ptr_iter.next::<Arp>()}.unwrap();
-        if arp_header.hlen != 6 || arp_header.plen != 4 {
-            // Unsupported now
-            Packet::Todo("can't support the case that not ipv4")
-        } else {
-            let rtype = ArpType::form_u16(arp_header.op.to_be());
-            Packet::ARP(ArpPacket::new(
-                IPv4::from_u32(arp_header.spa.to_be()), 
-                MacAddress::new(arp_header.sha), 
-                IPv4::from_u32(arp_header.tpa.to_be()), 
-                MacAddress::new(arp_header.tha), 
-                rtype
-            ))
-        }
+        Packet::ARP(ArpPacket::new(
+            IPv4::from_u32(arp_header.spa.to_be()), 
+            MacAddress::new(arp_header.sha), 
+            IPv4::from_u32(arp_header.tpa.to_be()), 
+            MacAddress::new(arp_header.tha), 
+            arp_header.type_(),
+        ))
     }
 
     pub fn analysis(&self, data: &[u8]) -> Packet {

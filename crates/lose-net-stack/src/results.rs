@@ -4,7 +4,6 @@ pub enum Packet {
     ARP(ArpPacket),
     UDP(UDPPacket<'static>),
     TCP(TCPPacket<'static>),
-    Todo(&'static str),
     None
 }
 
