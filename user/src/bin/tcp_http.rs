@@ -132,7 +132,7 @@ pub fn main() -> i32 {
     listen(fd as usize);
 
     loop {
-        let client = accept(0 as usize);
+        let client = accept(fd as usize);
         println!("client connected: {}", client);
 
         if client < 1 {
