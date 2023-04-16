@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
-use crate::consts::{ETH_RTYPE_IP, IP_PROTOCAL_UDP, IP_HEADER_VHL};
-use crate::net::{UDP, Eth, Ip, UDP_LEN, IP_LEN, ETH_LEN};
+use crate::consts::{IP_PROTOCAL_UDP, IP_HEADER_VHL};
+use crate::net::{UDP, Eth, Ip, UDP_LEN, IP_LEN, ETH_LEN, EthType};
 use crate::IPv4;
 use crate::MacAddress;
 use crate::utils::{UnsafeRefIter, check_sum};
@@ -45,7 +45,7 @@ impl<'a> UDPPacket<'a> {
         let udp_data = unsafe {data_ptr_iter.get_curr_arr_mut()};
 
 
-        eth_header.rtype = ETH_RTYPE_IP.to_be();
+        eth_header.set_type(EthType::IP);
         eth_header.shost = self.source_mac.to_bytes();
         eth_header.dhost = self.dest_mac.to_bytes();
         

@@ -1,12 +1,33 @@
 use core::mem::size_of;
 
 
-#[derive(Debug)]
 #[repr(C)]
 pub struct Eth {
     pub(crate) dhost: [u8; 6], // destination host
     pub(crate) shost: [u8; 6], // source host
     pub(crate) rtype: u16      // packet type, arp or ip
+}
+
+impl Eth {
+    pub fn type_(&self) -> EthType {
+        match self.rtype.to_be() {
+            0x800 => EthType::IP,
+            0x806 => EthType::ARP,
+            _ => panic!()
+        }
+    }
+
+    pub fn set_type(&mut self, type_: EthType) {
+        match type_ {
+            EthType::IP => self.rtype = 0x800u16.to_be(),
+            EthType::ARP => self.rtype = 0x806u16.to_be(),
+        }
+    }
+}
+
+pub enum EthType {
+    IP,
+    ARP,
 }
 
 #[repr(packed)]

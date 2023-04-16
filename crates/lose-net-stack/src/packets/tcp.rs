@@ -1,10 +1,10 @@
 use alloc::vec::Vec;
 
-use crate::consts::{ETH_RTYPE_IP, IP_HEADER_VHL, IP_PROTOCAL_TCP, TCP_EMPTY_DATA};
+use crate::consts::{IP_HEADER_VHL, IP_PROTOCAL_TCP, TCP_EMPTY_DATA};
 use crate::utils::{UnsafeRefIter, check_sum};
 use crate::IPv4;
 use crate::MacAddress;
-use crate::net::{TCP_LEN, IP_LEN, ETH_LEN, Eth, Ip, TCP, TcpFlags};
+use crate::net::{TCP_LEN, IP_LEN, ETH_LEN, Eth, Ip, TCP, TcpFlags, EthType};
 
 #[derive(Clone, Copy)]
 pub struct TCPPacket<'a> {
@@ -36,7 +36,7 @@ impl<'a> TCPPacket<'a>  {
         let tcp_data = unsafe {data_ptr_iter.get_curr_arr_mut()};
 
 
-        eth_header.rtype = ETH_RTYPE_IP.to_be();
+        eth_header.set_type(EthType::IP);
         eth_header.shost = self.source_mac.to_bytes();
         eth_header.dhost = self.dest_mac.to_bytes();
         

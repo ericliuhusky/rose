@@ -14,6 +14,7 @@ extern crate bitflags;
 
 pub use addr::IPv4;
 pub use addr::MacAddress;
+use net::EthType;
 pub use net::TcpFlags;
 use net::Arp;
 use net::Eth;
@@ -121,10 +122,9 @@ impl LoseStack {
     pub fn analysis(&self, data: &[u8]) -> Packet {
         let mut data_ptr_iter = UnsafeRefIter::new(data);
         let eth_header = unsafe{data_ptr_iter.next::<Eth>()}.unwrap();
-        match eth_header.rtype.to_be() {
-            ETH_RTYPE_IP => self.analysis_ip(data_ptr_iter, eth_header),
-            ETH_RTYPE_ARP => self.analysis_arp(data_ptr_iter),
-            _ => Packet::None // Unsupported type
+        match eth_header.type_() {
+            EthType::IP => self.analysis_ip(data_ptr_iter, eth_header),
+            EthType::ARP => self.analysis_arp(data_ptr_iter),
         }
     }
 }
