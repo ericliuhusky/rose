@@ -86,12 +86,6 @@ impl LoseStack {
         })
     }
 
-    fn analysis_icmp(&self, data_ptr_iter: UnsafeRefIter, _ip_header: &Ip, _eth_header: &Eth) -> Packet {
-        let _data = unsafe{data_ptr_iter.get_curr_arr()};
-
-        Packet::ICMP()
-    }
-
     fn analysis_ip(&self, mut data_ptr_iter: UnsafeRefIter, eth_header: &Eth) -> Packet {
         let ip_header = unsafe{data_ptr_iter.next::<Ip>()}.unwrap();
 
@@ -106,7 +100,6 @@ impl LoseStack {
         match ip_header.pro {
             IP_PROTOCAL_UDP => self.analysis_udp(data_ptr_iter, ip_header, eth_header),
             IP_PROTOCAL_TCP => self.analysis_tcp(data_ptr_iter, ip_header, eth_header),
-            IP_PROTOCAL_ICMP => self.analysis_icmp(data_ptr_iter, ip_header, eth_header),
             _ => Packet::None,
         }
     }

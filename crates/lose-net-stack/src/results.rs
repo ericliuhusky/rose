@@ -4,8 +4,6 @@ pub enum Packet {
     ARP(ArpPacket),
     UDP(UDPPacket<'static>),
     TCP(TCPPacket<'static>),
-    ICMP(),
-    IGMP(),
     Todo(&'static str),
     None
 }

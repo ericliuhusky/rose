@@ -33,7 +33,7 @@ pub struct Ip {
     pub(crate) id: u16,    // identification, can combine all packets
     pub(crate) off: u16,   // fragment offset field, packet from
     pub(crate) ttl: u8,    // time to live
-    pub(crate) pro: u8,    // protocol， ICMP(1)、IGMP(2)、TCP(6)、UDP(17)
+    pub(crate) pro: u8,    // protocol，TCP(6)、UDP(17)
     pub(crate) sum: u16,   // checksum,
     pub(crate) src: u32,   // souce ip
     pub(crate) dst: u32    // destination ip
@@ -75,17 +75,6 @@ pub struct TCP {
     pub(crate) win: u16,    // window size
     pub(crate) sum: u16,    // checksum
     pub(crate) urg: u16,    // urgent pointer
-}
-
-#[allow(dead_code)]
-#[repr(packed)]
-#[derive(Debug, Clone, Copy)]
-pub struct ICMP {
-    pub(crate) type_: u8,
-    pub(crate) code: u8,
-    pub(crate) checksum: u16,
-    pub(crate) id: u16,
-    pub(crate) seq: u16,
 }
 
 pub(crate) const ETH_LEN: usize = size_of::<Eth>();

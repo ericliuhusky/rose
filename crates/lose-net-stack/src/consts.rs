@@ -12,7 +12,6 @@ pub(crate) const ARP_OP_REQUEST: u16 = 1;
 pub(crate) const ARP_OP_REPLY: u16 = 2;
 
 // ip packet
-pub(crate) const IP_PROTOCAL_ICMP: u8 = 1;
 pub(crate) const IP_PROTOCAL_TCP: u8 = 6;
 pub(crate) const IP_PROTOCAL_UDP: u8 = 17;
 
