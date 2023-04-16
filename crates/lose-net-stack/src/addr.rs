@@ -2,7 +2,7 @@
 pub struct IPv4(u32);
 
 impl IPv4 {
-    pub fn new(a1: u8, a2: u8, a3: u8, a4: u8) -> Self {
+    pub const fn new(a1: u8, a2: u8, a3: u8, a4: u8) -> Self {
         IPv4((a1 as u32) << 24 | (a2 as u32) << 16 | (a3 as u32) << 8 | (a4 as u32))
     }
 
@@ -19,7 +19,7 @@ impl IPv4 {
 pub struct MacAddress([u8; 6]);
 
 impl MacAddress {
-    pub fn new(addr: [u8; 6]) -> Self {
+    pub const fn new(addr: [u8; 6]) -> Self {
         MacAddress(addr)
     }
 

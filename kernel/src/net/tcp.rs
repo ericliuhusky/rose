@@ -24,8 +24,8 @@ pub struct TCP {
 impl TCP {
     pub fn new_server() -> Self {
         Self {
-            source_ip: *LOCALHOST_IP,
-            source_mac: *LOCALHOST_MAC,
+            source_ip: LOCALHOST_IP,
+            source_mac: LOCALHOST_MAC,
             source_port: 0,
             dest_ip: IPv4::from_u32(0),
             dest_mac: MacAddress::new([0; 6]),
@@ -44,8 +44,8 @@ impl TCP {
         ack: u32,
     ) -> Self {
         Self {
-            source_ip: *LOCALHOST_IP,
-            source_mac: *LOCALHOST_MAC,
+            source_ip: LOCALHOST_IP,
+            source_mac: LOCALHOST_MAC,
             source_port: dest_port,
             dest_ip: source_ip,
             dest_mac: source_mac,

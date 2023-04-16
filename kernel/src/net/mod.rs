@@ -15,12 +15,8 @@ use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
 use self::tcp::TCP;
 
-lazy_static::lazy_static! {
-    pub static ref LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
-}
-lazy_static::lazy_static! {
-    pub static ref LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
-}
+pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
+pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
 
 pub struct NetStack(RefCell<LoseStack>);
 
@@ -28,8 +24,8 @@ impl NetStack {
     pub fn new() -> Self {
         unsafe {
             NetStack(RefCell::new(LoseStack::new(
-                *LOCALHOST_IP,
-                *LOCALHOST_MAC,
+                LOCALHOST_IP,
+                LOCALHOST_MAC,
             )))
         }
     }

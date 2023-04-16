@@ -22,8 +22,8 @@ pub struct UDP {
 impl UDP {
     pub fn new() -> Self {
         Self {
-            source_ip: *LOCALHOST_IP,
-            source_mac: *LOCALHOST_MAC,
+            source_ip: LOCALHOST_IP,
+            source_mac: LOCALHOST_MAC,
             source_port: 0,
             dest_ip: IPv4::from_u32(0),
             dest_mac: MacAddress::new([0; 6]),
