@@ -69,17 +69,4 @@ impl<'a> UDPPacket<'a> {
 
         data
     }
-
-    pub fn reply(&self, data: &'static [u8]) -> Self {
-        Self::new(
-            self.dest_ip, 
-            self.dest_mac, 
-            self.dest_port, 
-            self.source_ip, 
-            self.source_mac, 
-            self.source_port, 
-            data.len(), 
-            data
-        )
-    }
 }

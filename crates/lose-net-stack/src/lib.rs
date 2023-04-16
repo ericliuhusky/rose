@@ -85,10 +85,6 @@ impl LoseStack {
     fn analysis_ip(&self, mut data_ptr_iter: UnsafeRefIter, eth_header: &Eth) -> Packet {
         let ip_header = unsafe{data_ptr_iter.next::<Ip>()}.unwrap();
 
-        if ip_header.vhl != IP_HEADER_VHL {
-            return Packet::None
-        }
-
         if ip_header.dst.to_be() != self.ip.to_u32() {
             return Packet::None
         }
