@@ -6,7 +6,7 @@ use crate::IPv4;
 use crate::MacAddress;
 use crate::utils::{UnsafeRefIter, check_sum};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct UDPPacket<'a> {
     pub source_ip: IPv4,
     pub source_mac: MacAddress,

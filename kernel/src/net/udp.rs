@@ -40,7 +40,6 @@ impl File for UDP {
         self.dest_mac = source_mac;
         self.dest_port = source_port;
 
-        println!("{}, {}", source_ip, source_port);
 
         for (i, byte) in buf.iter_mut().enumerate() {
             if i >= data.len() {

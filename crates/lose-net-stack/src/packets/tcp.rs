@@ -6,7 +6,7 @@ use crate::IPv4;
 use crate::MacAddress;
 use crate::net::{TCP_LEN, IP_LEN, ETH_LEN, Eth, Ip, TCP, TcpFlags};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct TCPPacket<'a> {
     pub source_ip: IPv4,
     pub source_mac: MacAddress,

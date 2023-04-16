@@ -76,8 +76,6 @@ pub fn net_arp() {
 
     match packet {
         Packet::ARP(arp_packet) => {
-            println!("source {} {}", arp_packet.sender_ip, arp_packet.sender_mac);
-            println!("dest {} {}", arp_packet.target_ip, arp_packet.target_mac);
             let lose_stack = LOSE_NET_STACK.0.borrow_mut();
             let reply_packet = arp_packet
                 .reply_packet(lose_stack.ip, lose_stack.mac)
@@ -102,8 +100,7 @@ pub fn net_arp_request(raddr: IPv4) {
 
     match packet {
         Packet::ARP(arp_packet) => {
-            println!("source {} {}", arp_packet.sender_ip, arp_packet.sender_mac);
-            println!("dest {} {}", arp_packet.target_ip, arp_packet.target_mac);
+            
         }
         _ => {}
     }

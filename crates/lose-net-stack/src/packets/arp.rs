@@ -32,7 +32,6 @@ impl ArpType {
     }
 }
 
-#[derive(Debug)]
 pub struct ArpPacket {
     pub sender_ip: IPv4,
     pub sender_mac: MacAddress,
