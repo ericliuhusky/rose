@@ -1,5 +1,3 @@
-use alloc::{string::String, format};
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct IPv4(u32);
 
@@ -12,17 +10,12 @@ impl IPv4 {
         IPv4(ip)
     }
 
-    pub fn to_string(&self) -> String {
-        format!("{}.{}.{}.{}", (self.0 >> 24) & 0xff, (self.0 >> 16) & 0xff, (self.0 >> 8) & 0xff, self.0 & 0xff)
-    }
-
     pub fn to_u32(&self) -> u32 {
         self.0
     }
 }
 
-
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 pub struct MacAddress([u8; 6]);
 
 impl MacAddress {
@@ -32,9 +25,5 @@ impl MacAddress {
 
     pub fn to_bytes(&self) -> [u8; 6] {
         self.0
-    }
-
-    pub fn to_string(&self) -> String {
-        format!("{:x}:{:x}:{:x}:{:x}:{:x}:{:x}", self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5])
     }
 }
