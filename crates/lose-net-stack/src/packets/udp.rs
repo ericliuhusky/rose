@@ -7,7 +7,7 @@ use crate::MacAddress;
 use crate::utils::{UnsafeRefIter, check_sum};
 
 #[derive(Clone)]
-pub struct UDPPacket<'a> {
+pub struct UDPPacket {
     pub source_ip: IPv4,
     pub source_mac: MacAddress,
     pub source_port: u16,
@@ -15,13 +15,13 @@ pub struct UDPPacket<'a> {
     pub dest_mac: MacAddress,
     pub dest_port: u16,
     pub data_len: usize,
-    pub data: &'a [u8]
+    pub data: Vec<u8>
 }
 
-impl<'a> UDPPacket<'a> {
+impl UDPPacket {
     pub fn new(source_ip: IPv4, source_mac: MacAddress, source_port: u16, 
         dest_ip: IPv4, dest_mac: MacAddress, dest_port: u16, 
-        data_len: usize, data: &'a [u8]) -> Self {
+        data_len: usize, data: Vec<u8>) -> Self {
         Self {
             source_ip,
             source_mac,

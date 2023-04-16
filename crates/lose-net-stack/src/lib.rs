@@ -55,7 +55,7 @@ impl LoseStack {
             dest_mac: MacAddress::new(eth_header.dhost), 
             dest_port: udp_header.dport.to_be(), 
             data_len, 
-            data: &data[..data_len]
+            data: data.to_vec(),
         })
     }
 

@@ -67,7 +67,7 @@ impl File for UDP {
             self.dest_mac,
             self.dest_port,
             len,
-            data.as_ref(),
+            data,
         );
         NET_DEVICE.transmit(&udp_packet.build_data());
         len
