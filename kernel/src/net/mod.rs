@@ -142,8 +142,9 @@ pub fn net_connect(ip: IPv4, port: u16) -> Option<TCP> {
 
             Some(TCP::new(
                 tcp_packet.source_ip,
-                tcp_packet.dest_port,
+                tcp_packet.source_mac,
                 tcp_packet.source_port,
+                tcp_packet.dest_port,
                 tcp_packet.seq,
                 tcp_packet.ack,
             ))
@@ -172,8 +173,9 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
 
                     Some(TCP::new(
                         tcp_packet.source_ip,
-                        tcp_packet.dest_port,
+                        tcp_packet.source_mac,
                         tcp_packet.source_port,
+                        tcp_packet.dest_port,
                         tcp_packet.seq,
                         tcp_packet.ack,
                     ))

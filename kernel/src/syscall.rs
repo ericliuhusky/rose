@@ -358,7 +358,7 @@ fn listen(fd: usize) -> isize {
     let mut process = current_process();
     let mut socket = process.fd_table.get(fd).unwrap().clone();
     let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
-    port_table::listen(socket.sport);
+    port_table::listen(socket.source_port);
     0
 }
 
@@ -369,7 +369,7 @@ fn accept(fd: usize) -> isize {
     let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
 
     net_arp();
-    let tcp_socket = busy_wait_accept(socket.sport);
+    let tcp_socket = busy_wait_accept(socket.source_port);
 
     let fd = process.fd_table.insert(MutRc::new(tcp_socket));
 
@@ -379,7 +379,7 @@ fn accept(fd: usize) -> isize {
 fn socket(tcp: bool) -> isize {
     let mut process = current_process();
     let socket: MutRc<dyn File> = if tcp {
-        MutRc::new(TCP::new(IPv4::from_u32(0), 0, 0, 0, 0))
+        MutRc::new(TCP::new_server())
     } else {
         MutRc::new(UDP::new())
     };
@@ -393,7 +393,7 @@ fn bind(fd: usize, port: u16) -> isize {
     match socket.file_type() {
         crate::fs::FileType::TCP => {
             let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
-            socket.sport = port;
+            socket.source_port = port;
         },
         crate::fs::FileType::UDP => {
             let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<UDP>) };
