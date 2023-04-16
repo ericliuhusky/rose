@@ -1,11 +1,10 @@
+use super::busy_wait_udp_read;
 use super::LOCALHOST_IP;
 use super::LOCALHOST_MAC;
-use super::busy_wait_udp_read;
 use super::NET_DEVICE;
 use crate::fs::File;
 use crate::net::net_arp;
 use alloc::vec;
-use alloc::vec::Vec;
 use lose_net_stack::packets::udp::UDPPacket;
 use lose_net_stack::IPv4;
 use lose_net_stack::MacAddress;
@@ -34,8 +33,7 @@ impl UDP {
 }
 
 impl File for UDP {
-    fn read(&mut self, buf: PhysicalBufferList) -> usize {
-        let mut buf = buf.list;
+    fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         net_arp();
         let (data, source_ip, source_mac, source_port) = busy_wait_udp_read(self.source_port);
         self.dest_ip = source_ip;
@@ -44,30 +42,20 @@ impl File for UDP {
 
         println!("{}, {}", source_ip, source_port);
 
-        let data_len = data.len();
-        let mut left = 0;
-        for i in 0..buf.len() {
-            let buffer_i_len = buf[i].len().min(data_len - left);
-
-            buf[i][..buffer_i_len]
-                .copy_from_slice(&data[left..(left + buffer_i_len)]);
-
-            left += buffer_i_len;
-            if left == data_len {
-                break;
+        for (i, byte) in buf.iter_mut().enumerate() {
+            if i >= data.len() {
+                return i;
             }
+            *byte = data[i];
         }
-        left
+        buf.len()
     }
 
     fn write(&mut self, buf: PhysicalBufferList) -> usize {
-        let buf = buf.list;
-        let mut data = vec![0u8; buf.concat().len()];
+        let mut data = vec![0u8; buf.len()];
 
-        let mut left = 0;
-        for i in 0..buf.len() {
-            data[left..(left + buf[i].len())].copy_from_slice(buf[i]);
-            left += buf[i].len();
+        for (i, byte) in buf.iter().enumerate() {
+            data[i] = byte;
         }
 
         let len = data.len();
