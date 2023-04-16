@@ -56,7 +56,7 @@ pub fn net_arp() {
     match packet {
         Packet::ARP(arp_packet) => {
             let reply_packet = arp_packet
-                .reply_packet(LOSE_NET_STACK.ip, LOSE_NET_STACK.mac)
+                .reply_packet(LOCALHOST_IP, LOCALHOST_MAC)
                 .expect("can't build reply");
             let reply_data = reply_packet.build_data();
             NET_DEVICE.transmit(&reply_data)
@@ -66,7 +66,7 @@ pub fn net_arp() {
 }
 
 pub fn net_arp_request(raddr: IPv4) {
-    let arp_packet = ArpPacket::new(LOSE_NET_STACK.ip, LOSE_NET_STACK.mac, raddr, MacAddress::default(), lose_net_stack::packets::arp::ArpType::Request);
+    let arp_packet = ArpPacket::new(LOCALHOST_IP, LOCALHOST_MAC, raddr, MacAddress::default(), lose_net_stack::packets::arp::ArpType::Request);
     NET_DEVICE.transmit(&arp_packet.build_data());
 
     let mut recv_buf = vec![0u8; 1024];
@@ -86,8 +86,8 @@ pub fn net_arp_request(raddr: IPv4) {
 pub fn net_connect(ip: IPv4, port: u16) -> Option<TCP> {
     // TODO: 自动分配端口号
     let tcp_packet = TCPPacket {
-        source_ip: LOSE_NET_STACK.ip,
-        source_mac: LOSE_NET_STACK.mac,
+        source_ip: LOCALHOST_IP,
+        source_mac: LOCALHOST_MAC,
         source_port: 5000,
         dest_ip: ip,
         dest_mac: MacAddress::new([0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
