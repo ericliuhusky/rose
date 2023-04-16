@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub struct IPv4(u32);
 
 impl IPv4 {
@@ -15,7 +15,7 @@ impl IPv4 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct MacAddress([u8; 6]);
 
 impl MacAddress {

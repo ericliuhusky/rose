@@ -85,7 +85,7 @@ pub fn net_arp() {
 
 pub fn net_arp_request(raddr: IPv4) {
     let net_stack = LOSE_NET_STACK.0.borrow_mut();
-    let arp_packet = ArpPacket::new(net_stack.ip, net_stack.mac, raddr, MacAddress::new([0; 6]), lose_net_stack::packets::arp::ArpType::Request);
+    let arp_packet = ArpPacket::new(net_stack.ip, net_stack.mac, raddr, MacAddress::default(), lose_net_stack::packets::arp::ArpType::Request);
     NET_DEVICE.transmit(&arp_packet.build_data());
 
     let mut recv_buf = vec![0u8; 1024];
