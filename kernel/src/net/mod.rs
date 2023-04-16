@@ -7,7 +7,6 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::packets::arp::ArpPacket;
 use lose_net_stack::packets::tcp::TCPPacket;
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
@@ -56,8 +55,7 @@ pub fn net_arp() {
     match packet {
         Packet::ARP(arp_packet) => {
             let reply_packet = arp_packet
-                .reply_packet(LOCALHOST_IP, LOCALHOST_MAC)
-                .expect("can't build reply");
+                .reply_packet(LOCALHOST_IP, LOCALHOST_MAC);
             let reply_data = reply_packet.build_data();
             NET_DEVICE.transmit(&reply_data)
         }
@@ -66,21 +64,21 @@ pub fn net_arp() {
 }
 
 pub fn net_arp_request(raddr: IPv4) {
-    let arp_packet = ArpPacket::new(LOCALHOST_IP, LOCALHOST_MAC, raddr, MacAddress::default(), lose_net_stack::packets::arp::ArpType::Request);
-    NET_DEVICE.transmit(&arp_packet.build_data());
+    // let arp_packet = ArpPacket::new(LOCALHOST_IP, LOCALHOST_MAC, raddr, MacAddress::default(), lose_net_stack::packets::arp::ArpType::Request);
+    // NET_DEVICE.transmit(&arp_packet.build_data());
 
-    let mut recv_buf = vec![0u8; 1024];
+    // let mut recv_buf = vec![0u8; 1024];
 
-    let len = NET_DEVICE.receive(&mut recv_buf);
+    // let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
+    // let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
-    match packet {
-        Packet::ARP(arp_packet) => {
+    // match packet {
+    //     Packet::ARP(arp_packet) => {
             
-        }
-        _ => {}
-    }
+    //     }
+    //     _ => {}
+    // }
 }
 
 pub fn net_connect(ip: IPv4, port: u16) -> Option<TCP> {

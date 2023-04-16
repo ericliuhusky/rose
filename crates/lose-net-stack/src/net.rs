@@ -1,6 +1,12 @@
 use core::mem::size_of;
-use crate::packets::arp::ArpType;
+use alloc::vec::Vec;
 
+use crate::{IPv4, MacAddress, utils::UnsafeRefIter, consts::{ETH_RTYPE_ARP, BROADCAST_MAC, ARP_HRD_ETHER, ARP_ETHADDR_LEN}};
+
+pub enum EthType {
+    IP,
+    ARP,
+}
 
 #[repr(C)]
 pub struct Eth {
@@ -27,13 +33,15 @@ impl Eth {
     }
 }
 
-pub enum EthType {
-    IP,
-    ARP,
+
+#[derive(Debug, Clone, Copy)]
+pub enum ArpType {
+    Request,
+    Reply,
 }
 
 #[repr(packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Arp {
     pub(crate) httype: u16, // Hardware type
     pub(crate) pttype: u16, // Protocol type, For IPv4, this has the value 0x0800.
@@ -61,6 +69,72 @@ impl Arp {
             ArpType::Reply => 2,
         };
         self.op = op.to_be();
+    }
+
+    pub fn src_ip(&self) -> IPv4 {
+        IPv4::from_u32(self.spa.to_be())
+    }
+
+    pub fn src_mac(&self) -> MacAddress {
+        MacAddress::new(self.sha)
+    }
+
+    pub fn set_src_ip(&mut self, ip: IPv4) {
+        self.spa = ip.to_u32().to_be()
+    }
+
+    pub fn set_src_mac(&mut self, mac: MacAddress) {
+        self.sha = mac.to_bytes()
+    }
+
+    pub fn set_dst_ip(&mut self, ip: IPv4) {
+        self.tpa = ip.to_u32().to_be()
+    }
+
+    pub fn set_dst_mac(&mut self, mac: MacAddress) {
+        self.tha = mac.to_bytes()
+    }
+
+    pub fn reply_packet(&self, local_ip: IPv4, local_mac: MacAddress) -> Self {
+        match self.type_() {
+            ArpType::Request => {
+                let mut reply_packet = Self::default();
+                reply_packet.set_src_ip(local_ip);
+                reply_packet.set_src_mac(local_mac);
+                reply_packet.set_dst_ip(self.src_ip());
+                reply_packet.set_dst_mac(self.src_mac());
+                reply_packet.set_type(ArpType::Reply);
+                reply_packet
+            }
+            _ => panic!()
+        }
+    }
+
+    pub fn build_data(&self) -> Vec<u8> {
+        let data = vec![0u8; ARP_LEN + ETH_LEN];
+
+        let mut data_ptr_iter = UnsafeRefIter::new(&data);
+
+        // let mut eth_header = unsafe{(data.as_ptr() as usize as *mut Eth).as_mut()}.unwrap();
+        let mut eth_header = unsafe{ data_ptr_iter.next_mut::<Eth>() }.unwrap();
+        eth_header.rtype = ETH_RTYPE_ARP.to_be();
+        eth_header.dhost = BROADCAST_MAC;
+        eth_header.shost = self.src_mac().to_bytes();
+
+        // let mut arp_header = unsafe{((data.as_ptr() as usize + size_of::<Eth>()) as *mut Arp).as_mut()}.unwrap();
+        let mut arp_header = unsafe { data_ptr_iter.next_mut::<Arp>() }.unwrap();
+        arp_header.httype = ARP_HRD_ETHER.to_be();
+        arp_header.pttype = ETH_RTYPE_ARP.to_be();
+        arp_header.hlen = ARP_ETHADDR_LEN as u8;    // mac address len
+        arp_header.plen = 4;    // ipv4
+        arp_header.op = self.op;
+        
+        arp_header.sha = self.sha;
+        arp_header.spa = self.spa;
+    
+        arp_header.tha = self.tha;
+        arp_header.tpa = self.tpa;
+        data
     }
 }
 

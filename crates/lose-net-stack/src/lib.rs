@@ -23,8 +23,6 @@ use net::TCP;
 use net::UDP;
 use net::UDP_LEN;
 use net::IP_LEN;
-use packets::arp::ArpPacket;
-use packets::arp::ArpType;
 use results::Packet;
 use utils::UnsafeRefIter;
 use consts::*;
@@ -104,13 +102,7 @@ impl LoseStack {
 
     fn analysis_arp(&self, mut data_ptr_iter: UnsafeRefIter) -> Packet {
         let arp_header = unsafe{data_ptr_iter.next::<Arp>()}.unwrap();
-        Packet::ARP(ArpPacket::new(
-            IPv4::from_u32(arp_header.spa.to_be()), 
-            MacAddress::new(arp_header.sha), 
-            IPv4::from_u32(arp_header.tpa.to_be()), 
-            MacAddress::new(arp_header.tha), 
-            arp_header.type_(),
-        ))
+        Packet::ARP(*arp_header)
     }
 
     pub fn analysis(&self, data: &[u8]) -> Packet {
