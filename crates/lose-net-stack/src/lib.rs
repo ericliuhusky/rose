@@ -39,7 +39,7 @@ pub struct LoseStack {
 }
 
 impl LoseStack {
-    pub fn new(ip: IPv4, mac: MacAddress) -> Self {
+    pub const fn new(ip: IPv4, mac: MacAddress) -> Self {
         Self {
             ip,
             mac

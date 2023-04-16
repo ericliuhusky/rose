@@ -5,11 +5,10 @@ pub mod udp;
 use crate::{
     drivers::virtio_net::NET_DEVICE,
 };
-use alloc::{rc::Rc, vec};
+use alloc::vec;
 use alloc::vec::Vec;
 use lose_net_stack::packets::arp::ArpPacket;
 use lose_net_stack::packets::tcp::TCPPacket;
-use core::cell::RefCell;
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
@@ -17,30 +16,14 @@ use self::tcp::TCP;
 
 pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
 pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
-
-pub struct NetStack(RefCell<LoseStack>);
-
-impl NetStack {
-    pub fn new() -> Self {
-        unsafe {
-            NetStack(RefCell::new(LoseStack::new(
-                LOCALHOST_IP,
-                LOCALHOST_MAC,
-            )))
-        }
-    }
-}
-
-lazy_static::lazy_static! {
-    static ref LOSE_NET_STACK: Rc<NetStack> = Rc::new(NetStack::new());
-}
+const LOSE_NET_STACK: LoseStack = LoseStack::new(LOCALHOST_IP, LOCALHOST_MAC);
 
 pub fn net_interrupt_handler() {
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
+    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
         Packet::TCP(tcp_packet) => {
@@ -68,13 +51,12 @@ pub fn net_arp() {
 
     let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
+    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
         Packet::ARP(arp_packet) => {
-            let lose_stack = LOSE_NET_STACK.0.borrow_mut();
             let reply_packet = arp_packet
-                .reply_packet(lose_stack.ip, lose_stack.mac)
+                .reply_packet(LOSE_NET_STACK.ip, LOSE_NET_STACK.mac)
                 .expect("can't build reply");
             let reply_data = reply_packet.build_data();
             NET_DEVICE.transmit(&reply_data)
@@ -84,15 +66,14 @@ pub fn net_arp() {
 }
 
 pub fn net_arp_request(raddr: IPv4) {
-    let net_stack = LOSE_NET_STACK.0.borrow_mut();
-    let arp_packet = ArpPacket::new(net_stack.ip, net_stack.mac, raddr, MacAddress::default(), lose_net_stack::packets::arp::ArpType::Request);
+    let arp_packet = ArpPacket::new(LOSE_NET_STACK.ip, LOSE_NET_STACK.mac, raddr, MacAddress::default(), lose_net_stack::packets::arp::ArpType::Request);
     NET_DEVICE.transmit(&arp_packet.build_data());
 
     let mut recv_buf = vec![0u8; 1024];
 
     let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = net_stack.analysis(&recv_buf[..len]);
+    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
         Packet::ARP(arp_packet) => {
@@ -103,11 +84,10 @@ pub fn net_arp_request(raddr: IPv4) {
 }
 
 pub fn net_connect(ip: IPv4, port: u16) -> Option<TCP> {
-    let net_stack = LOSE_NET_STACK.0.borrow_mut();
     // TODO: 自动分配端口号
     let tcp_packet = TCPPacket {
-        source_ip: net_stack.ip,
-        source_mac: net_stack.mac,
+        source_ip: LOSE_NET_STACK.ip,
+        source_mac: LOSE_NET_STACK.mac,
         source_port: 5000,
         dest_ip: ip,
         dest_mac: MacAddress::new([0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
@@ -127,7 +107,7 @@ pub fn net_connect(ip: IPv4, port: u16) -> Option<TCP> {
 
     let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = net_stack.analysis(&recv_buf[..len]);
+    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
         Packet::TCP(tcp_packet) => {
@@ -151,7 +131,7 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
 
     let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
+    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
         Packet::TCP(tcp_packet) => {
@@ -188,7 +168,7 @@ pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32
 
     let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
+    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
         Packet::TCP(tcp_packet) => {
@@ -214,7 +194,7 @@ pub fn net_udp_read(lport: u16) -> Option<(Vec<u8>, IPv4, MacAddress, u16)> {
 
     let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = LOSE_NET_STACK.0.borrow_mut().analysis(&recv_buf[..len]);
+    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
         Packet::UDP(udp_packet) => {
