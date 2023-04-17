@@ -49,21 +49,7 @@ impl LoseStack {
         let data = &unsafe{data_ptr_iter.get_curr_arr()}[offset..];
         let data_len = ip_header.len.to_be() as usize - TCP_LEN - IP_LEN - offset;
 
-        Packet::TCP(packets::tcp::TCPPacket {
-            source_ip: IPv4::from_u32(ip_header.src.to_be()), 
-            source_mac: MacAddress::new(eth_header.shost), 
-            source_port: tcp_header.sport.to_be(), 
-            dest_ip: IPv4::from_u32(ip_header.dst.to_be()), 
-            dest_mac: MacAddress::new(eth_header.dhost), 
-            dest_port: tcp_header.dport.to_be(), 
-            data_len,
-            seq: tcp_header.seq.to_be(),
-            ack: tcp_header.ack.to_be(),
-            flags: tcp_header.flags,
-            win: tcp_header.win.to_be(),
-            urg: tcp_header.urg.to_be(),
-            data: data.to_vec(),
-        })
+        Packet::TCP((*eth_header, *ip_header, *tcp_header, data.to_vec()))
     }
 
     fn analysis_ip(&self, mut data_ptr_iter: UnsafeRefIter, eth_header: &Eth) -> Packet {

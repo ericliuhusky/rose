@@ -84,15 +84,15 @@ bitflags! {
 #[repr(packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct TCP {
-    pub(crate) sport: u16, // souce port
-    pub(crate) dport: u16, // destination port
-    pub(crate) seq: u32, // sequence number
-    pub(crate) ack: u32, // acknowledgement number
-    pub(crate) offset: u8, // offset, first 4 bytes are tcp header length
-    pub(crate) flags: TcpFlags, // flags, last 6 are flags(U, A, P, R, S, F)
-    pub(crate) win: u16,    // window size
-    pub(crate) sum: u16,    // checksum
-    pub(crate) urg: u16,    // urgent pointer
+    pub sport: u16, // souce port
+    pub dport: u16, // destination port
+    pub seq: u32, // sequence number
+    pub ack: u32, // acknowledgement number
+    pub offset: u8, // offset, first 4 bytes are tcp header length
+    pub flags: TcpFlags, // flags, last 6 are flags(U, A, P, R, S, F)
+    pub win: u16,    // window size
+    pub sum: u16,    // checksum
+    pub urg: u16,    // urgent pointer
 }
 
 pub(crate) const ETH_LEN: usize = size_of::<Eth>();

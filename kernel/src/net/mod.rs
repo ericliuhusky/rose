@@ -18,33 +18,33 @@ pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
 pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
 const LOSE_NET_STACK: LoseStack = LoseStack::new(LOCALHOST_IP, LOCALHOST_MAC);
 
-pub fn net_interrupt_handler() {
-    let mut recv_buf = vec![0u8; 1024];
+// pub fn net_interrupt_handler() {
+//     let mut recv_buf = vec![0u8; 1024];
 
-    let len = NET_DEVICE.receive(&mut recv_buf);
+//     let len = NET_DEVICE.receive(&mut recv_buf);
 
-    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
+//     let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
-    match packet {
-        Packet::TCP(tcp_packet) => {
-            let target = tcp_packet.source_ip;
-            let lport = tcp_packet.dest_port;
-            let rport = tcp_packet.source_port;
-            let flags = tcp_packet.flags;
+//     match packet {
+//         Packet::TCP(tcp_packet) => {
+//             let target = tcp_packet.source_ip;
+//             let lport = tcp_packet.dest_port;
+//             let rport = tcp_packet.source_port;
+//             let flags = tcp_packet.flags;
 
-            if flags.contains(TcpFlags::F) {
-                // tcp disconnected
-                let reply_packet = tcp_packet.ack();
-                NET_DEVICE.transmit(&reply_packet.build_data());
+//             if flags.contains(TcpFlags::F) {
+//                 // tcp disconnected
+//                 let reply_packet = tcp_packet.ack();
+//                 NET_DEVICE.transmit(&reply_packet.build_data());
 
-                let mut end_packet = reply_packet.ack();
-                end_packet.flags |= TcpFlags::F;
-                NET_DEVICE.transmit(&end_packet.build_data());
-            }
-        }
-        _ => {}
-    }
-}
+//                 let mut end_packet = reply_packet.ack();
+//                 end_packet.flags |= TcpFlags::F;
+//                 NET_DEVICE.transmit(&end_packet.build_data());
+//             }
+//         }
+//         _ => {}
+//     }
+// }
 
 pub fn net_arp() {
     let (eth, arp) = Net::recv_arp();
@@ -59,7 +59,22 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
     let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
-        Packet::TCP(tcp_packet) => {
+        Packet::TCP((eth, ip, tcp, data)) => {
+            let tcp_packet = TCPPacket {
+                source_ip: IPv4::from_u32(ip.src.to_be()), 
+                source_mac: MacAddress::new(eth.shost), 
+                source_port: tcp.sport.to_be(), 
+                dest_ip: IPv4::from_u32(ip.dst.to_be()), 
+                dest_mac: MacAddress::new(eth.dhost), 
+                dest_port: tcp.dport.to_be(), 
+                data_len: data.len(),
+                seq: tcp.seq.to_be(),
+                ack: tcp.ack.to_be(),
+                flags: tcp.flags,
+                win: tcp.win.to_be(),
+                urg: tcp.urg.to_be(),
+                data: data.to_vec(),
+            };
             let flags = tcp_packet.flags;
 
             if flags.contains(TcpFlags::S) {
@@ -96,7 +111,22 @@ pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32
     let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
 
     match packet {
-        Packet::TCP(tcp_packet) => {
+        Packet::TCP((eth, ip, tcp, data)) => {
+            let tcp_packet = TCPPacket {
+                source_ip: IPv4::from_u32(ip.src.to_be()), 
+                source_mac: MacAddress::new(eth.shost), 
+                source_port: tcp.sport.to_be(), 
+                dest_ip: IPv4::from_u32(ip.dst.to_be()), 
+                dest_mac: MacAddress::new(eth.dhost), 
+                dest_port: tcp.dport.to_be(), 
+                data_len: data.len(),
+                seq: tcp.seq.to_be(),
+                ack: tcp.ack.to_be(),
+                flags: tcp.flags,
+                win: tcp.win.to_be(),
+                urg: tcp.urg.to_be(),
+                data: data.to_vec(),
+            };
             if tcp_packet.flags.contains(TcpFlags::A) {
                 if tcp_packet.data_len == 0 {
                     return None;

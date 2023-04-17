@@ -1,6 +1,10 @@
-use crate::{packets::{tcp::TCPPacket}};
+use alloc::vec::Vec;
+
+use crate::{Eth, Ip};
+
+use super::net::TCP;
 
 pub enum Packet {
-    TCP(TCPPacket),
+    TCP((Eth, Ip, TCP, Vec<u8>)),
     None
 }
