@@ -105,28 +105,31 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
 }
 
 pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32, u32)> {
-    let (eth, ip, tcp, data) = TransPort::recv_tcp(lport);
-    let tcp_packet = TCPPacket {
-        source_ip: IPv4::from_u32(ip.src.to_be()), 
-        source_mac: MacAddress::new(eth.shost), 
-        source_port: tcp.sport.to_be(), 
-        dest_ip: IPv4::from_u32(ip.dst.to_be()), 
-        dest_mac: MacAddress::new(eth.dhost), 
-        dest_port: tcp.dport.to_be(), 
-        data_len: data.len(),
-        seq: tcp.seq.to_be(),
-        ack: tcp.ack.to_be(),
-        flags: tcp.flags,
-        win: tcp.win.to_be(),
-        urg: tcp.urg.to_be(),
-        data: data.to_vec(),
-    };
-    if tcp_packet.flags.contains(TcpFlags::A) {
-        if tcp_packet.data_len == 0 {
-            return None;
-        }
-        if lport == tcp_packet.dest_port && raddr == tcp_packet.source_ip && rport == tcp_packet.source_port {
-            Some((tcp_packet.data.to_vec(), tcp_packet.seq, tcp_packet.ack))
+    if let Some((eth, ip, tcp, data)) = TransPort::recv_tcp(lport) {
+        let tcp_packet = TCPPacket {
+            source_ip: IPv4::from_u32(ip.src.to_be()), 
+            source_mac: MacAddress::new(eth.shost), 
+            source_port: tcp.sport.to_be(), 
+            dest_ip: IPv4::from_u32(ip.dst.to_be()), 
+            dest_mac: MacAddress::new(eth.dhost), 
+            dest_port: tcp.dport.to_be(), 
+            data_len: data.len(),
+            seq: tcp.seq.to_be(),
+            ack: tcp.ack.to_be(),
+            flags: tcp.flags,
+            win: tcp.win.to_be(),
+            urg: tcp.urg.to_be(),
+            data: data.to_vec(),
+        };
+        if tcp_packet.flags.contains(TcpFlags::A) {
+            if tcp_packet.data_len == 0 {
+                return None;
+            }
+            if lport == tcp_packet.dest_port && raddr == tcp_packet.source_ip && rport == tcp_packet.source_port {
+                Some((tcp_packet.data.to_vec(), tcp_packet.seq, tcp_packet.ack))
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -312,18 +315,22 @@ impl Net {
 struct TransPort;
 
 impl TransPort {
-    fn recv_udp(port: u16) -> (Eth, Ip, UDPHeader, Vec<u8>) {
-        loop {
-            if let Some((eth, ip, data)) = Net::recv_ip() {
-                if ip.protocol() == IPProtocal::UDP {
-                    let udp_len = size_of::<UDPHeader>();
-                    let udp = unsafe { &*(&data[..udp_len] as *const [u8] as *const UDPHeader) };
-                    if udp.dport.to_be() == port {
-                        let remain_data = &data[udp_len..];
-                        return (eth, ip, *udp, remain_data.to_vec());
-                    }
+    fn recv_udp(port: u16) -> Option<(Eth, Ip, UDPHeader, Vec<u8>)> {
+        if let Some((eth, ip, data)) = Net::recv_ip() {
+            if ip.protocol() == IPProtocal::UDP {
+                let udp_len = size_of::<UDPHeader>();
+                let udp = unsafe { &*(&data[..udp_len] as *const [u8] as *const UDPHeader) };
+                if udp.dport.to_be() == port {
+                    let remain_data = &data[udp_len..];
+                    Some((eth, ip, *udp, remain_data.to_vec()))
+                } else {
+                    None
                 }
+            } else {
+                None
             }
+        } else {
+            None
         }
     }
 
@@ -343,18 +350,22 @@ impl TransPort {
         Net::send_ip(eth, ip, total_data);
     }
 
-    fn recv_tcp(port: u16) -> (Eth, Ip, TCPHeader, Vec<u8>) {
-        loop {
-            if let Some((eth, ip, data)) = Net::recv_ip() {
-                if ip.protocol() == IPProtocal::TCP {
-                    let tcp_len = size_of::<TCPHeader>();
-                    let tcp = unsafe { &*(&data[..tcp_len] as *const [u8] as *const TCPHeader) };
-                    if tcp.dport.to_be() == port {
-                        let remain_data = &data[tcp_len..];
-                        return (eth, ip, *tcp, remain_data.to_vec());
-                    }
+    fn recv_tcp(port: u16) -> Option<(Eth, Ip, TCPHeader, Vec<u8>)> {
+        if let Some((eth, ip, data)) = Net::recv_ip() {
+            if ip.protocol() == IPProtocal::TCP {
+                let tcp_len = size_of::<TCPHeader>();
+                let tcp = unsafe { &*(&data[..tcp_len] as *const [u8] as *const TCPHeader) };
+                if tcp.dport.to_be() == port {
+                    let remain_data = &data[tcp_len..];
+                    Some((eth, ip, *tcp, remain_data.to_vec()))
+                } else {
+                    None
                 }
+            } else {
+                None
             }
+        } else {
+            None
         }
     }
 }

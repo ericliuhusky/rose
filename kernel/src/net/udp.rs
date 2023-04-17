@@ -2,6 +2,7 @@ use super::TransPort;
 use crate::fs::File;
 use crate::net::net_arp;
 use alloc::vec;
+use alloc::vec::Vec;
 use lose_net_stack::Eth;
 use lose_net_stack::Ip;
 use super::UDPHeader;
@@ -28,7 +29,17 @@ impl UDP {
 impl File for UDP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         net_arp();
-        let (eth, ip, udp, data) = TransPort::recv_udp(self.source_port);
+        let (eth, ip, udp, data): (Eth, Ip, UDPHeader, Vec<u8>);
+        loop {
+            if let Some((_eth, _ip, _udp, _data)) = TransPort::recv_udp(self.source_port) {
+                eth = _eth;
+                ip = _ip;
+                udp = _udp;
+                data = _data;
+                break;
+            }
+        }
+
         self.eth = eth;
         self.ip = ip;
         self.udp = udp;
