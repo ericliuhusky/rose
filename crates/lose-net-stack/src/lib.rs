@@ -21,7 +21,7 @@ pub use net::Eth;
 pub use net::EthType;
 pub use net::Ip;
 pub use net::IPProtocal;
-use net::TCP;
+use net::TCPHeader;
 use net::IP_LEN;
 use results::Packet;
 pub use utils::UnsafeRefIter;
@@ -44,7 +44,7 @@ impl LoseStack {
     }
 
     fn analysis_tcp(&self, mut data_ptr_iter: UnsafeRefIter, ip_header: &Ip, eth_header: &Eth) -> Packet {
-        let tcp_header = unsafe{data_ptr_iter.next::<TCP>()}.unwrap();
+        let tcp_header = unsafe{data_ptr_iter.next::<TCPHeader>()}.unwrap();
         let offset = ((tcp_header.offset >> 4 & 0xf) as usize - 5) * 4;
         let data = &unsafe{data_ptr_iter.get_curr_arr()}[offset..];
         let data_len = ip_header.len.to_be() as usize - TCP_LEN - IP_LEN - offset;

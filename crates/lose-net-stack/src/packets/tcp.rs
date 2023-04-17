@@ -4,7 +4,7 @@ use crate::consts::{IP_HEADER_VHL, IP_PROTOCAL_TCP, TCP_EMPTY_DATA};
 use crate::utils::{UnsafeRefIter, check_sum};
 use crate::IPv4;
 use crate::MacAddress;
-use crate::net::{TCP_LEN, IP_LEN, ETH_LEN, Eth, Ip, TCP, TcpFlags, EthType};
+use crate::net::{TCP_LEN, IP_LEN, ETH_LEN, Eth, Ip, TCPHeader, TcpFlags, EthType};
 
 #[derive(Clone)]
 pub struct TCPPacket {
@@ -32,7 +32,7 @@ impl TCPPacket  {
         let mut data_ptr_iter = UnsafeRefIter::new(&data);
         let eth_header = unsafe{data_ptr_iter.next_mut::<Eth>()}.unwrap();
         let ip_header = unsafe{data_ptr_iter.next_mut::<Ip>()}.unwrap();
-        let tcp_header = unsafe{data_ptr_iter.next_mut::<TCP>()}.unwrap();
+        let tcp_header = unsafe{data_ptr_iter.next_mut::<TCPHeader>()}.unwrap();
         let tcp_data = unsafe {data_ptr_iter.get_curr_arr_mut()};
 
 

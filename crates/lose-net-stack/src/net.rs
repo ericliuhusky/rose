@@ -83,7 +83,7 @@ bitflags! {
 #[allow(dead_code)]
 #[repr(packed)]
 #[derive(Debug, Clone, Copy)]
-pub struct TCP {
+pub struct TCPHeader {
     pub sport: u16, // souce port
     pub dport: u16, // destination port
     pub seq: u32, // sequence number
@@ -97,7 +97,7 @@ pub struct TCP {
 
 pub(crate) const ETH_LEN: usize = size_of::<Eth>();
 pub(crate) const IP_LEN:  usize = size_of::<Ip>();
-pub(crate) const TCP_LEN: usize = size_of::<TCP>();
+pub(crate) const TCP_LEN: usize = size_of::<TCPHeader>();
 
 /*
 arp request and reply data
