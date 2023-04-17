@@ -105,43 +105,33 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
 }
 
 pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32, u32)> {
-    let mut recv_buf = vec![0u8; 1024];
-
-    let len = NET_DEVICE.receive(&mut recv_buf);
-
-    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
-
-    match packet {
-        Packet::TCP((eth, ip, tcp, data)) => {
-            let tcp_packet = TCPPacket {
-                source_ip: IPv4::from_u32(ip.src.to_be()), 
-                source_mac: MacAddress::new(eth.shost), 
-                source_port: tcp.sport.to_be(), 
-                dest_ip: IPv4::from_u32(ip.dst.to_be()), 
-                dest_mac: MacAddress::new(eth.dhost), 
-                dest_port: tcp.dport.to_be(), 
-                data_len: data.len(),
-                seq: tcp.seq.to_be(),
-                ack: tcp.ack.to_be(),
-                flags: tcp.flags,
-                win: tcp.win.to_be(),
-                urg: tcp.urg.to_be(),
-                data: data.to_vec(),
-            };
-            if tcp_packet.flags.contains(TcpFlags::A) {
-                if tcp_packet.data_len == 0 {
-                    return None;
-                }
-                if lport == tcp_packet.dest_port && raddr == tcp_packet.source_ip && rport == tcp_packet.source_port {
-                    Some((tcp_packet.data.to_vec(), tcp_packet.seq, tcp_packet.ack))
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+    let (eth, ip, tcp, data) = TransPort::recv_tcp(lport);
+    let tcp_packet = TCPPacket {
+        source_ip: IPv4::from_u32(ip.src.to_be()), 
+        source_mac: MacAddress::new(eth.shost), 
+        source_port: tcp.sport.to_be(), 
+        dest_ip: IPv4::from_u32(ip.dst.to_be()), 
+        dest_mac: MacAddress::new(eth.dhost), 
+        dest_port: tcp.dport.to_be(), 
+        data_len: data.len(),
+        seq: tcp.seq.to_be(),
+        ack: tcp.ack.to_be(),
+        flags: tcp.flags,
+        win: tcp.win.to_be(),
+        urg: tcp.urg.to_be(),
+        data: data.to_vec(),
+    };
+    if tcp_packet.flags.contains(TcpFlags::A) {
+        if tcp_packet.data_len == 0 {
+            return None;
         }
-        _ => None
+        if lport == tcp_packet.dest_port && raddr == tcp_packet.source_ip && rport == tcp_packet.source_port {
+            Some((tcp_packet.data.to_vec(), tcp_packet.seq, tcp_packet.ack))
+        } else {
+            None
+        }
+    } else {
+        None
     }
 }
 
