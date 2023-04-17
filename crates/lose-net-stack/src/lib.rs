@@ -27,6 +27,7 @@ use net::IP_LEN;
 use results::Packet;
 pub use utils::UnsafeRefIter;
 use consts::*;
+pub use utils::check_sum;
 
 use crate::net::TCP_LEN;
 

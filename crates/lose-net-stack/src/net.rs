@@ -8,7 +8,7 @@ pub enum EthType {
     ARP,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Eth {
     pub dhost: [u8; 6], // destination host
@@ -36,7 +36,7 @@ impl Eth {
 
 #[allow(dead_code)]
 #[repr(packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Ip {
     pub vhl: u8,    // version << 4 | header length >> 2
     pub tos: u8,    // type of service
@@ -68,7 +68,7 @@ impl Ip {
 
 #[allow(dead_code)]
 #[repr(packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct UDP {
     pub sport: u16, // souce port
     pub dport: u16, // destination port

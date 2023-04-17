@@ -1,33 +1,25 @@
-use super::busy_wait_udp_read;
-use super::LOCALHOST_IP;
-use super::LOCALHOST_MAC;
-use super::NET_DEVICE;
+use super::TransPort;
 use crate::fs::File;
 use crate::net::net_arp;
 use alloc::vec;
-use lose_net_stack::packets::udp::UDPPacket;
-use lose_net_stack::IPv4;
-use lose_net_stack::MacAddress;
+use lose_net_stack::Eth;
+use lose_net_stack::Ip;
 use page_table::PhysicalBufferList;
 
 pub struct UDP {
-    pub source_ip: IPv4,
-    pub source_mac: MacAddress,
     pub source_port: u16,
-    pub dest_ip: IPv4,
-    pub dest_mac: MacAddress,
-    pub dest_port: u16,
+    pub eth: Eth,
+    pub ip: Ip,
+    pub udp: lose_net_stack::UDP,
 }
 
 impl UDP {
     pub fn new() -> Self {
         Self {
-            source_ip: LOCALHOST_IP,
-            source_mac: LOCALHOST_MAC,
             source_port: 0,
-            dest_ip: IPv4::default(),
-            dest_mac: MacAddress::default(),
-            dest_port: 0,
+            eth: Eth::default(),
+            ip: Ip::default(),
+            udp: lose_net_stack::UDP::default(),
         }
     }
 }
@@ -35,11 +27,10 @@ impl UDP {
 impl File for UDP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         net_arp();
-        let (data, source_ip, source_mac, source_port) = busy_wait_udp_read(self.source_port);
-        self.dest_ip = source_ip;
-        self.dest_mac = source_mac;
-        self.dest_port = source_port;
-
+        let (eth, ip, udp, data) = TransPort::recv_udp(self.source_port);
+        self.eth = eth;
+        self.ip = ip;
+        self.udp = udp;
 
         for (i, byte) in buf.iter_mut().enumerate() {
             if i >= data.len() {
@@ -58,18 +49,7 @@ impl File for UDP {
         }
 
         let len = data.len();
-
-        let udp_packet = UDPPacket::new(
-            self.source_ip,
-            self.source_mac,
-            self.source_port,
-            self.dest_ip,
-            self.dest_mac,
-            self.dest_port,
-            len,
-            data,
-        );
-        NET_DEVICE.transmit(&udp_packet.build_data());
+        TransPort::send_udp(self.eth, self.ip,self.udp, data);
         len
     }
 

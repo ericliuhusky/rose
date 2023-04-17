@@ -8,7 +8,7 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, UDP, IPProtocal};
+use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, UDP, IPProtocal, check_sum};
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
@@ -128,14 +128,6 @@ pub fn busy_wait_accept(lport: u16) -> TCP {
             return socket;
         }
     }
-}
-
-pub fn busy_wait_udp_read(lport: u16) -> (Vec<u8>, IPv4, MacAddress, u16) {
-    let (eth, ip, udp, data) = TransPort::recv_udp(lport);
-    let source_port = udp.sport.to_be();
-    let source_ip = IPv4::from_u32(ip.src.to_be());
-    let source_mac = MacAddress::new(eth.shost);
-    (data, source_ip, source_mac, source_port)
 }
 
 
@@ -268,6 +260,23 @@ impl Net {
             }
         }
     }
+
+    fn send_ip(eth: Eth, ip: Ip, data: Vec<u8>) {
+        let len = data.len() + size_of::<Ip>();
+        let mut re_ip = ip;
+        re_ip.src = ip.dst;
+        re_ip.dst = ip.src;
+        re_ip.len = (len as u16).to_be();
+        re_ip.sum = 0;
+        re_ip.sum = check_sum(&mut re_ip as *mut Ip as *mut u8, size_of::<Ip>() as _, 0);
+
+        let header_data = unsafe { &*(&re_ip as *const Ip as *const [u8; 20]) };
+        let header_data = header_data.to_vec();
+
+        let mut total_data = header_data;
+        total_data.extend(data);
+        Link::send_eth(eth, total_data)
+    }
 }
 
 struct TransPort;
@@ -285,5 +294,21 @@ impl TransPort {
                 }
             }
         }
+    }
+
+    fn send_udp(eth: Eth, ip: Ip, udp: UDP, data: Vec<u8>) {
+        let len = data.len() + size_of::<UDP>();
+        let mut re_udp = udp;
+        re_udp.sport = udp.dport;
+        re_udp.dport = udp.sport;
+        re_udp.sum = 0;
+        re_udp.ulen = (len as u16).to_be();
+
+        let header_data = unsafe { &*(&re_udp as *const UDP as *const [u8; 8]) };
+        let header_data = header_data.to_vec();
+        let mut total_data = header_data;
+        total_data.extend(data);
+
+        Net::send_ip(eth, ip, total_data);
     }
 }
