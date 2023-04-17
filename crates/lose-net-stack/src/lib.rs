@@ -17,8 +17,6 @@ extern crate print;
 pub use addr::IPv4;
 pub use addr::MacAddress;
 pub use net::TcpFlags;
-pub use net::Arp;
-pub use net::ArpType;
 pub use net::Eth;
 pub use net::EthType;
 use net::Ip;

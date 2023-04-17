@@ -8,7 +8,7 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::{packets::tcp::TCPPacket, Eth, Arp, EthType, ArpType};
+use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType};
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
@@ -218,6 +218,69 @@ pub fn busy_wait_udp_read(lport: u16) -> (Vec<u8>, IPv4, MacAddress, u16) {
     }
 }
 
+
+#[derive(Debug, Clone, Copy)]
+pub enum ArpType {
+    Request,
+    Reply,
+}
+
+#[repr(packed)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Arp {
+    pub httype: u16, // Hardware type
+    pub pttype: u16, // Protocol type, For IPv4, this has the value 0x0800.
+    pub hlen: u8,    // Hardware length: Ethernet address length is 6.
+    pub plen: u8,    // Protocol length: IPv4 address length is 4.
+    op: u16,     // Operation: 1 for request, 2 for reply.
+    pub sha: [u8; 6],// Sender hardware address
+    pub spa: u32,    // Sender protocol address
+    pub tha: [u8; 6],// Target hardware address
+    pub tpa: u32     // Target protocol address
+}
+
+impl Arp {
+    pub fn type_(&self) -> ArpType {
+        match self.op.to_be() {
+            1 => ArpType::Request,
+            2 => ArpType::Reply,
+            _ => panic!()
+        }
+    }
+
+    pub fn set_type(&mut self, type_: ArpType) {
+        let op: u16 = match type_ {
+            ArpType::Request => 1,
+            ArpType::Reply => 2,
+        };
+        self.op = op.to_be();
+    }
+
+    pub fn src_ip(&self) -> IPv4 {
+        IPv4::from_u32(self.spa.to_be())
+    }
+
+    pub fn src_mac(&self) -> MacAddress {
+        MacAddress::new(self.sha)
+    }
+
+    pub fn set_src_ip(&mut self, ip: IPv4) {
+        self.spa = ip.to_u32().to_be()
+    }
+
+    pub fn set_src_mac(&mut self, mac: MacAddress) {
+        self.sha = mac.to_bytes()
+    }
+
+    pub fn set_dst_ip(&mut self, ip: IPv4) {
+        self.tpa = ip.to_u32().to_be()
+    }
+
+    pub fn set_dst_mac(&mut self, mac: MacAddress) {
+        self.tha = mac.to_bytes()
+    }
+}
+
 struct Link;
 
 impl Link {
@@ -265,7 +328,7 @@ impl Net {
         re_arp.set_src_ip(LOCALHOST_IP);
         re_arp.set_src_mac(LOCALHOST_MAC);
         re_arp.set_dst_ip(arp.src_ip());
-        re_arp.set_src_mac(arp.src_mac());
+        re_arp.set_dst_mac(arp.src_mac());
         re_arp.set_type(ArpType::Reply);
 
         let data = unsafe { &*(&re_arp as *const Arp as *const [u8; 28]) };
