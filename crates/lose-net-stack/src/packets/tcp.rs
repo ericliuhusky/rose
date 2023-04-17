@@ -71,13 +71,6 @@ impl<'a> TCPPacket<'a>  {
         data
     }
 
-    pub fn reply(&self, data: &'a[u8]) -> Self {
-        let mut ack_packet = self.ack();
-        ack_packet.data_len += data.len();
-        ack_packet.data = data;
-        ack_packet
-    }
-
     pub fn ack(&self) -> Self {
         let mut ack = self.seq + self.data_len as u32;
 
