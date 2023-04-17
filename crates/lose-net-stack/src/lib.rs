@@ -19,10 +19,10 @@ pub use addr::MacAddress;
 pub use net::TcpFlags;
 pub use net::Eth;
 pub use net::EthType;
-use net::Ip;
+pub use net::Ip;
+pub use net::IPProtocal;
 use net::TCP;
-use net::UDP;
-use net::UDP_LEN;
+pub use net::UDP;
 use net::IP_LEN;
 use results::Packet;
 pub use utils::UnsafeRefIter;
@@ -41,23 +41,6 @@ impl LoseStack {
             ip,
             mac
         }
-    }
-
-    fn analysis_udp(&self, mut data_ptr_iter: UnsafeRefIter, ip_header: &Ip, eth_header: &Eth) -> Packet {
-        let udp_header = unsafe{data_ptr_iter.next::<UDP>()}.unwrap();
-        let data = unsafe{data_ptr_iter.get_curr_arr()};
-        let data_len = ip_header.len.to_be() as usize - UDP_LEN - IP_LEN;
-
-        Packet::UDP(packets::udp::UDPPacket { 
-            source_ip: IPv4::from_u32(ip_header.src.to_be()), 
-            source_mac: MacAddress::new(eth_header.shost), 
-            source_port: udp_header.sport.to_be(), 
-            dest_ip: IPv4::from_u32(ip_header.dst.to_be()), 
-            dest_mac: MacAddress::new(eth_header.dhost), 
-            dest_port: udp_header.dport.to_be(), 
-            data_len, 
-            data: data.to_vec(),
-        })
     }
 
     fn analysis_tcp(&self, mut data_ptr_iter: UnsafeRefIter, ip_header: &Ip, eth_header: &Eth) -> Packet {
@@ -91,7 +74,6 @@ impl LoseStack {
         }
 
         match ip_header.pro {
-            IP_PROTOCAL_UDP => self.analysis_udp(data_ptr_iter, ip_header, eth_header),
             IP_PROTOCAL_TCP => self.analysis_tcp(data_ptr_iter, ip_header, eth_header),
             _ => Packet::None,
         }

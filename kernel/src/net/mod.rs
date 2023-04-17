@@ -8,7 +8,7 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType};
+use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, UDP, IPProtocal};
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
@@ -114,25 +114,6 @@ pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32
     }
 }
 
-pub fn net_udp_read(lport: u16) -> Option<(Vec<u8>, IPv4, MacAddress, u16)> {
-    let mut recv_buf = vec![0u8; 1024];
-
-    let len = NET_DEVICE.receive(&mut recv_buf);
-
-    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
-
-    match packet {
-        Packet::UDP(udp_packet) => {
-            if lport == udp_packet.dest_port {
-                Some((udp_packet.data.to_vec(), udp_packet.source_ip, udp_packet.source_mac, udp_packet.source_port))
-            } else {
-                None
-            }
-        }
-        _ => None
-    }
-}
-
 pub fn busy_wait_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> (Vec<u8>, u32, u32) {
     loop {
         if let Some(data) = net_tcp_read(lport, raddr, rport) {
@@ -150,11 +131,11 @@ pub fn busy_wait_accept(lport: u16) -> TCP {
 }
 
 pub fn busy_wait_udp_read(lport: u16) -> (Vec<u8>, IPv4, MacAddress, u16) {
-    loop {
-        if let Some(data) = net_udp_read(lport) {
-            return data;
-        }
-    }
+    let (eth, ip, udp, data) = TransPort::recv_udp(lport);
+    let source_port = udp.sport.to_be();
+    let source_ip = IPv4::from_u32(ip.src.to_be());
+    let source_mac = MacAddress::new(eth.shost);
+    (data, source_ip, source_mac, source_port)
 }
 
 
@@ -274,5 +255,35 @@ impl Net {
         let data = data.to_vec();
 
         Link::send_eth(eth, data);
+    }
+
+    fn recv_ip() -> (Eth, Ip, Vec<u8>) {
+        loop {
+            let (eth, data) = Link::recv_eth();
+            if eth.type_() == EthType::IP {
+                let ip_len = size_of::<Ip>();
+                let ip = unsafe { &*(&data[..ip_len] as *const [u8] as *const Ip) };
+                let remain_data = &data[ip_len..];
+                return (eth, *ip, remain_data.to_vec());
+            }
+        }
+    }
+}
+
+struct TransPort;
+
+impl TransPort {
+    fn recv_udp(port: u16) -> (Eth, Ip, UDP, Vec<u8>) {
+        loop {
+            let (eth, ip, data) = Net::recv_ip();
+            if ip.protocol() == IPProtocal::UDP {
+                let udp_len = size_of::<UDP>();
+                let udp = unsafe { &*(&data[..udp_len] as *const [u8] as *const UDP) };
+                if udp.dport.to_be() == port {
+                    let remain_data = &data[udp_len..];
+                    return (eth, ip, *udp, remain_data.to_vec());
+                }
+            }
+        }
     }
 }

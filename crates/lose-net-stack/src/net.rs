@@ -38,26 +38,42 @@ impl Eth {
 #[repr(packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct Ip {
-    pub(crate) vhl: u8,    // version << 4 | header length >> 2
-    pub(crate) tos: u8,    // type of service
-    pub(crate) len: u16,   // total length, packet length
-    pub(crate) id: u16,    // identification, can combine all packets
-    pub(crate) off: u16,   // fragment offset field, packet from
-    pub(crate) ttl: u8,    // time to live
-    pub(crate) pro: u8,    // protocol，TCP(6)、UDP(17)
-    pub(crate) sum: u16,   // checksum,
-    pub(crate) src: u32,   // souce ip
-    pub(crate) dst: u32    // destination ip
+    pub vhl: u8,    // version << 4 | header length >> 2
+    pub tos: u8,    // type of service
+    pub len: u16,   // total length, packet length
+    pub id: u16,    // identification, can combine all packets
+    pub off: u16,   // fragment offset field, packet from
+    pub ttl: u8,    // time to live
+    pub pro: u8,    // protocol，TCP(6)、UDP(17)
+    pub sum: u16,   // checksum,
+    pub src: u32,   // souce ip
+    pub dst: u32    // destination ip
+}
+
+#[derive(PartialEq, Eq)]
+pub enum IPProtocal {
+    TCP,
+    UDP,
+}
+
+impl Ip {
+    pub fn protocol(&self) -> IPProtocal {
+        match self.pro {
+            6 => IPProtocal::TCP,
+            17 => IPProtocal::UDP,
+            _ => panic!()
+        }
+    }
 }
 
 #[allow(dead_code)]
 #[repr(packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct UDP {
-    pub(crate) sport: u16, // souce port
-    pub(crate) dport: u16, // destination port
-    pub(crate) ulen: u16,  // length, including udp header, not including IP header
-    pub(crate) sum: u16    // checksum
+    pub sport: u16, // souce port
+    pub dport: u16, // destination port
+    pub ulen: u16,  // length, including udp header, not including IP header
+    pub sum: u16    // checksum
 }
 
 bitflags! {
