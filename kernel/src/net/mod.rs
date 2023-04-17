@@ -8,7 +8,7 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, IPProtocal, check_sum};
+use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, IPProtocal, check_sum, TCPHeader};
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
@@ -349,5 +349,19 @@ impl TransPort {
         total_data.extend(data);
 
         Net::send_ip(eth, ip, total_data);
+    }
+
+    fn recv_tcp(port: u16) -> (Eth, Ip, TCPHeader, Vec<u8>) {
+        loop {
+            let (eth, ip, data) = Net::recv_ip();
+            if ip.protocol() == IPProtocal::TCP {
+                let tcp_len = size_of::<TCPHeader>();
+                let tcp = unsafe { &*(&data[..tcp_len] as *const [u8] as *const TCPHeader) };
+                if tcp.dport.to_be() == port {
+                    let remain_data = &data[tcp_len..];
+                    return (eth, ip, *tcp, remain_data.to_vec());
+                }
+            }
+        }
     }
 }

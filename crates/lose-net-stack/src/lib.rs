@@ -21,7 +21,7 @@ pub use net::Eth;
 pub use net::EthType;
 pub use net::Ip;
 pub use net::IPProtocal;
-use net::TCPHeader;
+pub use net::TCPHeader;
 use net::IP_LEN;
 use results::Packet;
 pub use utils::UnsafeRefIter;
