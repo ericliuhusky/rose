@@ -47,8 +47,9 @@ const LOSE_NET_STACK: LoseStack = LoseStack::new(LOCALHOST_IP, LOCALHOST_MAC);
 // }
 
 pub fn net_arp() {
-    let (eth, arp) = Net::recv_arp();
-    Net::send_arp(eth, arp);
+    if let Some((eth, arp)) = Net::recv_arp() {
+        Net::send_arp(eth, arp);
+    }
 }
 
 pub fn net_accept(lport: u16) -> Option<TCP> {
@@ -264,14 +265,13 @@ impl Link {
 struct Net;
 
 impl Net {
-    fn recv_arp() -> (Eth, Arp) {
-        loop {
-            let (eth, data) = Link::recv_eth();
-            if eth.type_() == EthType::ARP {
-                let arp = unsafe { &*(&data[..] as *const [u8] as *const Arp) };
-                return (eth, *arp)
-            }
+    fn recv_arp() -> Option<(Eth, Arp)> {
+        let (eth, data) = Link::recv_eth();
+        if eth.type_() == EthType::ARP {
+            let arp = unsafe { &*(&data[..] as *const [u8] as *const Arp) };
+            return Some((eth, *arp))
         }
+        None
     }
 
     fn send_arp(eth: Eth, arp: Arp) {        
