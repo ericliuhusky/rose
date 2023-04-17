@@ -99,17 +99,12 @@ impl LoseStack {
         }
     }
 
-    fn analysis_arp(&self, mut data_ptr_iter: UnsafeRefIter) -> Packet {
-        let arp_header = unsafe{data_ptr_iter.next::<Arp>()}.unwrap();
-        Packet::ARP(*arp_header)
-    }
-
     pub fn analysis(&self, data: &[u8]) -> Packet {
         let mut data_ptr_iter = UnsafeRefIter::new(data);
         let eth_header = unsafe{data_ptr_iter.next::<Eth>()}.unwrap();
         match eth_header.type_() {
             EthType::IP => self.analysis_ip(data_ptr_iter, eth_header),
-            EthType::ARP => self.analysis_arp(data_ptr_iter),
+            _ => panic!(),
         }
     }
 }

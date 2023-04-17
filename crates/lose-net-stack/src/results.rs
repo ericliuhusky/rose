@@ -1,7 +1,6 @@
-use crate::{packets::{udp::UDPPacket, tcp::TCPPacket}, net::Arp};
+use crate::{packets::{udp::UDPPacket, tcp::TCPPacket}};
 
 pub enum Packet {
-    ARP(Arp),
     UDP(UDPPacket),
     TCP(TCPPacket<'static>),
     None

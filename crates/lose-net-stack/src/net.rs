@@ -1,7 +1,6 @@
 use core::mem::size_of;
-use alloc::vec::Vec;
 
-use crate::{IPv4, MacAddress, utils::UnsafeRefIter, consts::{ETH_RTYPE_ARP, BROADCAST_MAC, ARP_HRD_ETHER, ARP_ETHADDR_LEN, ETH_RTYPE_IP}};
+use crate::{IPv4, MacAddress};
 
 #[derive(PartialEq, Eq)]
 pub enum EthType {
@@ -153,7 +152,6 @@ pub struct TCP {
 }
 
 pub(crate) const ETH_LEN: usize = size_of::<Eth>();
-pub(crate) const ARP_LEN: usize = size_of::<Arp>();
 pub(crate) const IP_LEN:  usize = size_of::<Ip>();
 pub(crate) const UDP_LEN: usize = size_of::<UDP>();
 pub(crate) const TCP_LEN: usize = size_of::<TCP>();
