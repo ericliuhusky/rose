@@ -95,7 +95,7 @@ impl File for TCP {
             flags: TcpFlags::A,
             win: 65535,
             urg: 0,
-            data: data.as_ref(),
+            data,
         };
         NET_DEVICE.transmit(&tcp_packet.build_data());
         len

@@ -62,7 +62,7 @@ impl LoseStack {
             flags: tcp_header.flags,
             win: tcp_header.win.to_be(),
             urg: tcp_header.urg.to_be(),
-            data,
+            data: data.to_vec(),
         })
     }
 

@@ -6,8 +6,8 @@ use crate::IPv4;
 use crate::MacAddress;
 use crate::net::{TCP_LEN, IP_LEN, ETH_LEN, Eth, Ip, TCP, TcpFlags, EthType};
 
-#[derive(Clone, Copy)]
-pub struct TCPPacket<'a> {
+#[derive(Clone)]
+pub struct TCPPacket {
     pub source_ip: IPv4,
     pub source_mac: MacAddress,
     pub source_port: u16,
@@ -21,10 +21,10 @@ pub struct TCPPacket<'a> {
     pub flags: TcpFlags,    // flags, last 6 are flags(U, A, P, R, S, F)
     pub win: u16,           // window size
     pub urg: u16,           // urgent pointer
-    pub data: &'a [u8]      // data buffer
+    pub data: Vec<u8>      // data buffer
 }
 
-impl<'a> TCPPacket<'a>  {
+impl TCPPacket  {
     pub fn build_data(&self) -> Vec<u8> {
         let data = vec![0u8; TCP_LEN + IP_LEN + ETH_LEN + self.data_len];
 
@@ -98,7 +98,7 @@ impl<'a> TCPPacket<'a>  {
             flags,
             win: self.win,
             urg: self.urg,
-            data: TCP_EMPTY_DATA
+            data: vec![],
         }
     }
 }
