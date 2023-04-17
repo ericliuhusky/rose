@@ -1,6 +1,6 @@
 use core::{mem::size_of, slice};
 
-pub(crate) struct UnsafeRefIter {
+pub struct UnsafeRefIter {
     ptr: usize,
     end: usize
 }

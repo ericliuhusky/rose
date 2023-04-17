@@ -1,18 +1,20 @@
 use core::mem::size_of;
 use alloc::vec::Vec;
 
-use crate::{IPv4, MacAddress, utils::UnsafeRefIter, consts::{ETH_RTYPE_ARP, BROADCAST_MAC, ARP_HRD_ETHER, ARP_ETHADDR_LEN}};
+use crate::{IPv4, MacAddress, utils::UnsafeRefIter, consts::{ETH_RTYPE_ARP, BROADCAST_MAC, ARP_HRD_ETHER, ARP_ETHADDR_LEN, ETH_RTYPE_IP}};
 
+#[derive(PartialEq, Eq)]
 pub enum EthType {
     IP,
     ARP,
 }
 
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Eth {
-    pub(crate) dhost: [u8; 6], // destination host
-    pub(crate) shost: [u8; 6], // source host
-    pub(crate) rtype: u16      // packet type, arp or ip
+    pub dhost: [u8; 6], // destination host
+    pub shost: [u8; 6], // source host
+    pub rtype: u16      // packet type, arp or ip
 }
 
 impl Eth {
@@ -43,15 +45,15 @@ pub enum ArpType {
 #[repr(packed)]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Arp {
-    pub(crate) httype: u16, // Hardware type
-    pub(crate) pttype: u16, // Protocol type, For IPv4, this has the value 0x0800.
-    pub(crate) hlen: u8,    // Hardware length: Ethernet address length is 6.
-    pub(crate) plen: u8,    // Protocol length: IPv4 address length is 4.
+    pub httype: u16, // Hardware type
+    pub pttype: u16, // Protocol type, For IPv4, this has the value 0x0800.
+    pub hlen: u8,    // Hardware length: Ethernet address length is 6.
+    pub plen: u8,    // Protocol length: IPv4 address length is 4.
     op: u16,     // Operation: 1 for request, 2 for reply.
-    pub(crate) sha: [u8; 6],// Sender hardware address
-    pub(crate) spa: u32,    // Sender protocol address
-    pub(crate) tha: [u8; 6],// Target hardware address
-    pub(crate) tpa: u32     // Target protocol address
+    pub sha: [u8; 6],// Sender hardware address
+    pub spa: u32,    // Sender protocol address
+    pub tha: [u8; 6],// Target hardware address
+    pub tpa: u32     // Target protocol address
 }
 
 impl Arp {
@@ -93,48 +95,6 @@ impl Arp {
 
     pub fn set_dst_mac(&mut self, mac: MacAddress) {
         self.tha = mac.to_bytes()
-    }
-
-    pub fn reply_packet(&self, local_ip: IPv4, local_mac: MacAddress) -> Self {
-        match self.type_() {
-            ArpType::Request => {
-                let mut reply_packet = Self::default();
-                reply_packet.set_src_ip(local_ip);
-                reply_packet.set_src_mac(local_mac);
-                reply_packet.set_dst_ip(self.src_ip());
-                reply_packet.set_dst_mac(self.src_mac());
-                reply_packet.set_type(ArpType::Reply);
-                reply_packet
-            }
-            _ => panic!()
-        }
-    }
-
-    pub fn build_data(&self) -> Vec<u8> {
-        let data = vec![0u8; ARP_LEN + ETH_LEN];
-
-        let mut data_ptr_iter = UnsafeRefIter::new(&data);
-
-        // let mut eth_header = unsafe{(data.as_ptr() as usize as *mut Eth).as_mut()}.unwrap();
-        let mut eth_header = unsafe{ data_ptr_iter.next_mut::<Eth>() }.unwrap();
-        eth_header.rtype = ETH_RTYPE_ARP.to_be();
-        eth_header.dhost = BROADCAST_MAC;
-        eth_header.shost = self.src_mac().to_bytes();
-
-        // let mut arp_header = unsafe{((data.as_ptr() as usize + size_of::<Eth>()) as *mut Arp).as_mut()}.unwrap();
-        let mut arp_header = unsafe { data_ptr_iter.next_mut::<Arp>() }.unwrap();
-        arp_header.httype = ARP_HRD_ETHER.to_be();
-        arp_header.pttype = ETH_RTYPE_ARP.to_be();
-        arp_header.hlen = ARP_ETHADDR_LEN as u8;    // mac address len
-        arp_header.plen = 4;    // ipv4
-        arp_header.op = self.op;
-        
-        arp_header.sha = self.sha;
-        arp_header.spa = self.spa;
-    
-        arp_header.tha = self.tha;
-        arp_header.tpa = self.tpa;
-        data
     }
 }
 

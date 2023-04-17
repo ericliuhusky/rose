@@ -2,12 +2,13 @@ pub mod port_table;
 pub mod tcp;
 pub mod udp;
 
+use core::mem::size_of;
 use crate::{
     drivers::virtio_net::NET_DEVICE,
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::packets::tcp::TCPPacket;
+use lose_net_stack::{packets::tcp::TCPPacket, Eth, Arp, EthType, ArpType};
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
@@ -46,21 +47,8 @@ pub fn net_interrupt_handler() {
 }
 
 pub fn net_arp() {
-    let mut recv_buf = vec![0u8; 1024];
-
-    let len = NET_DEVICE.receive(&mut recv_buf);
-
-    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
-
-    match packet {
-        Packet::ARP(arp_packet) => {
-            let reply_packet = arp_packet
-                .reply_packet(LOCALHOST_IP, LOCALHOST_MAC);
-            let reply_data = reply_packet.build_data();
-            NET_DEVICE.transmit(&reply_data)
-        }
-        _ => {}
-    }
+    let (eth, arp) = Net::recv_arp();
+    Net::send_arp(eth, arp);
 }
 
 pub fn net_arp_request(raddr: IPv4) {
@@ -227,5 +215,62 @@ pub fn busy_wait_udp_read(lport: u16) -> (Vec<u8>, IPv4, MacAddress, u16) {
         if let Some(data) = net_udp_read(lport) {
             return data;
         }
+    }
+}
+
+struct Link;
+
+impl Link {
+    fn recv_eth() -> (Eth, Vec<u8>) {
+        let mut recv_buf = vec![0u8; 1024];
+        let len = NET_DEVICE.receive(&mut recv_buf);
+        let data = &recv_buf[..len];
+
+        let eth_len = size_of::<Eth>();
+        let remain_data = &data[eth_len..];
+        let eth = unsafe { &*(&data[..eth_len] as *const _ as *const Eth) };
+
+        (*eth, remain_data.to_vec())
+    }
+
+    fn send_eth(eth: Eth, data: Vec<u8>) {
+        let mut re_eth = eth;
+        re_eth.dhost = eth.shost;
+        re_eth.shost = LOCALHOST_MAC.to_bytes();
+
+        let eth_data = unsafe { &*(&re_eth as *const Eth as *const [u8; 14]) };
+        let eth_data = eth_data.to_vec();
+        let mut reply_data = eth_data;
+        reply_data.extend(data);
+
+        NET_DEVICE.transmit(&reply_data)
+    }
+}
+
+struct Net;
+
+impl Net {
+    fn recv_arp() -> (Eth, Arp) {
+        loop {
+            let (eth, data) = Link::recv_eth();
+            if eth.type_() == EthType::ARP {
+                let arp = unsafe { &*(&data[..] as *const [u8] as *const Arp) };
+                return (eth, *arp)
+            }
+        }
+    }
+
+    fn send_arp(eth: Eth, arp: Arp) {        
+        let mut re_arp = arp;
+        re_arp.set_src_ip(LOCALHOST_IP);
+        re_arp.set_src_mac(LOCALHOST_MAC);
+        re_arp.set_dst_ip(arp.src_ip());
+        re_arp.set_src_mac(arp.src_mac());
+        re_arp.set_type(ArpType::Reply);
+
+        let data = unsafe { &*(&re_arp as *const Arp as *const [u8; 28]) };
+        let data = data.to_vec();
+
+        Link::send_eth(eth, data);
     }
 }

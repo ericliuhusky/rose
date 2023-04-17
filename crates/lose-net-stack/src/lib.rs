@@ -11,20 +11,23 @@ pub(crate) mod utils;
 extern crate alloc;
 #[macro_use]
 extern crate bitflags;
+#[macro_use]
+extern crate print;
 
 pub use addr::IPv4;
 pub use addr::MacAddress;
-use net::EthType;
 pub use net::TcpFlags;
-use net::Arp;
-use net::Eth;
+pub use net::Arp;
+pub use net::ArpType;
+pub use net::Eth;
+pub use net::EthType;
 use net::Ip;
 use net::TCP;
 use net::UDP;
 use net::UDP_LEN;
 use net::IP_LEN;
 use results::Packet;
-use utils::UnsafeRefIter;
+pub use utils::UnsafeRefIter;
 use consts::*;
 
 use crate::net::TCP_LEN;
