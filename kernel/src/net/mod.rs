@@ -51,67 +51,6 @@ pub fn net_arp() {
     Net::send_arp(eth, arp);
 }
 
-pub fn net_arp_request(raddr: IPv4) {
-    // let arp_packet = ArpPacket::new(LOCALHOST_IP, LOCALHOST_MAC, raddr, MacAddress::default(), lose_net_stack::packets::arp::ArpType::Request);
-    // NET_DEVICE.transmit(&arp_packet.build_data());
-
-    // let mut recv_buf = vec![0u8; 1024];
-
-    // let len = NET_DEVICE.receive(&mut recv_buf);
-
-    // let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
-
-    // match packet {
-    //     Packet::ARP(arp_packet) => {
-            
-    //     }
-    //     _ => {}
-    // }
-}
-
-pub fn net_connect(ip: IPv4, port: u16) -> Option<TCP> {
-    // TODO: 自动分配端口号
-    let tcp_packet = TCPPacket {
-        source_ip: LOCALHOST_IP,
-        source_mac: LOCALHOST_MAC,
-        source_port: 5000,
-        dest_ip: ip,
-        dest_mac: MacAddress::new([0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
-        dest_port: port,
-        data_len: 0,
-        seq: 0,
-        ack: 0,
-        flags: TcpFlags::S,
-        win: 65535,
-        urg: 0,
-        data: &[],
-    };
-    NET_DEVICE.transmit(&tcp_packet.build_data());
-
-
-    let mut recv_buf = vec![0u8; 1024];
-
-    let len = NET_DEVICE.receive(&mut recv_buf);
-
-    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
-
-    match packet {
-        Packet::TCP(tcp_packet) => {
-            println!("{} {}", tcp_packet.seq, tcp_packet.ack);
-
-            Some(TCP::new(
-                tcp_packet.source_ip,
-                tcp_packet.source_mac,
-                tcp_packet.source_port,
-                tcp_packet.dest_port,
-                tcp_packet.seq,
-                tcp_packet.ack,
-            ))
-        }
-        _ => None
-    }
-}
-
 pub fn net_accept(lport: u16) -> Option<TCP> {
     let mut recv_buf = vec![0u8; 1024];
 
