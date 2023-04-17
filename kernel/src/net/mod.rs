@@ -259,9 +259,10 @@ impl Net {
         let (eth, data) = Link::recv_eth();
         if eth.type_() == EthType::ARP {
             let arp = unsafe { &*(&data[..] as *const [u8] as *const Arp) };
-            return Some((eth, *arp))
+            Some((eth, *arp))
+        } else {
+            None
         }
-        None
     }
 
     fn send_arp(eth: Eth, arp: Arp) {        
@@ -278,15 +279,15 @@ impl Net {
         Link::send_eth(eth, data);
     }
 
-    fn recv_ip() -> (Eth, Ip, Vec<u8>) {
-        loop {
-            let (eth, data) = Link::recv_eth();
-            if eth.type_() == EthType::IP {
-                let ip_len = size_of::<Ip>();
-                let ip = unsafe { &*(&data[..ip_len] as *const [u8] as *const Ip) };
-                let remain_data = &data[ip_len..];
-                return (eth, *ip, remain_data.to_vec());
-            }
+    fn recv_ip() -> Option<(Eth, Ip, Vec<u8>)> {
+        let (eth, data) = Link::recv_eth();
+        if eth.type_() == EthType::IP {
+            let ip_len = size_of::<Ip>();
+            let ip = unsafe { &*(&data[..ip_len] as *const [u8] as *const Ip) };
+            let remain_data = &data[ip_len..];
+            Some((eth, *ip, remain_data.to_vec()))
+        } else {
+            None
         }
     }
 
@@ -313,13 +314,14 @@ struct TransPort;
 impl TransPort {
     fn recv_udp(port: u16) -> (Eth, Ip, UDPHeader, Vec<u8>) {
         loop {
-            let (eth, ip, data) = Net::recv_ip();
-            if ip.protocol() == IPProtocal::UDP {
-                let udp_len = size_of::<UDPHeader>();
-                let udp = unsafe { &*(&data[..udp_len] as *const [u8] as *const UDPHeader) };
-                if udp.dport.to_be() == port {
-                    let remain_data = &data[udp_len..];
-                    return (eth, ip, *udp, remain_data.to_vec());
+            if let Some((eth, ip, data)) = Net::recv_ip() {
+                if ip.protocol() == IPProtocal::UDP {
+                    let udp_len = size_of::<UDPHeader>();
+                    let udp = unsafe { &*(&data[..udp_len] as *const [u8] as *const UDPHeader) };
+                    if udp.dport.to_be() == port {
+                        let remain_data = &data[udp_len..];
+                        return (eth, ip, *udp, remain_data.to_vec());
+                    }
                 }
             }
         }
@@ -343,13 +345,14 @@ impl TransPort {
 
     fn recv_tcp(port: u16) -> (Eth, Ip, TCPHeader, Vec<u8>) {
         loop {
-            let (eth, ip, data) = Net::recv_ip();
-            if ip.protocol() == IPProtocal::TCP {
-                let tcp_len = size_of::<TCPHeader>();
-                let tcp = unsafe { &*(&data[..tcp_len] as *const [u8] as *const TCPHeader) };
-                if tcp.dport.to_be() == port {
-                    let remain_data = &data[tcp_len..];
-                    return (eth, ip, *tcp, remain_data.to_vec());
+            if let Some((eth, ip, data)) = Net::recv_ip() {
+                if ip.protocol() == IPProtocal::TCP {
+                    let tcp_len = size_of::<TCPHeader>();
+                    let tcp = unsafe { &*(&data[..tcp_len] as *const [u8] as *const TCPHeader) };
+                    if tcp.dport.to_be() == port {
+                        let remain_data = &data[tcp_len..];
+                        return (eth, ip, *tcp, remain_data.to_vec());
+                    }
                 }
             }
         }
