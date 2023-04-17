@@ -22,7 +22,6 @@ pub use net::EthType;
 pub use net::Ip;
 pub use net::IPProtocal;
 use net::TCP;
-pub use net::UDP;
 use net::IP_LEN;
 use results::Packet;
 pub use utils::UnsafeRefIter;

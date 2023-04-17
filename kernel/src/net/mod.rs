@@ -8,7 +8,7 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, UDP, IPProtocal, check_sum};
+use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, IPProtocal, check_sum};
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
 
@@ -193,6 +193,15 @@ impl Arp {
     }
 }
 
+#[repr(packed)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct UDPHeader {
+    pub sport: u16, // souce port
+    pub dport: u16, // destination port
+    pub ulen: u16,  // length, including udp header, not including IP header
+    pub sum: u16    // checksum
+}
+
 struct Link;
 
 impl Link {
@@ -282,12 +291,12 @@ impl Net {
 struct TransPort;
 
 impl TransPort {
-    fn recv_udp(port: u16) -> (Eth, Ip, UDP, Vec<u8>) {
+    fn recv_udp(port: u16) -> (Eth, Ip, UDPHeader, Vec<u8>) {
         loop {
             let (eth, ip, data) = Net::recv_ip();
             if ip.protocol() == IPProtocal::UDP {
-                let udp_len = size_of::<UDP>();
-                let udp = unsafe { &*(&data[..udp_len] as *const [u8] as *const UDP) };
+                let udp_len = size_of::<UDPHeader>();
+                let udp = unsafe { &*(&data[..udp_len] as *const [u8] as *const UDPHeader) };
                 if udp.dport.to_be() == port {
                     let remain_data = &data[udp_len..];
                     return (eth, ip, *udp, remain_data.to_vec());
@@ -296,15 +305,15 @@ impl TransPort {
         }
     }
 
-    fn send_udp(eth: Eth, ip: Ip, udp: UDP, data: Vec<u8>) {
-        let len = data.len() + size_of::<UDP>();
+    fn send_udp(eth: Eth, ip: Ip, udp: UDPHeader, data: Vec<u8>) {
+        let len = data.len() + size_of::<UDPHeader>();
         let mut re_udp = udp;
         re_udp.sport = udp.dport;
         re_udp.dport = udp.sport;
         re_udp.sum = 0;
         re_udp.ulen = (len as u16).to_be();
 
-        let header_data = unsafe { &*(&re_udp as *const UDP as *const [u8; 8]) };
+        let header_data = unsafe { &*(&re_udp as *const UDPHeader as *const [u8; 8]) };
         let header_data = header_data.to_vec();
         let mut total_data = header_data;
         total_data.extend(data);

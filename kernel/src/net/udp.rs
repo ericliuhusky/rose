@@ -4,13 +4,14 @@ use crate::net::net_arp;
 use alloc::vec;
 use lose_net_stack::Eth;
 use lose_net_stack::Ip;
+use super::UDPHeader;
 use page_table::PhysicalBufferList;
 
 pub struct UDP {
     pub source_port: u16,
     pub eth: Eth,
     pub ip: Ip,
-    pub udp: lose_net_stack::UDP,
+    pub udp: UDPHeader,
 }
 
 impl UDP {
@@ -19,7 +20,7 @@ impl UDP {
             source_port: 0,
             eth: Eth::default(),
             ip: Ip::default(),
-            udp: lose_net_stack::UDP::default(),
+            udp: UDPHeader::default(),
         }
     }
 }

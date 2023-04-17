@@ -66,15 +66,6 @@ impl Ip {
     }
 }
 
-#[allow(dead_code)]
-#[repr(packed)]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct UDP {
-    pub sport: u16, // souce port
-    pub dport: u16, // destination port
-    pub ulen: u16,  // length, including udp header, not including IP header
-    pub sum: u16    // checksum
-}
 
 bitflags! {
     // #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -106,7 +97,6 @@ pub struct TCP {
 
 pub(crate) const ETH_LEN: usize = size_of::<Eth>();
 pub(crate) const IP_LEN:  usize = size_of::<Ip>();
-pub(crate) const UDP_LEN: usize = size_of::<UDP>();
 pub(crate) const TCP_LEN: usize = size_of::<TCP>();
 
 /*
