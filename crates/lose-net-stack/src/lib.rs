@@ -2,7 +2,6 @@
 
 mod net;
 mod addr;
-pub mod packets;
 pub(crate) mod utils;
 
 #[macro_use]

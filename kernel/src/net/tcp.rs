@@ -7,7 +7,6 @@ use alloc::vec;
 use lose_net_stack::Eth;
 use lose_net_stack::Ip;
 use lose_net_stack::TCPHeader;
-use lose_net_stack::packets::tcp::TCPPacket;
 use lose_net_stack::IPv4;
 use lose_net_stack::MacAddress;
 use lose_net_stack::TcpFlags;
@@ -74,7 +73,7 @@ impl TCP {
 
 impl File for TCP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
-        let (data, seq, ack) = busy_wait_tcp_read(self.source_port, self.dest_ip, self.dest_port);
+        let (data, seq, ack) = busy_wait_tcp_read(self.source_port);
         self.seq = seq;
         self.ack = ack;
 

@@ -8,7 +8,7 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, IPProtocal, check_sum, TCPHeader};
+use lose_net_stack::{Eth, EthType, Ip, IPProtocal, check_sum, TCPHeader};
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{MacAddress, TcpFlags};
 
@@ -52,43 +52,21 @@ pub fn net_arp() {
 }
 
 pub fn net_accept(lport: u16) -> Option<TCP> {
-    if let Some((eth, ip, tcp, data)) = TransPort::recv_tcp(lport) {
-        let tcp_packet = TCPPacket {
-            source_ip: IPv4::from_u32(ip.src.to_be()), 
-            source_mac: MacAddress::new(eth.shost), 
-            source_port: tcp.sport.to_be(), 
-            dest_ip: IPv4::from_u32(ip.dst.to_be()), 
-            dest_mac: MacAddress::new(eth.dhost), 
-            dest_port: tcp.dport.to_be(), 
-            data_len: data.len(),
-            seq: tcp.seq.to_be(),
-            ack: tcp.ack.to_be(),
-            flags: tcp.flags,
-            win: tcp.win.to_be(),
-            urg: tcp.urg.to_be(),
-            data: data.to_vec(),
-        };
-        let flags = tcp_packet.flags;
+    if let Some((eth, ip, tcp, data)) = TransPort::recv_tcp(lport) {    
+        if tcp.flags.contains(TcpFlags::S) {
+            TransPort::send_tcp(eth, ip, tcp.ack(), vec![]);
     
-        if flags.contains(TcpFlags::S) {
-            // if it has a port to accept, then response the request
-            if lport == tcp_packet.dest_port {
-                TransPort::send_tcp(eth, ip, tcp.ack(), vec![]);
-    
-                Some(TCP::new(
-                    tcp_packet.source_ip,
-                    tcp_packet.source_mac,
-                    tcp_packet.source_port,
-                    tcp_packet.dest_port,
-                    tcp_packet.seq,
-                    tcp_packet.ack,
-                    eth,
-                    ip,
-                    tcp,
-                ))
-            } else {
-                None
-            }
+            Some(TCP::new(
+                IPv4::from_u32(ip.src.to_be()),
+                MacAddress::new(eth.shost),
+                tcp.sport.to_be(),
+                tcp.dport.to_be(),
+                tcp.seq.to_be(),
+                tcp.ack.to_be(),
+                eth,
+                ip,
+                tcp,
+            ))
         } else {
             None
         }
@@ -97,32 +75,13 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
     }
 }
 
-pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32, u32)> {
+pub fn net_tcp_read(lport: u16) -> Option<(Vec<u8>, u32, u32)> {
     if let Some((eth, ip, tcp, data)) = TransPort::recv_tcp(lport) {
-        let tcp_packet = TCPPacket {
-            source_ip: IPv4::from_u32(ip.src.to_be()), 
-            source_mac: MacAddress::new(eth.shost), 
-            source_port: tcp.sport.to_be(), 
-            dest_ip: IPv4::from_u32(ip.dst.to_be()), 
-            dest_mac: MacAddress::new(eth.dhost), 
-            dest_port: tcp.dport.to_be(), 
-            data_len: data.len(),
-            seq: tcp.seq.to_be(),
-            ack: tcp.ack.to_be(),
-            flags: tcp.flags,
-            win: tcp.win.to_be(),
-            urg: tcp.urg.to_be(),
-            data: data.to_vec(),
-        };
-        if tcp_packet.flags.contains(TcpFlags::A) {
-            if tcp_packet.data_len == 0 {
+        if tcp.flags.contains(TcpFlags::A) {
+            if data.len() == 0 {
                 return None;
             }
-            if lport == tcp_packet.dest_port && raddr == tcp_packet.source_ip && rport == tcp_packet.source_port {
-                Some((tcp_packet.data.to_vec(), tcp_packet.seq, tcp_packet.ack))
-            } else {
-                None
-            }
+            Some((data, tcp.seq.to_be(), tcp.ack.to_be()))
         } else {
             None
         }
@@ -131,9 +90,9 @@ pub fn net_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> Option<(Vec<u8>, u32
     }
 }
 
-pub fn busy_wait_tcp_read(lport: u16, raddr: IPv4, rport: u16) -> (Vec<u8>, u32, u32) {
+pub fn busy_wait_tcp_read(lport: u16) -> (Vec<u8>, u32, u32) {
     loop {
-        if let Some(data) = net_tcp_read(lport, raddr, rport) {
+        if let Some(data) = net_tcp_read(lport) {
             return data;
         }
     }
