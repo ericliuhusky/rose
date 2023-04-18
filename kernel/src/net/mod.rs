@@ -73,8 +73,7 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
         if flags.contains(TcpFlags::S) {
             // if it has a port to accept, then response the request
             if lport == tcp_packet.dest_port {
-                let reply_packet = tcp_packet.ack();
-                NET_DEVICE.transmit(&reply_packet.build_data());
+                TransPort::send_tcp(eth, ip, tcp.ack(), vec![]);
     
                 Some(TCP::new(
                     tcp_packet.source_ip,
@@ -360,5 +359,26 @@ impl TransPort {
         } else {
             None
         }
+    }
+
+    fn send_tcp(eth: Eth, ip: Ip, tcp: TCPHeader, data: Vec<u8>) {
+        let mut re_tcp = tcp;
+        re_tcp.sport = tcp.dport;
+        re_tcp.dport = tcp.sport;
+        re_tcp.offset = 5 << 4;
+        re_tcp.sum = 0;
+
+        let mut sum = ip.dst.to_be().to_be();
+        sum += ip.src.to_be().to_be();
+        sum += (ip.pro as u16).to_be() as u32;
+        sum += ((data.len() + size_of::<TCPHeader>()) as u16).to_be() as u32;
+        re_tcp.sum = check_sum(&mut re_tcp as *mut _ as *mut u8, (size_of::<TCPHeader>() + data.len()) as _, sum);
+
+        let header_data = unsafe { &*(&re_tcp as *const TCPHeader as *const [u8; 20]) };
+        let header_data = header_data.to_vec();
+        let mut total_data = header_data;
+        total_data.extend(data);
+
+        Net::send_ip(eth, ip, total_data);
     }
 }

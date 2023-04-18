@@ -95,6 +95,22 @@ pub struct TCPHeader {
     pub urg: u16,    // urgent pointer
 }
 
+impl TCPHeader {
+    pub fn ack(&self) -> Self {
+        Self {
+            sport: self.sport,
+            dport: self.dport,
+            seq: 0,
+            ack: (self.seq.to_be() + 1).to_be(),
+            offset: self.offset,
+            flags: TcpFlags::S | TcpFlags::A,
+            win: self.win,
+            urg: self.urg,
+            sum: 0,
+        }
+    }
+}
+
 pub(crate) const ETH_LEN: usize = size_of::<Eth>();
 pub(crate) const IP_LEN:  usize = size_of::<Ip>();
 pub(crate) const TCP_LEN: usize = size_of::<TCPHeader>();
