@@ -72,19 +72,6 @@ impl TCPPacket  {
     }
 
     pub fn ack(&self) -> Self {
-        let mut ack = self.seq + self.data_len as u32;
-
-        // according to rfc793, the SYN consume one byte in the stream.
-        if self.flags.contains(TcpFlags::S) || self.flags.contains(TcpFlags::F) {
-            ack += 1;
-        }
-
-        let mut flags = self.flags;
-        
-        if flags.contains(TcpFlags::R) {
-            flags.remove(TcpFlags::R);
-        }
-
         Self {
             source_ip: self.dest_ip,
             source_mac: self.dest_mac,
@@ -93,9 +80,9 @@ impl TCPPacket  {
             dest_mac: self.source_mac,
             dest_port: self.source_port,
             data_len: 0,
-            seq: self.ack,
-            ack,
-            flags,
+            seq: 0,
+            ack: self.seq + 1,
+            flags: TcpFlags::S | TcpFlags::A,
             win: self.win,
             urg: self.urg,
             data: vec![],

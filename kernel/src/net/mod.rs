@@ -73,8 +73,7 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
         if flags.contains(TcpFlags::S) {
             // if it has a port to accept, then response the request
             if lport == tcp_packet.dest_port {
-                let mut reply_packet = tcp_packet.ack();
-                reply_packet.flags = TcpFlags::S | TcpFlags::A;
+                let reply_packet = tcp_packet.ack();
                 NET_DEVICE.transmit(&reply_packet.build_data());
     
                 Some(TCP::new(
