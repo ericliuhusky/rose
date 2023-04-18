@@ -1,10 +1,8 @@
 use alloc::vec::Vec;
 
-use crate::consts::{IP_HEADER_VHL, IP_PROTOCAL_TCP};
-use crate::utils::{UnsafeRefIter, check_sum};
 use crate::IPv4;
 use crate::MacAddress;
-use crate::net::{TCP_LEN, IP_LEN, ETH_LEN, Eth, Ip, TCPHeader, TcpFlags, EthType};
+use crate::net::TcpFlags;
 
 #[derive(Clone)]
 pub struct TCPPacket {

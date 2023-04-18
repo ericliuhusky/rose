@@ -2,7 +2,6 @@
 
 mod net;
 mod addr;
-mod consts;
 pub mod packets;
 pub(crate) mod utils;
 
@@ -21,6 +20,4 @@ pub use net::EthType;
 pub use net::Ip;
 pub use net::IPProtocal;
 pub use net::TCPHeader;
-pub use utils::UnsafeRefIter;
-use consts::*;
 pub use utils::check_sum;

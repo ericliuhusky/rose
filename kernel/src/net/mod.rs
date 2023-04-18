@@ -8,7 +8,7 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, IPProtocal, check_sum, TCPHeader, UnsafeRefIter};
+use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, IPProtocal, check_sum, TCPHeader};
 pub use lose_net_stack::IPv4;
 use lose_net_stack::{MacAddress, TcpFlags};
 
