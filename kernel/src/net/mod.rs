@@ -8,6 +8,7 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
+use core_ext::UInt;
 
 use self::tcp::TCP;
 
@@ -487,7 +488,7 @@ impl TransPort {
             }
         }
         let start = data.as_slice().as_ptr() as usize;
-        let end = start + (data.len() & !1);
+        let end = start + UInt(data.len()).align_to_lower(2);
         for p in (start..end).step_by(2) {
             check_sum += unsafe { *(p as *const u16) as u32 };
             if check_sum > 0xffff {
