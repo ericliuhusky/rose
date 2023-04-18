@@ -1,8 +1,12 @@
+use super::TransPort;
 use super::busy_wait_tcp_read;
 use super::LOCALHOST_IP;
 use super::LOCALHOST_MAC;
 use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
 use alloc::vec;
+use lose_net_stack::Eth;
+use lose_net_stack::Ip;
+use lose_net_stack::TCPHeader;
 use lose_net_stack::packets::tcp::TCPPacket;
 use lose_net_stack::IPv4;
 use lose_net_stack::MacAddress;
@@ -19,6 +23,9 @@ pub struct TCP {
     pub dest_port: u16,
     pub seq: u32,
     pub ack: u32,
+    pub eth: Eth,
+    pub ip: Ip,
+    pub tcp: TCPHeader,
 }
 
 impl TCP {
@@ -32,6 +39,9 @@ impl TCP {
             dest_port: 0,
             seq: 0,
             ack: 0,
+            eth: Eth::default(),
+            ip: Ip::default(),
+            tcp: TCPHeader::default(),
         }
     }
 
@@ -42,6 +52,9 @@ impl TCP {
         dest_port: u16,
         seq: u32,
         ack: u32,
+        eth: Eth,
+        ip: Ip,
+        tcp: TCPHeader,
     ) -> Self {
         Self {
             source_ip: LOCALHOST_IP,
@@ -52,6 +65,9 @@ impl TCP {
             dest_port: source_port,
             seq,
             ack,
+            eth,
+            ip,
+            tcp,
         }
     }
 }
@@ -80,24 +96,12 @@ impl File for TCP {
 
         let len = data.len();
 
-        let (ack, seq) = (self.seq, self.ack);
+        self.tcp.ack = self.seq.to_be();
+        self.tcp.seq = self.ack.to_be();
+        self.tcp.flags = TcpFlags::A;
 
-        let tcp_packet = TCPPacket {
-            source_ip: self.source_ip,
-            source_mac: self.source_mac,
-            source_port: self.source_port,
-            dest_ip: self.dest_ip,
-            dest_mac: self.dest_mac,
-            dest_port: self.dest_port,
-            data_len: len,
-            seq,
-            ack,
-            flags: TcpFlags::A,
-            win: 65535,
-            urg: 0,
-            data,
-        };
-        NET_DEVICE.transmit(&tcp_packet.build_data());
+        TransPort::send_tcp(self.eth, self.ip, self.tcp, data.clone());
+
         len
     }
 

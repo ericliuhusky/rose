@@ -69,6 +69,7 @@ impl Ip {
 
 bitflags! {
     // #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    #[derive(Default)]
     pub struct TcpFlags: u8 {
         const NONE = 0;
         const F = 0b00000001;
@@ -82,7 +83,7 @@ bitflags! {
 
 #[allow(dead_code)]
 #[repr(packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct TCPHeader {
     pub sport: u16, // souce port
     pub dport: u16, // destination port

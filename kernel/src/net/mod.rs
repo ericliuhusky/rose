@@ -82,6 +82,9 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
                     tcp_packet.dest_port,
                     tcp_packet.seq,
                     tcp_packet.ack,
+                    eth,
+                    ip,
+                    tcp,
                 ))
             } else {
                 None
@@ -372,7 +375,34 @@ impl TransPort {
         sum += ip.src.to_be().to_be();
         sum += (ip.pro as u16).to_be() as u32;
         sum += ((data.len() + size_of::<TCPHeader>()) as u16).to_be() as u32;
-        re_tcp.sum = check_sum(&mut re_tcp as *mut _ as *mut u8, (size_of::<TCPHeader>() + data.len()) as _, sum);
+
+        let mut check_sum = sum;
+        let start = &re_tcp as *const _ as usize;
+        let end = start + size_of::<TCPHeader>();
+        for p in (start..end).step_by(2) {
+            check_sum += unsafe { *(p as *const u16) as u32 };
+            if check_sum > 0xffff {
+                check_sum = (check_sum & 0xFFFF) + (check_sum >> 16);
+                check_sum = check_sum + (check_sum >> 16);
+            }
+        }
+        let start = data.as_slice().as_ptr() as usize;
+        let end = start + data.len();
+        for p in (start..end).step_by(2) {
+            check_sum += unsafe { *(p as *const u16) as u32 };
+            if check_sum > 0xffff {
+                check_sum = (check_sum & 0xFFFF) + (check_sum >> 16);
+                check_sum = check_sum + (check_sum >> 16);
+            }
+        }
+        if data.len() %2 != 0 {
+            check_sum += *data.last().unwrap() as u32;
+            check_sum = (check_sum & 0xFFFF) + (check_sum >> 16);
+            check_sum = check_sum + (check_sum >> 16);
+        }
+        let ans = !check_sum as u16;
+
+        re_tcp.sum = ans;
 
         let header_data = unsafe { &*(&re_tcp as *const TCPHeader as *const [u8; 20]) };
         let header_data = header_data.to_vec();
