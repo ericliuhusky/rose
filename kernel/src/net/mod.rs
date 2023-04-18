@@ -8,15 +8,14 @@ use crate::{
 };
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, IPProtocal, check_sum, TCPHeader};
+use lose_net_stack::{packets::tcp::TCPPacket, Eth, EthType, Ip, IPProtocal, check_sum, TCPHeader, UnsafeRefIter};
 pub use lose_net_stack::IPv4;
-use lose_net_stack::{results::Packet, LoseStack, MacAddress, TcpFlags};
+use lose_net_stack::{MacAddress, TcpFlags};
 
 use self::tcp::TCP;
 
 pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
 pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
-const LOSE_NET_STACK: LoseStack = LoseStack::new(LOCALHOST_IP, LOCALHOST_MAC);
 
 // pub fn net_interrupt_handler() {
 //     let mut recv_buf = vec![0u8; 1024];
@@ -53,54 +52,47 @@ pub fn net_arp() {
 }
 
 pub fn net_accept(lport: u16) -> Option<TCP> {
-    let mut recv_buf = vec![0u8; 1024];
-
-    let len = NET_DEVICE.receive(&mut recv_buf);
-
-    let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
-
-    match packet {
-        Packet::TCP((eth, ip, tcp, data)) => {
-            let tcp_packet = TCPPacket {
-                source_ip: IPv4::from_u32(ip.src.to_be()), 
-                source_mac: MacAddress::new(eth.shost), 
-                source_port: tcp.sport.to_be(), 
-                dest_ip: IPv4::from_u32(ip.dst.to_be()), 
-                dest_mac: MacAddress::new(eth.dhost), 
-                dest_port: tcp.dport.to_be(), 
-                data_len: data.len(),
-                seq: tcp.seq.to_be(),
-                ack: tcp.ack.to_be(),
-                flags: tcp.flags,
-                win: tcp.win.to_be(),
-                urg: tcp.urg.to_be(),
-                data: data.to_vec(),
-            };
-            let flags = tcp_packet.flags;
-
-            if flags.contains(TcpFlags::S) {
-                // if it has a port to accept, then response the request
-                if lport == tcp_packet.dest_port {
-                    let mut reply_packet = tcp_packet.ack();
-                    reply_packet.flags = TcpFlags::S | TcpFlags::A;
-                    NET_DEVICE.transmit(&reply_packet.build_data());
-
-                    Some(TCP::new(
-                        tcp_packet.source_ip,
-                        tcp_packet.source_mac,
-                        tcp_packet.source_port,
-                        tcp_packet.dest_port,
-                        tcp_packet.seq,
-                        tcp_packet.ack,
-                    ))
-                } else {
-                    None
-                }
+    if let Some((eth, ip, tcp, data)) = TransPort::recv_tcp(lport) {
+        let tcp_packet = TCPPacket {
+            source_ip: IPv4::from_u32(ip.src.to_be()), 
+            source_mac: MacAddress::new(eth.shost), 
+            source_port: tcp.sport.to_be(), 
+            dest_ip: IPv4::from_u32(ip.dst.to_be()), 
+            dest_mac: MacAddress::new(eth.dhost), 
+            dest_port: tcp.dport.to_be(), 
+            data_len: data.len(),
+            seq: tcp.seq.to_be(),
+            ack: tcp.ack.to_be(),
+            flags: tcp.flags,
+            win: tcp.win.to_be(),
+            urg: tcp.urg.to_be(),
+            data: data.to_vec(),
+        };
+        let flags = tcp_packet.flags;
+    
+        if flags.contains(TcpFlags::S) {
+            // if it has a port to accept, then response the request
+            if lport == tcp_packet.dest_port {
+                let mut reply_packet = tcp_packet.ack();
+                reply_packet.flags = TcpFlags::S | TcpFlags::A;
+                NET_DEVICE.transmit(&reply_packet.build_data());
+    
+                Some(TCP::new(
+                    tcp_packet.source_ip,
+                    tcp_packet.source_mac,
+                    tcp_packet.source_port,
+                    tcp_packet.dest_port,
+                    tcp_packet.seq,
+                    tcp_packet.ack,
+                ))
             } else {
                 None
             }
+        } else {
+            None
         }
-        _ => None
+    } else {
+        None
     }
 }
 
@@ -357,7 +349,9 @@ impl TransPort {
                 let tcp = unsafe { &*(&data[..tcp_len] as *const [u8] as *const TCPHeader) };
                 if tcp.dport.to_be() == port {
                     let remain_data = &data[tcp_len..];
-                    Some((eth, ip, *tcp, remain_data.to_vec()))
+                    let offset = ((tcp.offset >> 4 & 0xf) as usize - 5) * 4;
+                    let offset_data = &remain_data[offset..];
+                    Some((eth, ip, *tcp, offset_data.to_vec()))
                 } else {
                     None
                 }

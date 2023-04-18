@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use crate::consts::{IP_HEADER_VHL, IP_PROTOCAL_TCP, TCP_EMPTY_DATA};
+use crate::consts::{IP_HEADER_VHL, IP_PROTOCAL_TCP};
 use crate::utils::{UnsafeRefIter, check_sum};
 use crate::IPv4;
 use crate::MacAddress;
