@@ -4,7 +4,8 @@
 extern crate alloc;
 #[macro_use]
 extern crate print;
-
+#[macro_use]
+extern crate bitflags;
 
 mod syscall;
 mod exception_handler;

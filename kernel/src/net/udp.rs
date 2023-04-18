@@ -3,8 +3,8 @@ use crate::fs::File;
 use crate::net::net_arp;
 use alloc::vec;
 use alloc::vec::Vec;
-use lose_net_stack::Eth;
-use lose_net_stack::Ip;
+use super::Eth;
+use super::Ip;
 use super::UDPHeader;
 use page_table::PhysicalBufferList;
 

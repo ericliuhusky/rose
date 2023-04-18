@@ -4,12 +4,12 @@ use super::LOCALHOST_IP;
 use super::LOCALHOST_MAC;
 use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
 use alloc::vec;
-use lose_net_stack::Eth;
-use lose_net_stack::Ip;
-use lose_net_stack::TCPHeader;
-use lose_net_stack::IPv4;
-use lose_net_stack::MacAddress;
-use lose_net_stack::TcpFlags;
+use super::Eth;
+use super::Ip;
+use super::TCPHeader;
+use super::IPv4;
+use super::MacAddress;
+use super::TcpFlags;
 use page_table::PhysicalBufferList;
 
 // add tcp packet info to this structure
