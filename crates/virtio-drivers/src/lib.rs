@@ -1,6 +1,7 @@
 #![no_std]
 
 extern crate alloc;
+extern crate core_ext;
 
 mod blk;
 mod hal;
@@ -15,6 +16,7 @@ pub use self::header::*;
 pub use self::net::VirtIONet;
 use self::queue::VirtQueue;
 use core::mem::size_of;
+use core_ext::UInt;
 use hal::*;
 
 /// The page size in bytes supported by the library (4 KiB).
@@ -22,7 +24,7 @@ const PAGE_SIZE: usize = 0x1000;
 
 /// Align `size` up to a page.
 fn align_up(size: usize) -> usize {
-    (size + PAGE_SIZE) & !(PAGE_SIZE - 1)
+    UInt(size).align_to_upper(PAGE_SIZE)
 }
 
 /// Convert a struct into a byte buffer.

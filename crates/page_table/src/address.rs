@@ -1,3 +1,5 @@
+use core_ext::UInt;
+
 pub type VPN = VirtualPage;
 pub type PPN = PhysicalPage;
 pub type VA = VirtualAddress;
@@ -74,14 +76,14 @@ pub trait Address {
     where
         Self: Sized,
     {
-        Self::new(self.number() & !0xfff)
+        Self::new(UInt(self.number()).align_to_lower(0x1000))
     }
 
     fn align_to_upper(&self) -> Self
     where
         Self: Sized,
     {
-        Self::new((self.number() + 0xfff) & !0xfff)
+        Self::new(UInt(self.number()).align_to_upper(0x1000))
     }
 
     fn page_offset(&self) -> usize {

@@ -1,6 +1,7 @@
 #![no_std]
 
 extern crate alloc;
+extern crate core_ext;
 
 mod address;
 mod page_table;
