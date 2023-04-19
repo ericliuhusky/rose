@@ -55,9 +55,6 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
             TransPort::send_tcp(eth, ip, tcp.ack(), vec![]);
     
             Some(TCP::new(
-                IPv4::from_u32(ip.src.to_be()),
-                MacAddress::new(eth.shost),
-                tcp.sport.to_be(),
                 tcp.dport.to_be(),
                 tcp.seq.to_be(),
                 tcp.ack.to_be(),

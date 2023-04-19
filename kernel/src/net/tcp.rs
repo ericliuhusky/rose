@@ -1,25 +1,16 @@
 use super::TransPort;
 use super::busy_wait_tcp_read;
-use super::LOCALHOST_IP;
-use super::LOCALHOST_MAC;
-use crate::{drivers::virtio_net::NET_DEVICE, fs::File};
+use crate::fs::File;
 use alloc::vec;
 use super::Eth;
 use super::Ip;
 use super::TCPHeader;
-use super::IPv4;
-use super::MacAddress;
 use super::TcpFlags;
 use page_table::PhysicalBufferList;
 
 // add tcp packet info to this structure
 pub struct TCP {
-    pub source_ip: IPv4,
-    pub source_mac: MacAddress,
     pub source_port: u16,
-    pub dest_ip: IPv4,
-    pub dest_mac: MacAddress,
-    pub dest_port: u16,
     pub seq: u32,
     pub ack: u32,
     pub eth: Eth,
@@ -30,12 +21,7 @@ pub struct TCP {
 impl TCP {
     pub fn new_server() -> Self {
         Self {
-            source_ip: LOCALHOST_IP,
-            source_mac: LOCALHOST_MAC,
             source_port: 0,
-            dest_ip: IPv4::default(),
-            dest_mac: MacAddress::default(),
-            dest_port: 0,
             seq: 0,
             ack: 0,
             eth: Eth::default(),
@@ -45,9 +31,6 @@ impl TCP {
     }
 
     pub fn new(
-        source_ip: IPv4,
-        source_mac: MacAddress,
-        source_port: u16,
         dest_port: u16,
         seq: u32,
         ack: u32,
@@ -56,12 +39,7 @@ impl TCP {
         tcp: TCPHeader,
     ) -> Self {
         Self {
-            source_ip: LOCALHOST_IP,
-            source_mac: LOCALHOST_MAC,
             source_port: dest_port,
-            dest_ip: source_ip,
-            dest_mac: source_mac,
-            dest_port: source_port,
             seq,
             ack,
             eth,
