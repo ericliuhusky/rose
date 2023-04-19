@@ -4,7 +4,7 @@ use core::cell::RefCell;
 use core::cmp::min;
 use core::mem::size_of;
 
-pub struct HeapAllocator {
+pub struct Global {
     /*
     由32个链表组成的可用地址列表
     链表在列表中的索引代表链表的层级level
@@ -15,7 +15,7 @@ pub struct HeapAllocator {
     free_list: RefCell<[LinkedList; 32]>,
 }
 
-impl HeapAllocator {
+impl Global {
     pub const fn new() -> Self {
         Self {
             free_list: RefCell::new([LinkedList::new(); 32]),
@@ -38,7 +38,7 @@ impl HeapAllocator {
     }
 }
 
-unsafe impl GlobalAlloc for HeapAllocator {
+unsafe impl GlobalAlloc for Global {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let mut free_list = self.free_list.borrow_mut();
 

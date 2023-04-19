@@ -3,6 +3,7 @@
 
 use core_ext::{println, print};
 pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create, mutex_create, mutex_lock, mutex_unlock, semaphore_create, semaphore_down, semaphore_up, connect, listen, accept, socket, bind};
+use alloc_ext::heap_alloc;
 
 #[no_mangle]
 #[link_section = ".text.entry"]
@@ -11,7 +12,7 @@ fn _start() {
         fn main();
     }
     // TODO: USER_HEAP_START_ADDR
-    heap_allocator::init(0xFFFFFFFFFFF7F000, 0x80000);
+    heap_alloc::init(0xFFFFFFFFFFF7F000, 0x80000);
     unsafe { main(); }
     exit();
 }
