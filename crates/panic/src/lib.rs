@@ -1,10 +1,10 @@
 #![no_std]
 #![feature(panic_info_message)]
 
-extern crate print;
+extern crate core_ext;
 
 use core::panic::PanicInfo;
-use print::println;
+use core_ext::println;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

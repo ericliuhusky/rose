@@ -1,4 +1,10 @@
 #![no_std]
+#![feature(allow_internal_unstable)]
+
+#[macro_use]
+mod macros;
+
+pub mod io;
 
 pub struct UInt(pub usize);
 

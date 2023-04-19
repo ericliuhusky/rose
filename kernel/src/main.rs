@@ -3,7 +3,7 @@
 
 extern crate alloc;
 #[macro_use]
-extern crate print;
+extern crate core_ext;
 #[macro_use]
 extern crate bitflags;
 

@@ -5,7 +5,7 @@ version = "0.1.0"
 [dependencies]
 sbi_call = { path = "../sbi_call" }
 sys_call = { path = "../sys_call" }
-print = { path = "../print" }
+core_ext = { path = "../core_ext" }
 
 [features]
 user = []
