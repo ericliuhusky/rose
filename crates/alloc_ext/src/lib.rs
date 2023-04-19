@@ -4,4 +4,4 @@
 
 extern crate alloc;
 
-pub mod mutrc;
+pub mod rc;

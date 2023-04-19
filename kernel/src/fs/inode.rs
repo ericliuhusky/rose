@@ -1,6 +1,6 @@
 use super::File;
 use crate::drivers::BLOCK_DEVICE;
-use alloc_ext::mutrc::MutRc;
+use alloc_ext::rc::MutRc;
 use page_table::PhysicalBufferList;
 use core::cell::RefCell;
 use alloc::rc::Rc;

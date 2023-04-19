@@ -2,7 +2,7 @@ use crate::task::{
     block_and_run_next, current_task, task::Task, wakeup_task,
 };
 use alloc::collections::VecDeque;
-use alloc_ext::mutrc::MutRc;
+use alloc_ext::rc::MutRc;
 
 pub struct Mutex {
     locked: bool,

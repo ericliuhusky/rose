@@ -1,7 +1,7 @@
 pub mod id;
 pub mod task;
 
-use alloc_ext::mutrc::MutRc;
+use alloc_ext::rc::MutRc;
 use self::{task::{Task, Process}, id::IDAllocDict};
 use alloc::vec::Vec;
 use exception::restore::restore_context;

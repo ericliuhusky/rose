@@ -219,7 +219,7 @@ use crate::fs::{open_file, File};
 use crate::mutex::Mutex;
 use crate::net::tcp::TCP;
 use crate::semaphore::Semaphore;
-use alloc_ext::mutrc::MutRc;
+use alloc_ext::rc::MutRc;
 use crate::task::{current_task, current_process, add_task};
 use crate::task::task::Task;
 
