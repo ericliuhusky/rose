@@ -56,8 +56,6 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
     
             Some(TCP::new(
                 tcp.dport.to_be(),
-                tcp.seq.to_be(),
-                tcp.ack.to_be(),
                 eth,
                 ip,
                 tcp,
@@ -70,13 +68,13 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
     }
 }
 
-pub fn net_tcp_read(lport: u16) -> Option<(Vec<u8>, u32, u32)> {
+pub fn net_tcp_read(lport: u16) -> Option<(Eth, Ip, TCPHeader, Vec<u8>)> {
     if let Some((eth, ip, tcp, data)) = TransPort::recv_tcp(lport) {
         if tcp.flags.contains(TcpFlags::A) {
             if data.len() == 0 {
                 return None;
             }
-            Some((data, tcp.seq.to_be(), tcp.ack.to_be()))
+            Some((eth, ip, tcp, data))
         } else {
             None
         }
@@ -85,7 +83,7 @@ pub fn net_tcp_read(lport: u16) -> Option<(Vec<u8>, u32, u32)> {
     }
 }
 
-pub fn busy_wait_tcp_read(lport: u16) -> (Vec<u8>, u32, u32) {
+pub fn busy_wait_tcp_read(lport: u16) -> (Eth, Ip, TCPHeader, Vec<u8>) {
     loop {
         if let Some(data) = net_tcp_read(lport) {
             return data;
