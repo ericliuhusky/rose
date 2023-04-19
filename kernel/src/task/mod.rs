@@ -1,8 +1,8 @@
 pub mod id;
 pub mod task;
 
-use alloc_ext::rc::MutRc;
-use self::{task::{Task, Process}, id::IDAllocDict};
+use alloc_ext::{rc::MutRc, collections::IDAllocDict};
+use self::task::{Task, Process};
 use alloc::vec::Vec;
 use exception::restore::restore_context;
 use sbi_call::shutdown;

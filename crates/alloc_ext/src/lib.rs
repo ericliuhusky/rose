@@ -5,3 +5,4 @@
 extern crate alloc;
 
 pub mod rc;
+pub mod collections;
