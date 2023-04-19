@@ -1,4 +1,3 @@
-use alloc::collections::btree_map::{ValuesMut, Iter};
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
@@ -55,20 +54,8 @@ impl<V> IDAllocDict<V> {
         self.dict.get(&id)
     }
 
-    pub fn get_mut(&mut self, id: usize) -> Option<&mut V> {
-        self.dict.get_mut(&id)
-    }
-
     pub fn remove(&mut self, id: usize) {
         self.dict.remove(&id);
         self.id_allocator.dealloc(id);
-    }
-
-    pub fn values_mut(&mut self) -> ValuesMut<usize, V> {
-        self.dict.values_mut()
-    }
-
-    pub fn iter(&self) -> Iter<usize, V> {
-        self.dict.iter()
     }
 }
