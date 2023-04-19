@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(allow_internal_unstable)]
 
 use core::fmt::{self, Write};
 
@@ -16,22 +17,24 @@ impl Write for Stdout {
     }
 }
 
-pub fn print(args: fmt::Arguments) {
+pub fn _print(args: fmt::Arguments) {
     Stdout.write_fmt(args).unwrap();
 }
 
 #[macro_export]
-/// print string macro
 macro_rules! print {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::print(format_args!($fmt $(, $($arg)+)?));
-    }
+    ($($arg:tt)*) => {{
+        $crate::_print(format_args!($($arg)*));
+    }};
 }
 
 #[macro_export]
-/// println string macro
+#[allow_internal_unstable(format_args_nl)]
 macro_rules! println {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
-    }
+    () => {
+        $crate::print!("\n")
+    };
+    ($($arg:tt)*) => {{
+        $crate::_print(format_args_nl!($($arg)*));
+    }};
 }
