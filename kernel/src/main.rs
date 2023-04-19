@@ -18,7 +18,6 @@ mod mutex;
 mod semaphore;
 mod net;
 
-extern crate panic;
 extern crate entry;
 
 #[no_mangle]

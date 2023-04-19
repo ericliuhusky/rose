@@ -1,10 +1,12 @@
 #![no_std]
 #![feature(allow_internal_unstable)]
+#![feature(panic_info_message)]
 
 #[macro_use]
 mod macros;
 
 pub mod io;
+pub mod panic;
 
 pub struct UInt(pub usize);
 

@@ -3,7 +3,6 @@
 
 use core_ext::{println, print};
 pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create, mutex_create, mutex_lock, mutex_unlock, semaphore_create, semaphore_down, semaphore_up, connect, listen, accept, socket, bind};
-extern crate panic;
 
 #[no_mangle]
 #[link_section = ".text.entry"]
