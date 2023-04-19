@@ -1,7 +1,7 @@
 use super::File;
 use crate::task::suspend_and_run_next;
 use alloc::collections::VecDeque;
-use mutrc::MutRc;
+use alloc_ext::mutrc::MutRc;
 use page_table::PhysicalBufferList;
 
 const PIPE_BUFFER_SIZE: usize = 32;

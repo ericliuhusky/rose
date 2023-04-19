@@ -1,6 +1,6 @@
 use crate::task::{block_and_run_next, current_task, task::Task, wakeup_task};
 use alloc::collections::VecDeque;
-use mutrc::MutRc;
+use alloc_ext::mutrc::MutRc;
 
 pub struct Semaphore {
     count: isize,
