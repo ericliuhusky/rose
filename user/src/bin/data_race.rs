@@ -29,7 +29,7 @@ fn f() {
 }
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     let mut tids = Vec::new();
     for _ in 0..3 {
         tids.push(thread_create(f as usize, 0));
@@ -38,5 +38,4 @@ pub fn main() -> i32 {
         waittid(tid);
     }
     println!("{}", unsafe { A });
-    0
 }

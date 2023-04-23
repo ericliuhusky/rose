@@ -123,7 +123,7 @@ fn handle_tcp_client(client_fd: usize) -> bool {
 }
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     println!("This is a very simple http server");
 
     let fd = socket(true);
@@ -137,7 +137,7 @@ pub fn main() -> i32 {
 
         if client < 1 {
             println!("Failed to accept a client on port 80");
-            return -1;
+            return;
         }
 
         if handle_tcp_client(client) {
@@ -149,7 +149,6 @@ pub fn main() -> i32 {
 
     // String::from_utf8_lossy(&buf[..len])
 
-    0
 }
 
 #[allow(unused)]

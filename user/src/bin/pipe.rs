@@ -9,7 +9,7 @@ use lib::{close, fork, pipe, read, waitpid, write};
 static STR: &str = "Hello, world!";
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     // create pipe
     let mut pipe_fd = [0usize; 2];
     pipe(&mut pipe_fd);
@@ -28,7 +28,6 @@ pub fn main() -> i32 {
         close(pipe_fd[0]);
         assert_eq!(core::str::from_utf8(&buffer[..len_read]).unwrap(), STR);
         println!("Read OK, child process exited!");
-        0
     } else {
         // parent process, write to child
         // close read end
@@ -38,6 +37,5 @@ pub fn main() -> i32 {
         close(pipe_fd[1]);
         waitpid(pid as usize);
         println!("pipetest passed!");
-        0
     }
 }

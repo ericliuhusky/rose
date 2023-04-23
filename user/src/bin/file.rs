@@ -7,7 +7,7 @@ extern crate lib;
 use lib::{close, open, read, write};
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     let test_str = "Hello, world!";
     let filea = "filea";
     let fd = open(filea, true);
@@ -23,5 +23,4 @@ pub fn main() -> i32 {
 
     assert_eq!(test_str, core::str::from_utf8(&buffer[..read_len]).unwrap(),);
     println!("file_test passed!");
-    0
 }

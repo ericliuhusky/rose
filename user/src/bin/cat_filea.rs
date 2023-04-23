@@ -8,7 +8,7 @@ extern crate alloc;
 use lib::{close, open, read};
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     let fd = open("filea", false);
     if fd == 0 {
         panic!("Error occured when opening file");
@@ -22,5 +22,4 @@ pub fn main() -> i32 {
         println!("{}", core::str::from_utf8(&buf[..size]).unwrap());
     }
     close(fd);
-    0
 }

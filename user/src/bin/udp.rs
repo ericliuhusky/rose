@@ -11,7 +11,7 @@ extern crate alloc;
 use lib::{connect, read, write, socket, bind};
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     println!("udp test open!");
 
     let udp_fd = socket(false);
@@ -33,6 +33,4 @@ pub fn main() -> i32 {
     write(udp_fd, buf.as_bytes());
 
     println!("udp send done, waiting for reply.");
-
-    0
 }

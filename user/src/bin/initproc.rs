@@ -7,12 +7,11 @@ extern crate lib;
 use lib::{exec, fork, waitpid};
 
 #[no_mangle]
-fn main() -> i32 {
+fn main() {
     let pid = fork();
     if pid == 0 {
         exec("shell");
     } else {
         waitpid(pid);
     }
-    0
 }

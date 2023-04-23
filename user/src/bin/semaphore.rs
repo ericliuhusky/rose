@@ -23,7 +23,7 @@ unsafe fn second() -> ! {
 }
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     semaphore_create(0);
     let threads = vec![
         thread_create(first as usize, 0),
@@ -32,5 +32,4 @@ pub fn main() -> i32 {
     for thread in threads.iter() {
         waittid(*thread);
     }
-    0
 }

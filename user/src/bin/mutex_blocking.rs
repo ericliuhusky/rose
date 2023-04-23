@@ -31,7 +31,7 @@ fn f() {
 }
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     mutex_create();
     let mut tids = Vec::new();
     for _ in 0..3 {
@@ -41,5 +41,4 @@ pub fn main() -> i32 {
         waittid(tid);
     }
     println!("{}", unsafe { A });
-    0
 }

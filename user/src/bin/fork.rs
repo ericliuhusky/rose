@@ -8,7 +8,7 @@ use lib::{fork, getpid, waitpid};
 use lib::exit;
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     println!("[fork]");
     let pid = fork();
     if pid == 0 {
@@ -19,5 +19,4 @@ pub fn main() -> i32 {
     println!("parent[{}] waiting...", getpid());
     waitpid(pid);
     println!("child[{}] exit", pid);
-    0
 }

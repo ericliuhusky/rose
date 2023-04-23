@@ -33,7 +33,7 @@ pub fn thread_c() -> ! {
 }
 
 #[no_mangle]
-pub fn main() -> i32 {
+pub fn main() {
     let v = vec![
         thread_create(thread_a as usize, 0),
         thread_create(thread_b as usize, 0),
@@ -44,5 +44,4 @@ pub fn main() -> i32 {
         println!("thread[{}] exit", tid);
     }
     println!("main thread exited.");
-    0
 }
