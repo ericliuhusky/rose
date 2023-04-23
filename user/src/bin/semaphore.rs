@@ -30,7 +30,7 @@ pub fn main() -> i32 {
         thread_create(second as usize, 0),
     ];
     for thread in threads.iter() {
-        waittid(*thread as usize);
+        waittid(*thread);
     }
     0
 }

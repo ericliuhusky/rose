@@ -30,10 +30,10 @@ fn handle_tcp_client(client_fd: usize) -> bool {
     // a buf to receive the data from the server
     let mut buf = vec![0u8; 1024];
 
-    let len = read(client_fd as usize, &mut buf);
+    let len = read(client_fd, &mut buf);
 
     println!("receive {} bytes", len);
-    hexdump(&buf[..len as usize]);
+    hexdump(&buf[..len]);
 
     // verify whether it is a valid HTTP request simply, [0x47,0x45,0x54, 0x20] is GET
     if len < 4 || buf[..4] != [0x47, 0x45, 0x54, 0x20] {
@@ -127,12 +127,12 @@ pub fn main() -> i32 {
     println!("This is a very simple http server");
 
     let fd = socket(true);
-    bind(fd as usize, 80);
+    bind(fd, 80);
 
-    listen(fd as usize);
+    listen(fd);
 
     loop {
-        let client = accept(fd as usize);
+        let client = accept(fd);
         println!("client connected: {}", client);
 
         if client < 1 {
@@ -140,14 +140,14 @@ pub fn main() -> i32 {
             return -1;
         }
 
-        if handle_tcp_client(client as usize) {
+        if handle_tcp_client(client) {
             break;
         }
     }
 
     println!("finish tcp test");
 
-    // String::from_utf8_lossy(&buf[..len as usize])
+    // String::from_utf8_lossy(&buf[..len])
 
     0
 }

@@ -13,10 +13,9 @@ pub fn main() -> i32 {
     if fd == 0 {
         panic!("Error occured when opening file");
     }
-    let fd = fd as usize;
     let mut buf = [0u8; 256];
     loop {
-        let size = read(fd, &mut buf) as usize;
+        let size = read(fd, &mut buf);
         if size == 0 {
             break;
         }

@@ -12,7 +12,7 @@ fn main() -> i32 {
     if pid == 0 {
         exec("shell");
     } else {
-        waitpid(pid as usize);
+        waitpid(pid);
     }
     0
 }

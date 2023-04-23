@@ -2,7 +2,7 @@
 
 use sys_call_id::*;
 
-pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isize, usize> {
+pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<usize, usize> {
     match id {
         SYS_READ => Ok(SysFuncImpl::read(args[0], args[1] as *const u8, args[2])),
         SYS_WRITE => Ok(SysFuncImpl::write(args[0], args[1] as *const u8, args[2])),
@@ -40,31 +40,31 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<isi
 }
 
 pub trait SysFunc {
-    fn read(fd: usize, buf: *const u8, len: usize) -> isize;
-    fn write(fd: usize, buf: *const u8, len: usize) -> isize;
-    fn exit() -> isize;
-    fn yield_() -> isize;
-    fn get_time() -> isize;
-    fn getpid() -> isize;
-    fn fork() -> isize;
-    fn exec(path: *const u8, len: usize) -> isize;
-    fn waitpid(pid: usize) -> isize;
-    fn putchar(c: usize) -> isize;
-    fn getchar() -> isize;
-    fn open(path: *const u8, len: usize, create: u32) -> isize;
-    fn close(fd: usize) -> isize;
-    fn pipe(pipe_fd: *mut usize) -> isize;
-    fn thread_create(entry: usize, arg: usize) -> isize;
-    fn waittid(tid: usize) -> isize;
-    fn mutex_create() -> isize;
-    fn mutex_lock(mutex_id: usize) -> isize;
-    fn mutex_unlock(mutex_id: usize) -> isize;
-    fn semaphore_create(res_count: usize) -> isize;
-    fn semaphore_down(sem_id: usize) -> isize;
-    fn semaphore_up(sem_id: usize) -> isize;
-    fn connect(fd: usize, ip: u32, port: u16) -> isize;
-    fn listen(fd: usize) -> isize;
-    fn accept(fd: usize) -> isize;
-    fn socket(tcp: bool) -> isize;
-    fn bind(fd: usize, port: u16) -> isize;
+    fn read(fd: usize, buf: *const u8, len: usize) -> usize;
+    fn write(fd: usize, buf: *const u8, len: usize) -> usize;
+    fn exit() -> usize;
+    fn yield_() -> usize;
+    fn get_time() -> usize;
+    fn getpid() -> usize;
+    fn fork() -> usize;
+    fn exec(path: *const u8, len: usize) -> usize;
+    fn waitpid(pid: usize) -> usize;
+    fn putchar(c: usize) -> usize;
+    fn getchar() -> usize;
+    fn open(path: *const u8, len: usize, create: u32) -> usize;
+    fn close(fd: usize) -> usize;
+    fn pipe(pipe_fd: *mut usize) -> usize;
+    fn thread_create(entry: usize, arg: usize) -> usize;
+    fn waittid(tid: usize) -> usize;
+    fn mutex_create() -> usize;
+    fn mutex_lock(mutex_id: usize) -> usize;
+    fn mutex_unlock(mutex_id: usize) -> usize;
+    fn semaphore_create(res_count: usize) -> usize;
+    fn semaphore_down(sem_id: usize) -> usize;
+    fn semaphore_up(sem_id: usize) -> usize;
+    fn connect(fd: usize, ip: u32, port: u16) -> usize;
+    fn listen(fd: usize) -> usize;
+    fn accept(fd: usize) -> usize;
+    fn socket(tcp: bool) -> usize;
+    fn bind(fd: usize, port: u16) -> usize;
 }

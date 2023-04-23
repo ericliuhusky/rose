@@ -40,7 +40,7 @@ pub fn main() -> i32 {
         thread_create(thread_c as usize, 0),
     ];
     for tid in v.iter() {
-        waittid(*tid as usize);
+        waittid(*tid);
         println!("thread[{}] exit", tid);
     }
     println!("main thread exited.");

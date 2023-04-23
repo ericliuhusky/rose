@@ -10,85 +10,85 @@ use 系统调用_进程::{exec, fork, getpid, waitpid};
 pub struct SysFuncImpl;
 
 impl SysFunc for SysFuncImpl {
-    fn read(fd: usize, buf: *const u8, len: usize) -> isize {
+    fn read(fd: usize, buf: *const u8, len: usize) -> usize {
         read(fd, buf, len)
     }
-    fn write(fd: usize, buf: *const u8, len: usize) -> isize {
+    fn write(fd: usize, buf: *const u8, len: usize) -> usize {
         write(fd, buf, len)
     }
-    fn exit() -> isize {
+    fn exit() -> usize {
         exit()
     }
-    fn yield_() -> isize {
+    fn yield_() -> usize {
         yield_()
     }
-    fn get_time() -> isize {
+    fn get_time() -> usize {
         get_time()
     }
-    fn getpid() -> isize {
+    fn getpid() -> usize {
         getpid()
     }
-    fn fork() -> isize {
+    fn fork() -> usize {
         fork()
     }
-    fn exec(path: *const u8, len: usize) -> isize {
+    fn exec(path: *const u8, len: usize) -> usize {
         exec(path, len)
     }
-    fn waitpid(pid: usize) -> isize {
+    fn waitpid(pid: usize) -> usize {
         waitpid(pid)
     }
-    fn putchar(c: usize) -> isize {
+    fn putchar(c: usize) -> usize {
         putchar(c)
     }
-    fn getchar() -> isize {
+    fn getchar() -> usize {
         getchar()
     }
-    fn open(path: *const u8, len: usize, create: u32) -> isize {
+    fn open(path: *const u8, len: usize, create: u32) -> usize {
         open(path, len, create)
     }
-    fn close(fd: usize) -> isize {
+    fn close(fd: usize) -> usize {
         close(fd)
     }
-    fn pipe(pipe_fd: *mut usize) -> isize {
+    fn pipe(pipe_fd: *mut usize) -> usize {
         pipe(pipe_fd)
     }
-    fn thread_create(entry: usize, arg: usize) -> isize {
+    fn thread_create(entry: usize, arg: usize) -> usize {
         thread_create(entry, arg)
     }
-    fn waittid(tid: usize) -> isize {
+    fn waittid(tid: usize) -> usize {
         waittid(tid)
     }
-    fn mutex_create() -> isize {
+    fn mutex_create() -> usize {
         mutex_create()
     }
-    fn mutex_lock(mutex_id: usize) -> isize {
+    fn mutex_lock(mutex_id: usize) -> usize {
         mutex_lock(mutex_id)
     }
-    fn mutex_unlock(mutex_id: usize) -> isize {
+    fn mutex_unlock(mutex_id: usize) -> usize {
         mutex_unlock(mutex_id)
     }
-    fn semaphore_create(res_count: usize) -> isize {
+    fn semaphore_create(res_count: usize) -> usize {
         semaphore_create(res_count)
     }
-    fn semaphore_down(sem_id: usize) -> isize {
+    fn semaphore_down(sem_id: usize) -> usize {
         semaphore_down(sem_id)
     }
-    fn semaphore_up(sem_id: usize) -> isize {
+    fn semaphore_up(sem_id: usize) -> usize {
         semaphore_up(sem_id)
     }
-    fn connect(fd: usize, ip: u32, port: u16) -> isize {
+    fn connect(fd: usize, ip: u32, port: u16) -> usize {
         connect(fd, ip, port)
     }
-    fn listen(fd: usize) -> isize {
+    fn listen(fd: usize) -> usize {
         listen(fd)
     }
-    fn accept(fd: usize) -> isize {
+    fn accept(fd: usize) -> usize {
         accept(fd)
     }
-    fn socket(tcp: bool) -> isize {
+    fn socket(tcp: bool) -> usize {
         socket(tcp)
     }
-    fn bind(fd: usize, port: u16) -> isize {
+    fn bind(fd: usize, port: u16) -> usize {
         bind(fd, port)
     }
 }
@@ -96,7 +96,7 @@ impl SysFunc for SysFuncImpl {
 mod 系统调用_输出 {
     use crate::task::current_process;
 
-    pub fn write(fd: usize, buf: *const u8, len: usize) -> isize {
+    pub fn write(fd: usize, buf: *const u8, len: usize) -> usize {
         let process = current_process();
         let fd_table = &process.fd_table;
         let mut file = fd_table.get(fd).unwrap().clone();
@@ -104,19 +104,19 @@ mod 系统调用_输出 {
             .memory_set
             .page_table
             .translate_buffer(buf as usize, len);
-        file.write(buf) as isize
+        file.write(buf)
     }
 
-    pub fn putchar(c: usize) -> isize {
+    pub fn putchar(c: usize) -> usize {
         sbi_call::putchar(c);
-        c as isize
+        c
     }
 }
 
 mod 系统调用_终止 {
     use crate::task::exit_and_run_next;
 
-    pub fn exit() -> isize {
+    pub fn exit() -> usize {
         println!("[kernel] Application exited");
         exit_and_run_next();
         unreachable!()
@@ -126,7 +126,7 @@ mod 系统调用_终止 {
 mod 系统调用_读取 {
     use crate::task::current_process;
 
-    pub fn read(fd: usize, buf: *const u8, len: usize) -> isize {
+    pub fn read(fd: usize, buf: *const u8, len: usize) -> usize {
         let process = current_process();
         let fd_table = &process.fd_table;
         let mut file = fd_table.get(fd).unwrap().clone();
@@ -134,18 +134,18 @@ mod 系统调用_读取 {
             .memory_set
             .page_table
             .translate_buffer(buf as usize, len);
-        file.read(buf) as isize
+        file.read(buf)
     }
 
-    pub fn getchar() -> isize {
-        sbi_call::getchar() as isize
+    pub fn getchar() -> usize {
+        sbi_call::getchar()
     }
 }
 
 mod 系统调用_让出时间片 {
     use crate::task::suspend_and_run_next;
 
-    pub fn yield_() -> isize {
+    pub fn yield_() -> usize {
         suspend_and_run_next();
         0
     }
@@ -154,30 +154,30 @@ mod 系统调用_让出时间片 {
 mod 系统调用_时钟计数器 {
     use crate::timer::读取时钟计数器的毫秒值;
 
-    pub fn get_time() -> isize {
-        读取时钟计数器的毫秒值() as isize
+    pub fn get_time() -> usize {
+        读取时钟计数器的毫秒值()
     }
 }
 
 mod 系统调用_进程 {
     use crate::task::{current_process, PROCESSES};
 
-    pub fn getpid() -> isize {
-        current_process().pid.unwrap() as isize
+    pub fn getpid() -> usize {
+        current_process().pid.unwrap()
     }
 
-    pub fn fork() -> isize {
+    pub fn fork() -> usize {
         let mut process = current_process();
         let new_process = process.fork();
         let mut task = new_process.main_task();
         task.cx.x[10] = 0;
         let new_pid = new_process.pid.unwrap();
-        new_pid as isize
+        new_pid
     }
 
     use crate::fs::open_file;
 
-    pub fn exec(path: *const u8, len: usize) -> isize {
+    pub fn exec(path: *const u8, len: usize) -> usize {
         let mut process = current_process();
         let 应用名称 = process
             .memory_set
@@ -193,7 +193,7 @@ mod 系统调用_进程 {
         }
     }
 
-    pub fn waitpid(pid: usize) -> isize {
+    pub fn waitpid(pid: usize) -> usize {
         let waited_process = unsafe { &PROCESSES }.get(pid).unwrap();
         if waited_process.is_exited {
             unsafe { &mut PROCESSES }.remove(pid);
@@ -212,7 +212,7 @@ use alloc_ext::rc::MutRc;
 use crate::task::{current_task, current_process, add_task};
 use crate::task::task::Task;
 
-pub fn open(path: *const u8, len: usize, create: u32) -> isize {
+pub fn open(path: *const u8, len: usize, create: u32) -> usize {
     let mut process = current_process();
     let path = process
         .memory_set
@@ -222,13 +222,13 @@ pub fn open(path: *const u8, len: usize, create: u32) -> isize {
     let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {
         let fd = process.fd_table.insert(inode);
-        fd as isize
+        fd
     } else {
         0
     }
 }
 
-pub fn close(fd: usize) -> isize {
+pub fn close(fd: usize) -> usize {
     let mut process = current_process();
     let fd_table = &process.fd_table;
     process.fd_table.remove(fd);
@@ -237,7 +237,7 @@ pub fn close(fd: usize) -> isize {
 
 use crate::fs::Pipe;
 
-pub fn pipe(pipe_fd: *mut usize) -> isize {
+pub fn pipe(pipe_fd: *mut usize) -> usize {
     let mut process = current_process();
 
     let (pipe_read, pipe_write) = Pipe::new_pair();
@@ -249,7 +249,7 @@ pub fn pipe(pipe_fd: *mut usize) -> isize {
     0
 }
 
-pub fn thread_create(entry: usize, arg: usize) -> isize {
+pub fn thread_create(entry: usize, arg: usize) -> usize {
     let task = current_task();
     let mut process = task.process.upgrade().unwrap();
     let mut new_task = MutRc::new(Task::new(
@@ -264,10 +264,10 @@ pub fn thread_create(entry: usize, arg: usize) -> isize {
         ustack_top,
     );
     new_task.cx.x[10] = arg;
-    new_task_tid as isize
+    new_task_tid
 }
 
-pub fn waittid(tid: usize) -> isize {
+pub fn waittid(tid: usize) -> usize {
     let task = current_task();
     let process = task.process.upgrade().unwrap();
 
@@ -279,42 +279,42 @@ pub fn waittid(tid: usize) -> isize {
     }
 }
 
-fn mutex_create() -> isize {
+fn mutex_create() -> usize {
     let mut process = current_process();
     let mutex = MutRc::new(Mutex::new());
     let id = process.mutexs.insert(mutex);
-    id as isize
+    id
 }
 
-fn mutex_lock(mutex_id: usize) -> isize {
+fn mutex_lock(mutex_id: usize) -> usize {
     let process = current_process();
     let mut mutex = process.mutexs.get(mutex_id).unwrap().clone();
     mutex.lock();
     0
 }
 
-fn mutex_unlock(mutex_id: usize) -> isize {
+fn mutex_unlock(mutex_id: usize) -> usize {
     let process = current_process();
     let mut mutex = process.mutexs.get(mutex_id).unwrap().clone();
     mutex.unlock();
     0
 }
 
-fn semaphore_create(res_count: usize) -> isize {
+fn semaphore_create(res_count: usize) -> usize {
     let mut process = current_process();
     let semaphore = MutRc::new(Semaphore::new(res_count));
     let id = process.semaphores.insert(semaphore);
-    id as isize
+    id
 }
 
-fn semaphore_down(sem_id: usize) -> isize {
+fn semaphore_down(sem_id: usize) -> usize {
     let process = current_process();
     let mut semaphore = process.semaphores.get(sem_id).unwrap().clone();
     semaphore.down();
     0
 }
 
-fn semaphore_up(sem_id: usize) -> isize {
+fn semaphore_up(sem_id: usize) -> usize {
     let process = current_process();
     let mut semaphore = process.semaphores.get(sem_id).unwrap().clone();
     semaphore.up();
@@ -328,12 +328,12 @@ use crate::net::udp::UDP;
 use crate::net::{IPv4, net_arp, busy_wait_accept};
 
 // just support udp
-fn connect(fd: usize, ip: u32, port: u16) -> isize {
+fn connect(fd: usize, ip: u32, port: u16) -> usize {
     unimplemented!();
 }
 
 // listen a port
-fn listen(fd: usize) -> isize {
+fn listen(fd: usize) -> usize {
     let mut process = current_process();
     let mut socket = process.fd_table.get(fd).unwrap().clone();
     let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
@@ -342,7 +342,7 @@ fn listen(fd: usize) -> isize {
 }
 
 // accept a tcp connection
-fn accept(fd: usize) -> isize {
+fn accept(fd: usize) -> usize {
     let mut process = current_process();
     let mut socket = process.fd_table.get(fd).unwrap().clone();
     let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
@@ -352,10 +352,10 @@ fn accept(fd: usize) -> isize {
 
     let fd = process.fd_table.insert(MutRc::new(tcp_socket));
 
-    fd as isize
+    fd
 }
 
-fn socket(tcp: bool) -> isize {
+fn socket(tcp: bool) -> usize {
     let mut process = current_process();
     let socket: MutRc<dyn File> = if tcp {
         MutRc::new(TCP::new_server())
@@ -363,10 +363,10 @@ fn socket(tcp: bool) -> isize {
         MutRc::new(UDP::new())
     };
     let fd = process.fd_table.insert(socket);
-    fd as isize
+    fd
 }
 
-fn bind(fd: usize, port: u16) -> isize {
+fn bind(fd: usize, port: u16) -> usize {
     let process = current_process();
     let mut socket = process.fd_table.get(fd).unwrap().clone();
     match socket.file_type() {

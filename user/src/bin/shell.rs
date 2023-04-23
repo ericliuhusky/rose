@@ -39,7 +39,7 @@ pub fn main() {
                         }
                         unreachable!();
                     } else {
-                        waitpid(pid as usize);
+                        waitpid(pid);
                         println!("[shell]: Process {} exited", pid);
                     }
                     line.clear();

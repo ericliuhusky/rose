@@ -20,7 +20,7 @@ pub fn exception_handler() {
             let result =
                 sys_func::<SysFuncImpl>(上下文.x[17], [上下文.x[10], 上下文.x[11], 上下文.x[12]]);
             match result {
-                Ok(ret) => 上下文.x[10] = ret as usize,
+                Ok(ret) => 上下文.x[10] = ret,
                 Err(id) => {
                     println!("[kernel] Unsupported syscall_id: {}", id);
                 }

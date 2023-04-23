@@ -10,12 +10,12 @@ use lib::{accept, bind, close, listen, read, socket, write, connect};
 #[no_mangle]
 fn main() {
     let client_fd = socket(true);
-    connect(client_fd as usize, 10 << 24 | 0 << 16 | 2 << 8 | 2, 80);
+    connect(client_fd, 10 << 24 | 0 << 16 | 2 << 8 | 2, 80);
 
     let request = "Hello from client!";
-    write(client_fd as usize, request.as_bytes());
+    write(client_fd, request.as_bytes());
     let mut buffer = [0u8; 1024];
-    read(client_fd as usize, &mut buffer);
+    read(client_fd, &mut buffer);
     println!("{}", from_utf8(&buffer).unwrap());
-    close(client_fd as usize);
+    close(client_fd);
 }

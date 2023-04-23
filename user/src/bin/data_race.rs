@@ -32,7 +32,7 @@ fn f() {
 pub fn main() -> i32 {
     let mut tids = Vec::new();
     for _ in 0..3 {
-        tids.push(thread_create(f as usize, 0) as usize);
+        tids.push(thread_create(f as usize, 0));
     }
     for tid in tids.into_iter() {
         waittid(tid);

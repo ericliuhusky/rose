@@ -16,13 +16,13 @@ pub fn main() -> i32 {
 
     let udp_fd = socket(false);
 
-    bind(udp_fd as usize, 2000);
+    bind(udp_fd, 2000);
 
     let mut buf = vec![0u8; 1024];
 
-    let len = read(udp_fd as usize, &mut buf);
+    let len = read(udp_fd, &mut buf);
 
-    let recv_str = String::from_utf8_lossy(&buf[..len as usize]);
+    let recv_str = String::from_utf8_lossy(&buf[..len]);
 
     println!("receive reply <{}>", recv_str);
 
@@ -30,7 +30,7 @@ pub fn main() -> i32 {
 
     println!("send <{}>", buf);
 
-    write(udp_fd as usize, buf.as_bytes());
+    write(udp_fd, buf.as_bytes());
 
     println!("udp send done, waiting for reply.");
 

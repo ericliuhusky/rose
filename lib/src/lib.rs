@@ -17,7 +17,7 @@ fn _start() {
     exit();
 }
 
-pub fn open(path: &str, create: bool) -> isize {
+pub fn open(path: &str, create: bool) -> usize {
     sys_call::open(path, create as usize)
 }
 
@@ -33,7 +33,7 @@ pub fn waitpid(pid: usize) {
 
 pub fn sleep(period_ms: usize) {
     let start = get_time();
-    while get_time() < start + period_ms as isize {
+    while get_time() < start + period_ms {
         yield_();
     }
 }
