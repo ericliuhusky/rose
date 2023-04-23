@@ -26,7 +26,7 @@ pub fn getchar() -> u8 {
 }
 
 pub fn waitpid(pid: usize) {
-    while sys_call::waitpid(pid) == -2 {
+    while sys_call::waitpid(pid) == 0 {
         yield_();
     }
 }
@@ -39,7 +39,7 @@ pub fn sleep(period_ms: usize) {
 }
 
 pub fn waittid(tid: usize) {
-    while sys_call::waittid(tid) == -2 {
+    while sys_call::waittid(tid) == 0 {
         yield_();
     }
 }

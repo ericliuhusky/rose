@@ -33,7 +33,7 @@ pub fn main() {
                     let pid = fork();
                     if pid == 0 {
                         // child process
-                        if exec(line.as_str()) == -1 {
+                        if exec(line.as_str()) == 0 {
                             println!("[shell] Error when executing!");
                             return;
                         }

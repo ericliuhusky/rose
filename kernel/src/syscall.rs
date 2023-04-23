@@ -99,16 +99,12 @@ mod 系统调用_输出 {
     pub fn write(fd: usize, buf: *const u8, len: usize) -> isize {
         let process = current_process();
         let fd_table = &process.fd_table;
-        if let Some(file) = fd_table.get(fd) {
-            let mut file = file.clone();
-            let buf = process
-                .memory_set
-                .page_table
-                .translate_buffer(buf as usize, len);
-            file.write(buf) as isize
-        } else {
-            -1
-        }
+        let mut file = fd_table.get(fd).unwrap().clone();
+        let buf = process
+            .memory_set
+            .page_table
+            .translate_buffer(buf as usize, len);
+        file.write(buf) as isize
     }
 
     pub fn putchar(c: usize) -> isize {
@@ -123,7 +119,7 @@ mod 系统调用_终止 {
     pub fn exit() -> isize {
         println!("[kernel] Application exited");
         exit_and_run_next();
-        -1
+        unreachable!()
     }
 }
 
@@ -133,16 +129,12 @@ mod 系统调用_读取 {
     pub fn read(fd: usize, buf: *const u8, len: usize) -> isize {
         let process = current_process();
         let fd_table = &process.fd_table;
-        if let Some(file) = fd_table.get(fd) {
-            let mut file = file.clone();
-            let buf = process
-                .memory_set
-                .page_table
-                .translate_buffer(buf as usize, len);
-            file.read(buf) as isize
-        } else {
-            -1
-        }
+        let mut file = fd_table.get(fd).unwrap().clone();
+        let buf = process
+            .memory_set
+            .page_table
+            .translate_buffer(buf as usize, len);
+        file.read(buf) as isize
     }
 
     pub fn getchar() -> isize {
@@ -195,22 +187,19 @@ mod 系统调用_进程 {
         if let Some(elf_inode) = open_file(&应用名称, false) {
             let elf_data = elf_inode.read_all();
             process.exec(&elf_data);
-            0
+            1
         } else {
-            -1
+            0
         }
     }
 
     pub fn waitpid(pid: usize) -> isize {
-        if let Some(waited_process) = unsafe { &PROCESSES }.get(pid) {
-            if waited_process.is_exited {
-                unsafe { &mut PROCESSES }.remove(pid);
-                0
-            } else {
-                -2
-            }
+        let waited_process = unsafe { &PROCESSES }.get(pid).unwrap();
+        if waited_process.is_exited {
+            unsafe { &mut PROCESSES }.remove(pid);
+            1
         } else {
-            -1
+            0
         }
     }
 }
@@ -235,7 +224,7 @@ pub fn open(path: *const u8, len: usize, create: u32) -> isize {
         let fd = process.fd_table.insert(inode);
         fd as isize
     } else {
-        -1
+        0
     }
 }
 
@@ -282,15 +271,11 @@ pub fn waittid(tid: usize) -> isize {
     let task = current_task();
     let process = task.process.upgrade().unwrap();
 
-    let waited_task = process.tasks.get(tid);
-    if let Some(waited_task) = waited_task {
-        if waited_task.is_exited {
-            0
-        } else {
-            -2
-        }
+    let waited_task = process.tasks.get(tid).unwrap();
+    if waited_task.is_exited {
+        1
     } else {
-        -1
+        0
     }
 }
 

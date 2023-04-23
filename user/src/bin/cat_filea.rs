@@ -10,7 +10,7 @@ use lib::{close, open, read};
 #[no_mangle]
 pub fn main() -> i32 {
     let fd = open("filea", false);
-    if fd == -1 {
+    if fd == 0 {
         panic!("Error occured when opening file");
     }
     let fd = fd as usize;
