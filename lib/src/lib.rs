@@ -3,10 +3,12 @@
 
 extern crate alloc;
 
+mod syscall;
+
 use alloc::boxed::Box;
 use core_ext::{println, print, CoreExt, CORE_EXT};
-use sys_call::putchar;
-pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create, mutex_create, mutex_lock, mutex_unlock, semaphore_create, semaphore_down, semaphore_up, connect, listen, accept, socket, bind};
+use syscall::putchar;
+pub use syscall::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create, mutex_create, mutex_lock, mutex_unlock, semaphore_create, semaphore_down, semaphore_up, connect, listen, accept, socket, bind};
 use alloc_ext::heap_alloc;
 
 #[no_mangle]
@@ -37,15 +39,15 @@ impl CoreExt for CoreExtImpl {
 }
 
 pub fn open(path: &str, create: bool) -> usize {
-    sys_call::open(path, create as usize)
+    syscall::open(path, create as usize)
 }
 
 pub fn getchar() -> u8 {
-    sys_call::getchar() as u8
+    syscall::getchar() as u8
 }
 
 pub fn waitpid(pid: usize) {
-    while sys_call::waitpid(pid) == 0 {
+    while syscall::waitpid(pid) == 0 {
         yield_();
     }
 }
@@ -58,7 +60,7 @@ pub fn sleep(period_ms: usize) {
 }
 
 pub fn waittid(tid: usize) {
-    while sys_call::waittid(tid) == 0 {
+    while syscall::waittid(tid) == 0 {
         yield_();
     }
 }

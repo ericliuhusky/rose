@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sys_call = { path = "../crates/sys_call" }
+sys_call_id = { path = "../crates/sys_call_id" }
 core_ext = { path = "../crates/core_ext" }
 alloc_ext = { path = "../crates/alloc_ext" }

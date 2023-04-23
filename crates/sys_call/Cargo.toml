@@ -1,7 +1,0 @@
-[package]
-name = "sys_call"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-sys_call_id = { version = "0.1.0", path = "../sys_call_id" }
