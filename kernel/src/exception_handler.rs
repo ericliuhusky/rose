@@ -1,11 +1,10 @@
-use crate::syscall::SysFuncImpl;
+use crate::syscall::syscall;
 use crate::task::{current_task, suspend_and_run_next, exit_and_run_next, current_process};
 use crate::timer::为下一次时钟中断定时;
 use exception::restore::restore_context;
 use riscv_register::{
     scause::{self, Exception, Interrupt},
 };
-use sys_func::sys_func;
 
 #[no_mangle]
 /// 处理中断、异常或系统调用
@@ -18,7 +17,7 @@ pub fn exception_handler() {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
             上下文.sepc += 4;
             let result =
-                sys_func::<SysFuncImpl>(上下文.x[17], [上下文.x[10], 上下文.x[11], 上下文.x[12]]);
+                syscall(上下文.x[17], [上下文.x[10], 上下文.x[11], 上下文.x[12]]);
             match result {
                 Ok(ret) => 上下文.x[10] = ret,
                 Err(id) => {

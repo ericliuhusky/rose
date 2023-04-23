@@ -1,5 +1,4 @@
 use exception::context::Context;
-use sys_func::SysFunc;
 use 系统调用_时钟计数器::get_time;
 use 系统调用_终止::exit;
 use 系统调用_让出时间片::yield_;
@@ -7,89 +6,43 @@ use 系统调用_读取::{getchar, read};
 use 系统调用_输出::{putchar, write};
 use 系统调用_进程::{exec, fork, getpid, waitpid};
 
-pub struct SysFuncImpl;
 
-impl SysFunc for SysFuncImpl {
-    fn read(fd: usize, buf: usize, len: usize) -> usize {
-        read(fd, buf, len)
-    }
-    fn write(fd: usize, buf: usize, len: usize) -> usize {
-        write(fd, buf, len)
-    }
-    fn exit() -> usize {
-        exit()
-    }
-    fn yield_() -> usize {
-        yield_()
-    }
-    fn get_time() -> usize {
-        get_time()
-    }
-    fn getpid() -> usize {
-        getpid()
-    }
-    fn fork() -> usize {
-        fork()
-    }
-    fn exec(path: usize, len: usize) -> usize {
-        exec(path, len)
-    }
-    fn waitpid(pid: usize) -> usize {
-        waitpid(pid)
-    }
-    fn putchar(c: usize) -> usize {
-        putchar(c)
-    }
-    fn getchar() -> usize {
-        getchar()
-    }
-    fn open(path: usize, len: usize, create: bool) -> usize {
-        open(path, len, create)
-    }
-    fn close(fd: usize) -> usize {
-        close(fd)
-    }
-    fn pipe(pipe_fd: usize) -> usize {
-        pipe(pipe_fd)
-    }
-    fn thread_create(entry: usize, arg: usize) -> usize {
-        thread_create(entry, arg)
-    }
-    fn waittid(tid: usize) -> usize {
-        waittid(tid)
-    }
-    fn mutex_create() -> usize {
-        mutex_create()
-    }
-    fn mutex_lock(mutex_id: usize) -> usize {
-        mutex_lock(mutex_id)
-    }
-    fn mutex_unlock(mutex_id: usize) -> usize {
-        mutex_unlock(mutex_id)
-    }
-    fn semaphore_create(res_count: usize) -> usize {
-        semaphore_create(res_count)
-    }
-    fn semaphore_down(sem_id: usize) -> usize {
-        semaphore_down(sem_id)
-    }
-    fn semaphore_up(sem_id: usize) -> usize {
-        semaphore_up(sem_id)
-    }
-    fn connect(fd: usize, ip: u32, port: u16) -> usize {
-        connect(fd, ip, port)
-    }
-    fn listen(fd: usize) -> usize {
-        listen(fd)
-    }
-    fn accept(fd: usize) -> usize {
-        accept(fd)
-    }
-    fn socket(tcp: bool) -> usize {
-        socket(tcp)
-    }
-    fn bind(fd: usize, port: u16) -> usize {
-        bind(fd, port)
+use sys_call_id::*;
+
+pub fn syscall(id: usize, args: [usize; 3]) -> Result<usize, usize> {
+    match id {
+        SYS_READ => Ok(read(args[0], args[1], args[2])),
+        SYS_WRITE => Ok(write(args[0], args[1], args[2])),
+        SYS_EXIT => Ok(exit()),
+        SYS_YIELD => Ok(yield_()),
+        SYS_GET_TIME => Ok(get_time()),
+        SYS_GETPID => Ok(getpid()),
+        SYS_FORK => Ok(fork()),
+        SYS_EXEC => Ok(exec(args[0], args[1])),
+        SYS_WAITPID => Ok(waitpid(args[0])),
+        SYS_PUTCHAR => Ok(putchar(args[0])),
+        SYS_GETCHAR => Ok(getchar()),
+        SYS_OPEN => Ok(open(
+            args[0],
+            args[1],
+            args[2] == 1,
+        )),
+        SYS_CLOSE => Ok(close(args[0])),
+        SYS_PIPE => Ok(pipe(args[0])),
+        SYS_THREAD_CREATE => Ok(thread_create(args[0], args[1])),
+        SYS_WAITTID => Ok(waittid(args[0])),
+        SYS_MUTEX_CREATE => Ok(mutex_create()),
+        SYS_MUTEX_LOCK => Ok(mutex_lock(args[0])),
+        SYS_MUTEX_UNLOCK => Ok(mutex_unlock(args[0])),
+        SYS_SEMAPHORE_CREATE => Ok(semaphore_create(args[0])),
+        SYS_SEMAPHORE_DOWN => Ok(semaphore_down(args[0])),
+        SYS_SEMAPHORE_UP => Ok(semaphore_up(args[0])),
+        SYS_CONNECT => Ok(connect(args[0], args[1] as u32, args[2] as u16)),
+        SYS_LISTEN => Ok(listen(args[0])),
+        SYS_ACCEPT => Ok(accept(args[0])),
+        SYS_SOCKET => Ok(socket(args[0] == 1)),
+        SYS_BIND => Ok(bind(args[0], args[1] as u16)),
+        _ => Err(id),
     }
 }
 
