@@ -1,13 +1,20 @@
 #![no_std]
 #![feature(alloc_error_handler)]
 
-use core_ext::{println, print};
+extern crate alloc;
+
+use alloc::boxed::Box;
+use core_ext::{println, print, CoreExt, CORE_EXT};
+use sys_call::putchar;
 pub use sys_call::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create, mutex_create, mutex_lock, mutex_unlock, semaphore_create, semaphore_down, semaphore_up, connect, listen, accept, socket, bind};
 use alloc_ext::heap_alloc;
 
 #[no_mangle]
 #[link_section = ".text.entry"]
 fn _start() {
+    unsafe {
+        CORE_EXT = Some(Box::new(CoreExtImpl));
+    }
     extern "C" {
         fn main();
     }
@@ -15,6 +22,18 @@ fn _start() {
     heap_alloc::init(0xFFFFFFFFFFF7F000, 0x80000);
     unsafe { main(); }
     exit();
+}
+
+struct CoreExtImpl;
+
+impl CoreExt for CoreExtImpl {
+    fn putchar(&self, c: char) {
+        putchar(c as usize);
+    }
+
+    fn exit(&self) -> ! {
+        exit();
+    }
 }
 
 pub fn open(path: &str, create: bool) -> usize {

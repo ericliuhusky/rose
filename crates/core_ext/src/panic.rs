@@ -1,4 +1,4 @@
-use crate::println;
+use crate::{println, CORE_EXT};
 use core::panic::PanicInfo;
 
 #[panic_handler]
@@ -13,8 +13,7 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         println!("Panicked: {}", info.message().unwrap());
     }
-    #[cfg(feature = "user")]
-    sys_call::exit();
-    #[cfg(not(feature = "user"))]
-    sbi_call::shutdown()
+    unsafe {
+        CORE_EXT.as_ref().unwrap().exit();
+    }
 }

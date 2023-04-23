@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 sys_call = { path = "../crates/sys_call" }
-core_ext = { path = "../crates/core_ext", features = ["user"] }
+core_ext = { path = "../crates/core_ext" }
 alloc_ext = { path = "../crates/alloc_ext" }
