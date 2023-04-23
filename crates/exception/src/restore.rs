@@ -11,7 +11,6 @@ pub fn restore_context(cx_ptr: *const Context, user_satp: usize) {
         }
         TEMP_CONTEXT.sepc = (*cx_ptr).sepc;
         TRAP_CONTEXT_ADDR = cx_ptr as usize;
-        #[cfg(feature = "memory_set")]
         super::memory_set::switch_user(user_satp);
         riscv_register::sepc::write(TEMP_CONTEXT.sepc);
         restore(&TEMP_CONTEXT);

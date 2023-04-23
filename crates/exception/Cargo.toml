@@ -5,6 +5,3 @@ edition = "2021"
 
 [dependencies]
 riscv_register = { path = "../riscv_register" }
-
-[features]
-memory_set = []

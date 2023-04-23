@@ -9,7 +9,7 @@ elf_reader = { path = "../crates/elf_reader" }
 sbi_call = { path = "../crates/sbi_call" }
 riscv_register = { path = "../crates/riscv_register" }
 entry = { path = "../crates/entry" }
-exception = { path = "../crates/exception", features = ["memory_set"] }
+exception = { path = "../crates/exception" }
 lazy_static = { version = "0.1.0", path = "../crates/lazy_static" }
 frame_allocator = { version = "0.1.0", path = "../crates/frame_allocator" }
 virtio-drivers = { path = "../crates/virtio-drivers", version = "0.1.0" }
