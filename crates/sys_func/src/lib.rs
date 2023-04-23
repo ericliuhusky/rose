@@ -4,24 +4,24 @@ use sys_call_id::*;
 
 pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<usize, usize> {
     match id {
-        SYS_READ => Ok(SysFuncImpl::read(args[0], args[1] as *const u8, args[2])),
-        SYS_WRITE => Ok(SysFuncImpl::write(args[0], args[1] as *const u8, args[2])),
+        SYS_READ => Ok(SysFuncImpl::read(args[0], args[1], args[2])),
+        SYS_WRITE => Ok(SysFuncImpl::write(args[0], args[1], args[2])),
         SYS_EXIT => Ok(SysFuncImpl::exit()),
         SYS_YIELD => Ok(SysFuncImpl::yield_()),
         SYS_GET_TIME => Ok(SysFuncImpl::get_time()),
         SYS_GETPID => Ok(SysFuncImpl::getpid()),
         SYS_FORK => Ok(SysFuncImpl::fork()),
-        SYS_EXEC => Ok(SysFuncImpl::exec(args[0] as *const u8, args[1])),
+        SYS_EXEC => Ok(SysFuncImpl::exec(args[0], args[1])),
         SYS_WAITPID => Ok(SysFuncImpl::waitpid(args[0])),
         SYS_PUTCHAR => Ok(SysFuncImpl::putchar(args[0])),
         SYS_GETCHAR => Ok(SysFuncImpl::getchar()),
         SYS_OPEN => Ok(SysFuncImpl::open(
-            args[0] as *const u8,
+            args[0],
             args[1],
-            args[2] as u32,
+            args[2] == 1,
         )),
         SYS_CLOSE => Ok(SysFuncImpl::close(args[0])),
-        SYS_PIPE => Ok(SysFuncImpl::pipe(args[0] as *mut usize)),
+        SYS_PIPE => Ok(SysFuncImpl::pipe(args[0])),
         SYS_THREAD_CREATE => Ok(SysFuncImpl::thread_create(args[0], args[1])),
         SYS_WAITTID => Ok(SysFuncImpl::waittid(args[0])),
         SYS_MUTEX_CREATE => Ok(SysFuncImpl::mutex_create()),
@@ -40,20 +40,20 @@ pub fn sys_func<SysFuncImpl: SysFunc>(id: usize, args: [usize; 3]) -> Result<usi
 }
 
 pub trait SysFunc {
-    fn read(fd: usize, buf: *const u8, len: usize) -> usize;
-    fn write(fd: usize, buf: *const u8, len: usize) -> usize;
+    fn read(fd: usize, buf: usize, len: usize) -> usize;
+    fn write(fd: usize, buf: usize, len: usize) -> usize;
     fn exit() -> usize;
     fn yield_() -> usize;
     fn get_time() -> usize;
     fn getpid() -> usize;
     fn fork() -> usize;
-    fn exec(path: *const u8, len: usize) -> usize;
+    fn exec(path: usize, len: usize) -> usize;
     fn waitpid(pid: usize) -> usize;
     fn putchar(c: usize) -> usize;
     fn getchar() -> usize;
-    fn open(path: *const u8, len: usize, create: u32) -> usize;
+    fn open(path: usize, len: usize, create: bool) -> usize;
     fn close(fd: usize) -> usize;
-    fn pipe(pipe_fd: *mut usize) -> usize;
+    fn pipe(pipe_fd: usize) -> usize;
     fn thread_create(entry: usize, arg: usize) -> usize;
     fn waittid(tid: usize) -> usize;
     fn mutex_create() -> usize;

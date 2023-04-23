@@ -10,10 +10,10 @@ use 系统调用_进程::{exec, fork, getpid, waitpid};
 pub struct SysFuncImpl;
 
 impl SysFunc for SysFuncImpl {
-    fn read(fd: usize, buf: *const u8, len: usize) -> usize {
+    fn read(fd: usize, buf: usize, len: usize) -> usize {
         read(fd, buf, len)
     }
-    fn write(fd: usize, buf: *const u8, len: usize) -> usize {
+    fn write(fd: usize, buf: usize, len: usize) -> usize {
         write(fd, buf, len)
     }
     fn exit() -> usize {
@@ -31,7 +31,7 @@ impl SysFunc for SysFuncImpl {
     fn fork() -> usize {
         fork()
     }
-    fn exec(path: *const u8, len: usize) -> usize {
+    fn exec(path: usize, len: usize) -> usize {
         exec(path, len)
     }
     fn waitpid(pid: usize) -> usize {
@@ -43,13 +43,13 @@ impl SysFunc for SysFuncImpl {
     fn getchar() -> usize {
         getchar()
     }
-    fn open(path: *const u8, len: usize, create: u32) -> usize {
+    fn open(path: usize, len: usize, create: bool) -> usize {
         open(path, len, create)
     }
     fn close(fd: usize) -> usize {
         close(fd)
     }
-    fn pipe(pipe_fd: *mut usize) -> usize {
+    fn pipe(pipe_fd: usize) -> usize {
         pipe(pipe_fd)
     }
     fn thread_create(entry: usize, arg: usize) -> usize {
@@ -96,14 +96,14 @@ impl SysFunc for SysFuncImpl {
 mod 系统调用_输出 {
     use crate::task::current_process;
 
-    pub fn write(fd: usize, buf: *const u8, len: usize) -> usize {
+    pub fn write(fd: usize, buf: usize, len: usize) -> usize {
         let process = current_process();
         let fd_table = &process.fd_table;
         let mut file = fd_table.get(fd).unwrap().clone();
         let buf = process
             .memory_set
             .page_table
-            .translate_buffer(buf as usize, len);
+            .translate_buffer(buf, len);
         file.write(buf)
     }
 
@@ -126,14 +126,14 @@ mod 系统调用_终止 {
 mod 系统调用_读取 {
     use crate::task::current_process;
 
-    pub fn read(fd: usize, buf: *const u8, len: usize) -> usize {
+    pub fn read(fd: usize, buf: usize, len: usize) -> usize {
         let process = current_process();
         let fd_table = &process.fd_table;
         let mut file = fd_table.get(fd).unwrap().clone();
         let buf = process
             .memory_set
             .page_table
-            .translate_buffer(buf as usize, len);
+            .translate_buffer(buf, len);
         file.read(buf)
     }
 
@@ -177,12 +177,12 @@ mod 系统调用_进程 {
 
     use crate::fs::open_file;
 
-    pub fn exec(path: *const u8, len: usize) -> usize {
+    pub fn exec(path: usize, len: usize) -> usize {
         let mut process = current_process();
         let 应用名称 = process
             .memory_set
             .page_table
-            .translate_buffer(path as usize, len)
+            .translate_buffer(path, len)
             .to_string();
         if let Some(elf_inode) = open_file(&应用名称, false) {
             let elf_data = elf_inode.read_all();
@@ -212,14 +212,13 @@ use alloc_ext::rc::MutRc;
 use crate::task::{current_task, current_process, add_task};
 use crate::task::task::Task;
 
-pub fn open(path: *const u8, len: usize, create: u32) -> usize {
+pub fn open(path: usize, len: usize, create: bool) -> usize {
     let mut process = current_process();
     let path = process
         .memory_set
         .page_table
-        .translate_buffer(path as usize, len)
+        .translate_buffer(path, len)
         .to_string();
-    let create = create != 0;
     if let Some(inode) = open_file(path.as_str(), create) {
         let fd = process.fd_table.insert(inode);
         fd
@@ -237,13 +236,13 @@ pub fn close(fd: usize) -> usize {
 
 use crate::fs::Pipe;
 
-pub fn pipe(pipe_fd: *mut usize) -> usize {
+pub fn pipe(pipe_fd: usize) -> usize {
     let mut process = current_process();
 
     let (pipe_read, pipe_write) = Pipe::new_pair();
     let read_fd = process.fd_table.insert(pipe_read);
     let write_fd = process.fd_table.insert(pipe_write);
-    let pipe_fd = process.memory_set.page_table.translate_type::<[usize; 2]>(pipe_fd as usize);
+    let pipe_fd = process.memory_set.page_table.translate_type::<[usize; 2]>(pipe_fd);
     pipe_fd[0] = read_fd;
     pipe_fd[1] = write_fd;
     0
