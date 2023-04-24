@@ -232,30 +232,6 @@ impl Arp {
         };
         self.op = op.to_be();
     }
-
-    pub fn src_ip(&self) -> IPv4 {
-        IPv4::from_u32(self.spa.to_be())
-    }
-
-    pub fn src_mac(&self) -> MacAddress {
-        MacAddress::new(self.sha)
-    }
-
-    pub fn set_src_ip(&mut self, ip: IPv4) {
-        self.spa = ip.to_u32().to_be()
-    }
-
-    pub fn set_src_mac(&mut self, mac: MacAddress) {
-        self.sha = mac.to_bytes()
-    }
-
-    pub fn set_dst_ip(&mut self, ip: IPv4) {
-        self.tpa = ip.to_u32().to_be()
-    }
-
-    pub fn set_dst_mac(&mut self, mac: MacAddress) {
-        self.tha = mac.to_bytes()
-    }
 }
 
 #[repr(packed)]
@@ -359,10 +335,10 @@ impl Net {
 
     fn send_arp(eth: Eth, arp: Arp) {        
         let mut re_arp = arp;
-        re_arp.set_src_ip(LOCALHOST_IP);
-        re_arp.set_src_mac(LOCALHOST_MAC);
-        re_arp.set_dst_ip(arp.src_ip());
-        re_arp.set_dst_mac(arp.src_mac());
+        re_arp.spa = LOCALHOST_IP.to_u32().to_be();
+        re_arp.sha = LOCALHOST_MAC.to_bytes();
+        re_arp.tpa = arp.spa;
+        re_arp.tha = arp.sha;
         re_arp.set_type(ArpType::Reply);
 
         let data = unsafe { &*(&re_arp as *const Arp as *const [u8; 28]) };
