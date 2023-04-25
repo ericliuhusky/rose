@@ -11,7 +11,6 @@ use alloc::vec::Vec;
 use core_ext::UInt;
 
 use self::tcp::TCP;
-use crate::headers_to_data;
 
 pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
 pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
@@ -324,9 +323,11 @@ impl Net {
         re_eth.dhost = eth.shost;
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let data = headers_to_data!(
-            (re_eth, size_of::<Eth>()),
-            (re_arp, size_of::<Arp>())
+        let data = headers_to_data(
+            vec![
+                Header::ETH(re_eth),
+                Header::ARP(re_arp),
+            ]
         );
 
         NET_DEVICE.transmit(&data);
@@ -377,10 +378,12 @@ impl TransPort {
         re_eth.dhost = eth.shost;
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let header_data = headers_to_data!(
-            (re_eth, size_of::<Eth>()),
-            (re_ip, size_of::<Ip>()),
-            (re_udp, size_of::<UDPHeader>())
+        let header_data = headers_to_data(
+            vec![
+                Header::ETH(re_eth), 
+                Header::IP(re_ip), 
+                Header::UDP(re_udp),
+            ]
         );
 
         let mut total_data = header_data;
@@ -465,10 +468,12 @@ impl TransPort {
         re_eth.dhost = eth.shost;
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let header_data = headers_to_data!(
-            (re_eth, size_of::<Eth>()), 
-            (re_ip, size_of::<Ip>()),
-            (re_tcp, size_of::<TCPHeader>())
+        let header_data = headers_to_data(
+            vec![
+                Header::ETH(re_eth),
+                Header::IP(re_ip),
+                Header::TCP(re_tcp),
+            ]
         );
 
         let mut total_data = header_data;
@@ -508,14 +513,41 @@ pub fn check_sum(addr:*mut u8, len:u32, sum: u32) -> u16 {
 }
 
 
-#[macro_export]
-macro_rules! headers_to_data {
-    ($(($header:ident, $header_len:expr)),*) => {{
-        let mut data = Vec::new();
-        $(
-            let header_data: [u8; $header_len] = unsafe { core::mem::transmute($header) };
-            data.extend(header_data);
-        )*
-        data
-    }};
+enum Header {
+    ETH(Eth),
+    ARP(Arp),
+    IP(Ip),
+    UDP(UDPHeader),
+    TCP(TCPHeader)
+}
+
+use core::mem::transmute;
+
+fn headers_to_data(headers: Vec<Header>) -> Vec<u8> {
+    let mut data = Vec::new();
+    for header in headers {
+        match header {
+            Header::ETH(eth) => {
+                let header_data: [u8; size_of::<Eth>()] = unsafe { transmute(eth) };
+                data.extend(header_data);
+            }
+            Header::ARP(arp) => {
+                let header_data: [u8; size_of::<Arp>()] = unsafe { transmute(arp) };
+                data.extend(header_data);
+            }
+            Header::IP(ip) => {
+                let header_data: [u8; size_of::<Ip>()] = unsafe { transmute(ip) };
+                data.extend(header_data);
+            }
+            Header::UDP(udp) => {
+                let header_data: [u8; size_of::<UDPHeader>()] = unsafe { transmute(udp) };
+                data.extend(header_data);
+            }
+            Header::TCP(tcp) => {
+                let header_data: [u8; size_of::<TCPHeader>()] = unsafe { transmute(tcp) };
+                data.extend(header_data);
+            }
+        }
+    }
+    data
 }
