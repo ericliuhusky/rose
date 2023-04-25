@@ -52,7 +52,9 @@ impl File for UDP {
         }
 
         let len = data.len();
-        TransPort::send_udp(self.udp.take().unwrap(), data);
+        let mut dst = self.udp.as_mut().unwrap().data;
+        dst[..len].copy_from_slice(&data);
+        TransPort::send_udp(self.udp.take().unwrap(), len);
         len
     }
 

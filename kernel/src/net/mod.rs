@@ -234,12 +234,14 @@ impl Arp {
     }
 }
 
+#[derive(Clone)]
 #[repr(packed)]
 struct ArpPacket {
     eth: Eth,
     arp: Arp,
 }
 
+#[derive(Clone)]
 #[repr(packed)]
 struct UDPPacket {
     eth: Eth,
@@ -332,23 +334,17 @@ impl Net {
     }
 
     fn send_arp(arp: ArpPacket) {
-        let mut re_arp = arp.arp;
-        re_arp.spa = LOCALHOST_IP.to_u32().to_be();
-        re_arp.sha = LOCALHOST_MAC.to_bytes();
-        re_arp.tpa = arp.arp.spa;
-        re_arp.tha = arp.arp.sha;
-        re_arp.set_type(ArpType::Reply);
+        let mut re_arp = arp.clone();
+        re_arp.arp.spa = LOCALHOST_IP.to_u32().to_be();
+        re_arp.arp.sha = LOCALHOST_MAC.to_bytes();
+        re_arp.arp.tpa = arp.arp.spa;
+        re_arp.arp.tha = arp.arp.sha;
+        re_arp.arp.set_type(ArpType::Reply);
 
-        let mut re_eth = arp.eth;
-        re_eth.dhost = arp.eth.shost;
-        re_eth.shost = LOCALHOST_MAC.to_bytes();
+        re_arp.eth.dhost = arp.eth.shost;
+        re_arp.eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let data = headers_to_data(
-            vec![
-                Header::ETH(re_eth),
-                Header::ARP(re_arp),
-            ]
-        );
+        let data: [u8; size_of::<ArpPacket>()] = unsafe { transmute(re_arp) };
 
         NET_DEVICE.transmit(&data);
     }
@@ -373,38 +369,28 @@ impl TransPort {
         }
     }
 
-    fn send_udp(udp: UDPPacket, data: Vec<u8>) {
-        let len = data.len() + size_of::<UDPHeader>();
-        let mut re_udp = udp.udp;
-        re_udp.sport = udp.udp.dport;
-        re_udp.dport = udp.udp.sport;
-        re_udp.sum = 0;
-        re_udp.ulen = (len as u16).to_be();
+    fn send_udp(udp: UDPPacket, data_len: usize) {
+        let mut re_udp = udp.clone();
+        let len = data_len + size_of::<UDPHeader>();
+        re_udp.udp.sport = udp.udp.dport;
+        re_udp.udp.dport = udp.udp.sport;
+        re_udp.udp.sum = 0;
+        re_udp.udp.ulen = (len as u16).to_be();
 
-        let len = data.len() + size_of::<Ip>() + size_of::<UDPHeader>();
-        let mut re_ip = udp.ip;
-        re_ip.src = udp.ip.dst;
-        re_ip.dst = udp.ip.src;
-        re_ip.len = (len as u16).to_be();
-        re_ip.sum = 0;
-        re_ip.sum = check_sum(&mut re_ip as *mut Ip as *mut u8, size_of::<Ip>() as _, 0);
+        let len = data_len + size_of::<Ip>() + size_of::<UDPHeader>();
+        re_udp.ip.src = udp.ip.dst;
+        re_udp.ip.dst = udp.ip.src;
+        re_udp.ip.len = (len as u16).to_be();
+        re_udp.ip.sum = 0;
+        re_udp.ip.sum = check_sum(&mut re_udp.ip as *mut Ip as *mut u8, size_of::<Ip>() as _, 0);
 
-        let mut re_eth = udp.eth;
-        re_eth.dhost = udp.eth.shost;
-        re_eth.shost = LOCALHOST_MAC.to_bytes();
+        re_udp.eth.dhost = udp.eth.shost;
+        re_udp.eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let header_data = headers_to_data(
-            vec![
-                Header::ETH(re_eth), 
-                Header::IP(re_ip), 
-                Header::UDP(re_udp),
-            ]
-        );
+        let data: [u8; size_of::<UDPPacket>()] = unsafe { transmute(re_udp) };
+        let data = &data[..(size_of::<Eth>() + size_of::<Ip>() + size_of::<UDPHeader>() + data_len)];
 
-        let mut total_data = header_data;
-        total_data.extend(data);
-
-        NET_DEVICE.transmit(&total_data);
+        NET_DEVICE.transmit(data);
     }
 
     fn recv_tcp(port: u16) -> Option<(Eth, Ip, TCPHeader, Vec<u8>)> {
