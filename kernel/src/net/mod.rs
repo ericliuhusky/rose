@@ -325,8 +325,8 @@ impl Net {
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
         let data = headers_to_data!(
-            re_eth: [u8; size_of::<Eth>()],
-            re_arp: [u8; size_of::<Arp>()]
+            (re_eth, size_of::<Eth>()),
+            (re_arp, size_of::<Arp>())
         );
 
         NET_DEVICE.transmit(&data);
@@ -378,9 +378,9 @@ impl TransPort {
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
         let header_data = headers_to_data!(
-            re_eth: [u8; size_of::<Eth>()],
-            re_ip: [u8; size_of::<Ip>()],
-            re_udp: [u8; size_of::<UDPHeader>()]
+            (re_eth, size_of::<Eth>()),
+            (re_ip, size_of::<Ip>()),
+            (re_udp, size_of::<UDPHeader>())
         );
 
         let mut total_data = header_data;
@@ -466,9 +466,9 @@ impl TransPort {
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
         let header_data = headers_to_data!(
-            re_eth: [u8; size_of::<Eth>()], 
-            re_ip: [u8; size_of::<Ip>()],
-            re_tcp: [u8; size_of::<TCPHeader>()]
+            (re_eth, size_of::<Eth>()), 
+            (re_ip, size_of::<Ip>()),
+            (re_tcp, size_of::<TCPHeader>())
         );
 
         let mut total_data = header_data;
@@ -510,10 +510,10 @@ pub fn check_sum(addr:*mut u8, len:u32, sum: u32) -> u16 {
 
 #[macro_export]
 macro_rules! headers_to_data {
-    ($($header:tt : $header_type:ty),*) => {{
+    ($(($header:ident, $header_len:expr)),*) => {{
         let mut data = Vec::new();
         $(
-            let header_data: $header_type = unsafe { core::mem::transmute($header) };
+            let header_data: [u8; $header_len] = unsafe { core::mem::transmute($header) };
             data.extend(header_data);
         )*
         data
