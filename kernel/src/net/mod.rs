@@ -44,8 +44,8 @@ pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0
 // }
 
 pub fn net_arp() {
-    if let Some((eth, arp)) = Net::recv_arp() {
-        Net::send_arp(eth, arp);
+    if let Some(arp) = Net::recv_arp() {
+        Net::send_arp(arp);
     }
 }
 
@@ -235,6 +235,28 @@ impl Arp {
 }
 
 #[repr(packed)]
+struct ArpPacket {
+    eth: Eth,
+    arp: Arp,
+}
+
+#[repr(packed)]
+struct UDPPacket {
+    eth: Eth,
+    ip: Ip,
+    udp: UDPHeader,
+    data: [u8; 1024],
+}
+
+#[repr(packed)]
+struct TCPPacket {
+    eth: Eth,
+    ip: Ip,
+    tcp: TCPHeader,
+    data: [u8; 1024],
+}
+
+#[repr(packed)]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct UDPHeader {
     pub sport: u16, // souce port
@@ -294,33 +316,31 @@ impl TCPHeader {
 struct Net;
 
 impl Net {
-    fn recv_arp() -> Option<(Eth, Arp)> {
+    fn recv_arp() -> Option<ArpPacket> {
         let mut recv_buf = vec![0u8; 1024];
         let len = NET_DEVICE.receive(&mut recv_buf);
         let data = &recv_buf[..len];
 
-        let eth_ptr = data.as_ptr() as *const Eth;
-        let arp_ptr = unsafe { eth_ptr.offset(1) } as *const Arp;
-        let eth = unsafe { core::ptr::read(eth_ptr) };
+        let arp_ptr = data.as_ptr() as *const ArpPacket;
         let arp = unsafe { core::ptr::read(arp_ptr) };
 
-        if eth.type_() == EthType::ARP {
-            Some((eth, arp))
+        if arp.eth.type_() == EthType::ARP {
+            Some(arp)
         } else {
             None
         }
     }
 
-    fn send_arp(eth: Eth, arp: Arp) {        
-        let mut re_arp = arp;
+    fn send_arp(arp: ArpPacket) {
+        let mut re_arp = arp.arp;
         re_arp.spa = LOCALHOST_IP.to_u32().to_be();
         re_arp.sha = LOCALHOST_MAC.to_bytes();
-        re_arp.tpa = arp.spa;
-        re_arp.tha = arp.sha;
+        re_arp.tpa = arp.arp.spa;
+        re_arp.tha = arp.arp.sha;
         re_arp.set_type(ArpType::Reply);
 
-        let mut re_eth = eth;
-        re_eth.dhost = eth.shost;
+        let mut re_eth = arp.eth;
+        re_eth.dhost = arp.eth.shost;
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
         let data = headers_to_data(
@@ -342,17 +362,12 @@ impl TransPort {
         let len = NET_DEVICE.receive(&mut recv_buf);
         let data = &recv_buf[..len];
 
-        let eth_ptr = data.as_ptr() as *const Eth;
-        let ip_ptr = unsafe { eth_ptr.offset(1) } as *const Ip;
-        let udp_ptr = unsafe { ip_ptr.offset(1) } as *const UDPHeader;
-        let data_ptr = unsafe { udp_ptr.offset(1) } as *const u8;
-        let eth = unsafe { core::ptr::read(eth_ptr) };
-        let ip = unsafe { core::ptr::read(ip_ptr) };
+        let udp_ptr = data.as_ptr() as *const UDPPacket;
         let udp = unsafe { core::ptr::read(udp_ptr) };
-        let data = unsafe { core::slice::from_raw_parts(data_ptr, len - size_of::<Eth>() - size_of::<Ip>() - size_of::<UDPHeader>()) };
+        let data = &udp.data[..(len - size_of::<UDPHeader>() - size_of::<Ip>() - size_of::<Eth>())];
 
-        if eth.type_() == EthType::IP && ip.protocol() == IPProtocal::UDP && udp.dport.to_be() == port {
-            Some((eth, ip, udp, data.to_vec()))
+        if udp.eth.type_() == EthType::IP && udp.ip.protocol() == IPProtocal::UDP && udp.udp.dport.to_be() == port {
+            Some((udp.eth, udp.ip, udp.udp, data.to_vec()))
         } else {
             None
         }
@@ -397,19 +412,15 @@ impl TransPort {
         let len = NET_DEVICE.receive(&mut recv_buf);
         let data = &recv_buf[..len];
 
-        let eth_ptr = data.as_ptr() as *const Eth;
-        let ip_ptr = unsafe { eth_ptr.offset(1) } as *const Ip;
-        let tcp_ptr = unsafe { ip_ptr.offset(1) } as *const TCPHeader;
-        let data_ptr = unsafe { tcp_ptr.offset(1) } as *const u8;
-        let eth = unsafe { core::ptr::read(eth_ptr) };
-        let ip = unsafe { core::ptr::read(ip_ptr) };
+        let tcp_ptr = data.as_ptr() as *const TCPPacket;
         let tcp = unsafe { core::ptr::read(tcp_ptr) };
-        let data = unsafe { core::slice::from_raw_parts(data_ptr, len - size_of::<Eth>() - size_of::<Ip>() - size_of::<TCPHeader>()) };
+        let data = &tcp.data[..(len - size_of::<TCPHeader>() - size_of::<Ip>() - size_of::<Eth>())];
 
-        if eth.type_() == EthType::IP && ip.protocol() == IPProtocal::TCP && tcp.dport.to_be() == port {
-            let offset = ((tcp.offset >> 4 & 0xf) as usize - 5) * 4;
+
+        if tcp.eth.type_() == EthType::IP && tcp.ip.protocol() == IPProtocal::TCP && tcp.tcp.dport.to_be() == port {
+            let offset = ((tcp.tcp.offset >> 4 & 0xf) as usize - 5) * 4;
             let offset_data = &data[offset..];
-            Some((eth, ip, tcp, offset_data.to_vec()))
+            Some((tcp.eth, tcp.ip, tcp.tcp, offset_data.to_vec()))
         } else {
             None
         }
