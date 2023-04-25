@@ -2,7 +2,7 @@ pub mod port_table;
 pub mod tcp;
 pub mod udp;
 
-use core::mem::{size_of, transmute};
+use core::mem::size_of;
 use crate::{
     drivers::virtio_net::NET_DEVICE,
 };
@@ -11,6 +11,7 @@ use alloc::vec::Vec;
 use core_ext::UInt;
 
 use self::tcp::TCP;
+use crate::headers_to_data;
 
 pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
 pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
@@ -323,11 +324,10 @@ impl Net {
         re_eth.dhost = eth.shost;
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let eth_data: [u8; size_of::<Eth>()] = unsafe { transmute(re_eth) };
-        let arp_data: [u8; size_of::<Arp>()] = unsafe { transmute(re_arp) };
-        let mut data = Vec::new();
-        data.extend(eth_data);
-        data.extend(arp_data);
+        let data = headers_to_data!(
+            re_eth: [u8; size_of::<Eth>()],
+            re_arp: [u8; size_of::<Arp>()]
+        );
 
         NET_DEVICE.transmit(&data);
     }
@@ -377,13 +377,11 @@ impl TransPort {
         re_eth.dhost = eth.shost;
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let eth_data: [u8; size_of::<Eth>()] = unsafe { transmute(re_eth) };
-        let ip_data: [u8; size_of::<Ip>()] = unsafe { transmute(re_ip) };
-        let udp_data: [u8; size_of::<UDPHeader>()] = unsafe { transmute(re_udp) };
-        let mut header_data = Vec::new();
-        header_data.extend(eth_data);
-        header_data.extend(ip_data);
-        header_data.extend(udp_data);
+        let header_data = headers_to_data!(
+            re_eth: [u8; size_of::<Eth>()],
+            re_ip: [u8; size_of::<Ip>()],
+            re_udp: [u8; size_of::<UDPHeader>()]
+        );
 
         let mut total_data = header_data;
         total_data.extend(data);
@@ -467,13 +465,11 @@ impl TransPort {
         re_eth.dhost = eth.shost;
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let eth_data: [u8; size_of::<Eth>()] = unsafe { transmute(re_eth) };
-        let ip_data: [u8; size_of::<Ip>()] = unsafe { transmute(re_ip) };
-        let tcp_data: [u8; size_of::<TCPHeader>()] = unsafe { transmute(re_tcp) };
-        let mut header_data = Vec::new();
-        header_data.extend(eth_data);
-        header_data.extend(ip_data);
-        header_data.extend(tcp_data);
+        let header_data = headers_to_data!(
+            re_eth: [u8; size_of::<Eth>()], 
+            re_ip: [u8; size_of::<Ip>()],
+            re_tcp: [u8; size_of::<TCPHeader>()]
+        );
 
         let mut total_data = header_data;
         total_data.extend(data);
@@ -509,4 +505,17 @@ pub fn check_sum(addr:*mut u8, len:u32, sum: u32) -> u16 {
      let answer:u16 = !sum as u16;
 
      answer
+}
+
+
+#[macro_export]
+macro_rules! headers_to_data {
+    ($($header:tt : $header_type:ty),*) => {{
+        let mut data = Vec::new();
+        $(
+            let header_data: $header_type = unsafe { core::mem::transmute($header) };
+            data.extend(header_data);
+        )*
+        data
+    }};
 }
