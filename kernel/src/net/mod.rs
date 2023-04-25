@@ -357,40 +357,40 @@ impl Net {
 struct TransPort;
 
 impl TransPort {
-    fn recv_udp(port: u16) -> Option<(Eth, Ip, UDPHeader, Vec<u8>)> {
+    fn recv_udp(port: u16) -> Option<(UDPPacket, usize)> {
         let mut recv_buf = vec![0u8; 1024];
         let len = NET_DEVICE.receive(&mut recv_buf);
         let data = &recv_buf[..len];
 
         let udp_ptr = data.as_ptr() as *const UDPPacket;
         let udp = unsafe { core::ptr::read(udp_ptr) };
-        let data = &udp.data[..(len - size_of::<UDPHeader>() - size_of::<Ip>() - size_of::<Eth>())];
+        let data_len = len - size_of::<UDPHeader>() - size_of::<Ip>() - size_of::<Eth>();
 
         if udp.eth.type_() == EthType::IP && udp.ip.protocol() == IPProtocal::UDP && udp.udp.dport.to_be() == port {
-            Some((udp.eth, udp.ip, udp.udp, data.to_vec()))
+            Some((udp, data_len))
         } else {
             None
         }
     }
 
-    fn send_udp(eth: Eth, ip: Ip, udp: UDPHeader, data: Vec<u8>) {
+    fn send_udp(udp: UDPPacket, data: Vec<u8>) {
         let len = data.len() + size_of::<UDPHeader>();
-        let mut re_udp = udp;
-        re_udp.sport = udp.dport;
-        re_udp.dport = udp.sport;
+        let mut re_udp = udp.udp;
+        re_udp.sport = udp.udp.dport;
+        re_udp.dport = udp.udp.sport;
         re_udp.sum = 0;
         re_udp.ulen = (len as u16).to_be();
 
         let len = data.len() + size_of::<Ip>() + size_of::<UDPHeader>();
-        let mut re_ip = ip;
-        re_ip.src = ip.dst;
-        re_ip.dst = ip.src;
+        let mut re_ip = udp.ip;
+        re_ip.src = udp.ip.dst;
+        re_ip.dst = udp.ip.src;
         re_ip.len = (len as u16).to_be();
         re_ip.sum = 0;
         re_ip.sum = check_sum(&mut re_ip as *mut Ip as *mut u8, size_of::<Ip>() as _, 0);
 
-        let mut re_eth = eth;
-        re_eth.dhost = eth.shost;
+        let mut re_eth = udp.eth;
+        re_eth.dhost = udp.eth.shost;
         re_eth.shost = LOCALHOST_MAC.to_bytes();
 
         let header_data = headers_to_data(

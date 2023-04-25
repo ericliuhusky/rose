@@ -1,27 +1,20 @@
 use super::TransPort;
+use super::UDPPacket;
 use crate::fs::File;
 use crate::net::net_arp;
 use alloc::vec;
-use alloc::vec::Vec;
-use super::Eth;
-use super::Ip;
-use super::UDPHeader;
 use page_table::PhysicalBufferList;
 
 pub struct UDP {
     pub source_port: u16,
-    pub eth: Eth,
-    pub ip: Ip,
-    pub udp: UDPHeader,
+    udp: Option<UDPPacket>,
 }
 
 impl UDP {
     pub fn new() -> Self {
         Self {
             source_port: 0,
-            eth: Eth::default(),
-            ip: Ip::default(),
-            udp: UDPHeader::default(),
+            udp: None,
         }
     }
 }
@@ -29,20 +22,18 @@ impl UDP {
 impl File for UDP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         net_arp();
-        let (eth, ip, udp, data): (Eth, Ip, UDPHeader, Vec<u8>);
+        let (udp, data_len): (UDPPacket, usize);
         loop {
-            if let Some((_eth, _ip, _udp, _data)) = TransPort::recv_udp(self.source_port) {
-                eth = _eth;
-                ip = _ip;
+            if let Some((_udp, _data_len)) = TransPort::recv_udp(self.source_port) {
                 udp = _udp;
-                data = _data;
+                data_len = _data_len;
                 break;
             }
         }
 
-        self.eth = eth;
-        self.ip = ip;
-        self.udp = udp;
+        let data = udp.data[..data_len].to_vec();
+
+        self.udp = Some(udp);
 
         for (i, byte) in buf.iter_mut().enumerate() {
             if i >= data.len() {
@@ -61,7 +52,7 @@ impl File for UDP {
         }
 
         let len = data.len();
-        TransPort::send_udp(self.eth, self.ip,self.udp, data);
+        TransPort::send_udp(self.udp.take().unwrap(), data);
         len
     }
 
