@@ -22,16 +22,15 @@ impl UDP {
 impl File for UDP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         net_arp();
-        let (udp, data_len): (UDPPacket, usize);
+        let udp: UDPPacket;
         loop {
-            if let Some((_udp, _data_len)) = TransPort::recv_udp(self.source_port) {
+            if let Some(_udp) = TransPort::recv_udp(self.source_port) {
                 udp = _udp;
-                data_len = _data_len;
                 break;
             }
         }
 
-        let data = udp.data[..data_len].to_vec();
+        let data = udp.data.clone();
 
         self.udp = Some(udp);
 
@@ -52,9 +51,8 @@ impl File for UDP {
         }
 
         let len = data.len();
-        let mut dst = self.udp.as_mut().unwrap().data;
-        dst[..len].copy_from_slice(&data);
-        TransPort::send_udp(self.udp.take().unwrap(), len);
+        self.udp.as_mut().unwrap().data = data;
+        TransPort::send_udp(self.udp.take().unwrap());
         len
     }
 

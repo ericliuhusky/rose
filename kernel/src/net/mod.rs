@@ -7,6 +7,7 @@ use crate::{
     drivers::virtio_net::NET_DEVICE,
 };
 use alloc::vec;
+use alloc::vec::Vec;
 use core::mem::transmute;
 use self::tcp::TCP;
 
@@ -240,11 +241,15 @@ struct ArpPacket {
 
 #[derive(Clone)]
 #[repr(packed)]
-struct UDPPacket {
+struct UDPPacketHeader {
     eth: Eth,
     ip: Ip,
     udp: UDPHeader,
-    data: [u8; 1024],
+}
+
+struct UDPPacket {
+    header: UDPPacketHeader,
+    data: Vec<u8>,
 }
 
 #[derive(Clone)]
@@ -351,44 +356,50 @@ impl Net {
 struct TransPort;
 
 impl TransPort {
-    fn recv_udp(port: u16) -> Option<(UDPPacket, usize)> {
+    fn recv_udp(port: u16) -> Option<UDPPacket> {
         let mut recv_buf = vec![0u8; 1024];
         let len = NET_DEVICE.receive(&mut recv_buf);
         let data = &recv_buf[..len];
 
-        let udp_ptr = data.as_ptr() as *const UDPPacket;
+        let udp_ptr = data.as_ptr() as *const UDPPacketHeader;
         let udp = unsafe { core::ptr::read(udp_ptr) };
+        let data_ptr = unsafe { udp_ptr.offset(1) } as *const u8;
         let data_len = len - size_of::<UDPHeader>() - size_of::<Ip>() - size_of::<Eth>();
+        let data = unsafe { core::slice::from_raw_parts(data_ptr, data_len) };
 
-        if udp.eth.type_() == EthType::IP && udp.ip.protocol() == IPProtocal::UDP && udp.udp.dport.to_be() == port {
-            Some((udp, data_len))
+        let udp = UDPPacket { header: udp, data: data.to_vec() };
+
+        if udp.header.eth.type_() == EthType::IP && udp.header.ip.protocol() == IPProtocal::UDP && udp.header.udp.dport.to_be() == port {
+            Some(udp)
         } else {
             None
         }
     }
 
-    fn send_udp(udp: UDPPacket, data_len: usize) {
-        let mut re_udp = udp.clone();
+    fn send_udp(udp: UDPPacket) {
+        let mut re_udp = udp.header.clone();
+        let data_len = udp.data.len();
         let len = data_len + size_of::<UDPHeader>();
-        re_udp.udp.sport = udp.udp.dport;
-        re_udp.udp.dport = udp.udp.sport;
+        re_udp.udp.sport = udp.header.udp.dport;
+        re_udp.udp.dport = udp.header.udp.sport;
         re_udp.udp.sum = 0;
         re_udp.udp.ulen = (len as u16).to_be();
 
         let len = data_len + size_of::<Ip>() + size_of::<UDPHeader>();
-        re_udp.ip.src = udp.ip.dst;
-        re_udp.ip.dst = udp.ip.src;
+        re_udp.ip.src = udp.header.ip.dst;
+        re_udp.ip.dst = udp.header.ip.src;
         re_udp.ip.len = (len as u16).to_be();
         re_udp.ip.sum = 0;
         re_udp.ip.sum = check_sum(&re_udp.ip as *const Ip as *const u8, size_of::<Ip>(), 0);
 
-        re_udp.eth.dhost = udp.eth.shost;
+        re_udp.eth.dhost = udp.header.eth.shost;
         re_udp.eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let data: [u8; size_of::<UDPPacket>()] = unsafe { transmute(re_udp) };
-        let data = &data[..(size_of::<Eth>() + size_of::<Ip>() + size_of::<UDPHeader>() + data_len)];
+        let data: [u8; size_of::<UDPPacketHeader>()] = unsafe { transmute(re_udp) };
+        let mut data = data.to_vec();
+        data.extend(udp.data);
 
-        NET_DEVICE.transmit(data);
+        NET_DEVICE.transmit(&data);
     }
 
     fn recv_tcp(port: u16) -> Option<(TCPPacket, usize)> {
