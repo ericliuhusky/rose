@@ -52,7 +52,9 @@ pub fn net_arp() {
 pub fn net_accept(lport: u16) -> Option<TCP> {
     if let Some((tcp, data_len)) = TransPort::recv_tcp(lport) {    
         if tcp.tcp.flags.contains(TcpFlags::S) {
-            TransPort::send_tcp(tcp.eth, tcp.ip, tcp.tcp.ack(), vec![]);
+            let mut re_tcp = tcp.clone();
+            re_tcp.tcp = tcp.tcp.ack();
+            TransPort::send_tcp(re_tcp, 0);
     
             Some(TCP::new(
                 tcp.tcp.dport.to_be(),
@@ -407,51 +409,37 @@ impl TransPort {
         }
     }
 
-    fn send_tcp(eth: Eth, ip: Ip, tcp: TCPHeader, data: Vec<u8>) {
-        let mut re_tcp = tcp;
-        re_tcp.sport = tcp.dport;
-        re_tcp.dport = tcp.sport;
-        re_tcp.offset = 5 << 4;
-        re_tcp.sum = 0;
+    fn send_tcp(tcp: TCPPacket, data_len: usize) {
+        let mut re_tcp = tcp.clone();
+        re_tcp.tcp.sport = tcp.tcp.dport;
+        re_tcp.tcp.dport = tcp.tcp.sport;
+        re_tcp.tcp.offset = 5 << 4;
+        re_tcp.tcp.sum = 0;
 
-        let mut sum = ip.dst.to_be().to_be();
-        sum += ip.src.to_be().to_be();
-        sum += (ip.pro as u16).to_be() as u32;
-        sum += ((data.len() + size_of::<TCPHeader>()) as u16).to_be() as u32;
+        let mut sum = re_tcp.ip.dst.to_be().to_be();
+        sum += re_tcp.ip.src.to_be().to_be();
+        sum += (re_tcp.ip.pro as u16).to_be() as u32;
+        sum += ((data_len + size_of::<TCPHeader>()) as u16).to_be() as u32;
 
-        let re_tcp_data: [u8; size_of::<TCPHeader>()] = unsafe { transmute(re_tcp) };
-        let mut re_tcp_data = re_tcp_data.to_vec();
-        re_tcp_data.extend(data.clone());
-        
-        let ans = check_sum(re_tcp_data.as_slice().as_ptr(), data.len() + size_of::<TCPHeader>(), sum);
+        let ans = check_sum(&re_tcp.tcp as *const TCPHeader as *const u8, data_len + size_of::<TCPHeader>(), sum);
 
-        re_tcp.sum = ans;
+        re_tcp.tcp.sum = ans;
 
 
-        let len = data.len() + size_of::<Ip>() + size_of::<TCPHeader>();
-        let mut re_ip = ip;
-        re_ip.src = ip.dst;
-        re_ip.dst = ip.src;
-        re_ip.len = (len as u16).to_be();
-        re_ip.sum = 0;
-        re_ip.sum = check_sum(&re_ip as *const Ip as *const u8, size_of::<Ip>(), 0);
+        let len = data_len + size_of::<Ip>() + size_of::<TCPHeader>();
+        re_tcp.ip.src = tcp.ip.dst;
+        re_tcp.ip.dst = tcp.ip.src;
+        re_tcp.ip.len = (len as u16).to_be();
+        re_tcp.ip.sum = 0;
+        re_tcp.ip.sum = check_sum(&re_tcp.ip as *const Ip as *const u8, size_of::<Ip>(), 0);
 
-        let mut re_eth = eth;
-        re_eth.dhost = eth.shost;
-        re_eth.shost = LOCALHOST_MAC.to_bytes();
+        re_tcp.eth.dhost = tcp.eth.shost;
+        re_tcp.eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let header_data = headers_to_data(
-            vec![
-                Header::ETH(re_eth),
-                Header::IP(re_ip),
-                Header::TCP(re_tcp),
-            ]
-        );
+        let data: [u8; size_of::<TCPPacket>()] = unsafe { transmute(re_tcp) };
+        let data = &data[..(size_of::<Eth>() + size_of::<Ip>() + size_of::<TCPHeader>() + data_len)];
 
-        let mut total_data = header_data;
-        total_data.extend(data);
-
-        NET_DEVICE.transmit(&total_data);
+        NET_DEVICE.transmit(data);
     }
 }
 

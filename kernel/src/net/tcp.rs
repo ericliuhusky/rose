@@ -55,7 +55,7 @@ impl File for TCP {
 
         let len = data.len();
 
-        let tcp = self.tcp.as_ref().unwrap().clone();
+        let mut tcp = self.tcp.as_ref().unwrap().clone();
 
         let mut tcp_h = tcp.tcp;
 
@@ -64,7 +64,11 @@ impl File for TCP {
         tcp_h.seq = ack;
         tcp_h.flags = TcpFlags::A;
 
-        TransPort::send_tcp(tcp.eth, tcp.ip, tcp_h, data.clone());
+        tcp.tcp = tcp_h;
+
+        let dst = &mut tcp.data;
+        dst[..len].copy_from_slice(&data);
+        TransPort::send_tcp(tcp, len);
 
         len
     }
