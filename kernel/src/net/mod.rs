@@ -50,15 +50,12 @@ pub fn net_arp() {
 }
 
 pub fn net_accept(lport: u16) -> Option<TCP> {
-    if let Some((eth, ip, tcp, data)) = TransPort::recv_tcp(lport) {    
-        if tcp.flags.contains(TcpFlags::S) {
-            TransPort::send_tcp(eth, ip, tcp.ack(), vec![]);
+    if let Some((tcp, data_len)) = TransPort::recv_tcp(lport) {    
+        if tcp.tcp.flags.contains(TcpFlags::S) {
+            TransPort::send_tcp(tcp.eth, tcp.ip, tcp.tcp.ack(), vec![]);
     
             Some(TCP::new(
-                tcp.dport.to_be(),
-                eth,
-                ip,
-                tcp,
+                tcp.tcp.dport.to_be(),
             ))
         } else {
             None
@@ -68,13 +65,13 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
     }
 }
 
-pub fn net_tcp_read(lport: u16) -> Option<(Eth, Ip, TCPHeader, Vec<u8>)> {
-    if let Some((eth, ip, tcp, data)) = TransPort::recv_tcp(lport) {
-        if tcp.flags.contains(TcpFlags::A) {
-            if data.len() == 0 {
+pub fn net_tcp_read(lport: u16) -> Option<(TCPPacket, usize)> {
+    if let Some((tcp, data_len)) = TransPort::recv_tcp(lport) {
+        if tcp.tcp.flags.contains(TcpFlags::A) {
+            if data_len == 0 {
                 return None;
             }
-            Some((eth, ip, tcp, data))
+            Some((tcp, data_len))
         } else {
             None
         }
@@ -83,7 +80,7 @@ pub fn net_tcp_read(lport: u16) -> Option<(Eth, Ip, TCPHeader, Vec<u8>)> {
     }
 }
 
-pub fn busy_wait_tcp_read(lport: u16) -> (Eth, Ip, TCPHeader, Vec<u8>) {
+pub fn busy_wait_tcp_read(lport: u16) -> (TCPPacket, usize) {
     loop {
         if let Some(data) = net_tcp_read(lport) {
             return data;
@@ -250,8 +247,9 @@ struct UDPPacket {
     data: [u8; 1024],
 }
 
+#[derive(Clone)]
 #[repr(packed)]
-struct TCPPacket {
+pub struct TCPPacket {
     eth: Eth,
     ip: Ip,
     tcp: TCPHeader,
@@ -393,20 +391,17 @@ impl TransPort {
         NET_DEVICE.transmit(data);
     }
 
-    fn recv_tcp(port: u16) -> Option<(Eth, Ip, TCPHeader, Vec<u8>)> {
+    fn recv_tcp(port: u16) -> Option<(TCPPacket, usize)> {
         let mut recv_buf = vec![0u8; 1024];
         let len = NET_DEVICE.receive(&mut recv_buf);
         let data = &recv_buf[..len];
 
         let tcp_ptr = data.as_ptr() as *const TCPPacket;
         let tcp = unsafe { core::ptr::read(tcp_ptr) };
-        let data = &tcp.data[..(len - size_of::<TCPHeader>() - size_of::<Ip>() - size_of::<Eth>())];
-
+        let data_len = len - size_of::<TCPHeader>() - size_of::<Ip>() - size_of::<Eth>();
 
         if tcp.eth.type_() == EthType::IP && tcp.ip.protocol() == IPProtocal::TCP && tcp.tcp.dport.to_be() == port {
-            let offset = ((tcp.tcp.offset >> 4 & 0xf) as usize - 5) * 4;
-            let offset_data = &data[offset..];
-            Some((tcp.eth, tcp.ip, tcp.tcp, offset_data.to_vec()))
+            Some((tcp, data_len))
         } else {
             None
         }

@@ -1,50 +1,41 @@
+use super::TCPPacket;
 use super::TransPort;
 use super::busy_wait_tcp_read;
 use crate::fs::File;
 use alloc::vec;
-use super::Eth;
-use super::Ip;
-use super::TCPHeader;
 use super::TcpFlags;
 use page_table::PhysicalBufferList;
 
 // add tcp packet info to this structure
 pub struct TCP {
     pub source_port: u16,
-    pub eth: Eth,
-    pub ip: Ip,
-    pub tcp: TCPHeader,
+    tcp: Option<TCPPacket>,
 }
 
 impl TCP {
     pub fn new_server() -> Self {
         Self {
             source_port: 0,
-            eth: Eth::default(),
-            ip: Ip::default(),
-            tcp: TCPHeader::default(),
+            tcp: None,
         }
     }
 
     pub fn new(
         dest_port: u16,
-        eth: Eth,
-        ip: Ip,
-        tcp: TCPHeader,
     ) -> Self {
         Self {
             source_port: dest_port,
-            eth,
-            ip,
-            tcp,
+            tcp: None,
         }
     }
 }
 
 impl File for TCP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
-        let (eth, ip, tcp, data) = busy_wait_tcp_read(self.source_port);
-        self.tcp = tcp;
+        let (tcp, data_len) = busy_wait_tcp_read(self.source_port);
+        self.tcp = Some(tcp.clone());
+        let offset = ((tcp.tcp.offset >> 4 & 0xf) as usize - 5) * 4;
+        let data = &tcp.data[offset..data_len];
 
         for (i, byte) in buf.iter_mut().enumerate() {
             if i >= data.len() {
@@ -64,12 +55,16 @@ impl File for TCP {
 
         let len = data.len();
 
-        let (seq, ack) = (self.tcp.seq, self.tcp.ack);
-        self.tcp.ack = seq;
-        self.tcp.seq = ack;
-        self.tcp.flags = TcpFlags::A;
+        let tcp = self.tcp.as_ref().unwrap().clone();
 
-        TransPort::send_tcp(self.eth, self.ip, self.tcp, data.clone());
+        let mut tcp_h = tcp.tcp;
+
+        let (seq, ack) = (tcp_h.seq, tcp_h.ack);
+        tcp_h.ack = seq;
+        tcp_h.seq = ack;
+        tcp_h.flags = TcpFlags::A;
+
+        TransPort::send_tcp(tcp.eth, tcp.ip, tcp_h, data.clone());
 
         len
     }
