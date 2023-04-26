@@ -380,7 +380,7 @@ impl TransPort {
         re_udp.ip.dst = udp.ip.src;
         re_udp.ip.len = (len as u16).to_be();
         re_udp.ip.sum = 0;
-        re_udp.ip.sum = check_sum(&mut re_udp.ip as *mut Ip as *mut u8, size_of::<Ip>() as _, 0);
+        re_udp.ip.sum = check_sum(&re_udp.ip as *const Ip as *const u8, size_of::<Ip>(), 0);
 
         re_udp.eth.dhost = udp.eth.shost;
         re_udp.eth.shost = LOCALHOST_MAC.to_bytes();
@@ -419,28 +419,11 @@ impl TransPort {
         sum += (ip.pro as u16).to_be() as u32;
         sum += ((data.len() + size_of::<TCPHeader>()) as u16).to_be() as u32;
 
-        let mut ck_sum = sum;
-        let start = &re_tcp as *const _ as usize;
-        let end = start + size_of::<TCPHeader>();
-        for p in (start..end).step_by(2) {
-            ck_sum += unsafe { *(p as *const u16) as u32 };
-        }
-        let start = data.as_slice().as_ptr() as usize;
-        let end = start + UInt(data.len()).align_to_lower(2);
-        for p in (start..end).step_by(2) {
-            ck_sum += unsafe { *(p as *const u16) as u32 };
-        }
-        if data.len() %2 != 0 {
-            ck_sum += *data.last().unwrap() as u32;
-        }
-        fn fold(mut sum: u32) -> u16 {
-            while (sum >> 16) != 0 {
-                sum = (sum & 0xffff) + (sum >> 16);
-            }
-            !sum as u16
-        }
-
-        let ans = fold(ck_sum);
+        let re_tcp_data: [u8; size_of::<TCPHeader>()] = unsafe { transmute(re_tcp) };
+        let mut re_tcp_data = re_tcp_data.to_vec();
+        re_tcp_data.extend(data.clone());
+        
+        let ans = check_sum(re_tcp_data.as_slice().as_ptr(), data.len() + size_of::<TCPHeader>(), sum);
 
         re_tcp.sum = ans;
 
@@ -451,7 +434,7 @@ impl TransPort {
         re_ip.dst = ip.src;
         re_ip.len = (len as u16).to_be();
         re_ip.sum = 0;
-        re_ip.sum = check_sum(&mut re_ip as *mut Ip as *mut u8, size_of::<Ip>() as _, 0);
+        re_ip.sum = check_sum(&re_ip as *const Ip as *const u8, size_of::<Ip>(), 0);
 
         let mut re_eth = eth;
         re_eth.dhost = eth.shost;
@@ -472,33 +455,27 @@ impl TransPort {
     }
 }
 
-pub fn check_sum(addr:*mut u8, len:u32, sum: u32) -> u16 {
-    let mut sum:u32 = sum;
-    let mut nleft = len;
-    let mut w = addr as *const u16;
-    
-     while nleft > 1 {
-        sum += unsafe{ *w as u32 };
-        w = (w as usize + 2) as *mut u16;
-        nleft -= 2;
 
-        if sum > 0xffff {
-            sum = (sum & 0xFFFF) + (sum >> 16);
-            sum = sum + (sum >> 16);
+fn check_sum(ptr: *const u8, mut len: usize, mut sum: u32) -> u16 {
+    let mut ptr = ptr as *const u16;
+
+    while len > 1 {
+        sum += unsafe { *ptr } as u32;
+        unsafe { ptr = ptr.offset(1); }
+        len -= 2;
+    }
+
+    if len == 1 {
+        sum += unsafe { *(ptr as *const u8) } as u32;
+    }
+
+    fn fold(mut sum: u32) -> u16 {
+        while (sum >> 16) != 0 {
+            sum = (sum & 0xffff) + (sum >> 16);
         }
-     }
-
-     if nleft == 1 {
-        sum += unsafe { *(w as *const u8) as u32};
-     }
-
-
-     sum = (sum & 0xFFFF) + (sum >> 16);
-     sum = sum + (sum >> 16);
-
-     let answer:u16 = !sum as u16;
-
-     answer
+        !sum as u16
+    }
+    fold(sum)
 }
 
 
