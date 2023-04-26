@@ -424,26 +424,23 @@ impl TransPort {
         let end = start + size_of::<TCPHeader>();
         for p in (start..end).step_by(2) {
             ck_sum += unsafe { *(p as *const u16) as u32 };
-            if ck_sum > 0xffff {
-                ck_sum = (ck_sum & 0xFFFF) + (ck_sum >> 16);
-                ck_sum = ck_sum + (ck_sum >> 16);
-            }
         }
         let start = data.as_slice().as_ptr() as usize;
         let end = start + UInt(data.len()).align_to_lower(2);
         for p in (start..end).step_by(2) {
             ck_sum += unsafe { *(p as *const u16) as u32 };
-            if ck_sum > 0xffff {
-                ck_sum = (ck_sum & 0xFFFF) + (ck_sum >> 16);
-                ck_sum = ck_sum + (ck_sum >> 16);
-            }
         }
         if data.len() %2 != 0 {
             ck_sum += *data.last().unwrap() as u32;
-            ck_sum = (ck_sum & 0xFFFF) + (ck_sum >> 16);
-            ck_sum = ck_sum + (ck_sum >> 16);
         }
-        let ans = !ck_sum as u16;
+        fn fold(mut sum: u32) -> u16 {
+            while (sum >> 16) != 0 {
+                sum = (sum & 0xffff) + (sum >> 16);
+            }
+            !sum as u16
+        }
+
+        let ans = fold(ck_sum);
 
         re_tcp.sum = ans;
 
