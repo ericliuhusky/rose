@@ -32,10 +32,10 @@ impl TCP {
 
 impl File for TCP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
-        let (tcp, data) = busy_wait_tcp_read(self.source_port);
+        let tcp = busy_wait_tcp_read(self.source_port);
         self.tcp = tcp.clone();
-        let offset = ((tcp.tcp.offset >> 4 & 0xf) as usize - 5) * 4;
-        let data = &data[offset..];
+        let offset = ((tcp.header.tcp.offset >> 4 & 0xf) as usize - 5) * 4;
+        let data = &tcp.data[offset..];
 
         for (i, byte) in buf.iter_mut().enumerate() {
             if i >= data.len() {
@@ -56,12 +56,14 @@ impl File for TCP {
         let len = data.len();
 
 
-        let (seq, ack) = (self.tcp.tcp.seq, self.tcp.tcp.ack);
-        self.tcp.tcp.ack = seq;
-        self.tcp.tcp.seq = ack;
-        self.tcp.tcp.flags = TcpFlags::A;
+        let (seq, ack) = (self.tcp.header.tcp.seq, self.tcp.header.tcp.ack);
+        self.tcp.header.tcp.ack = seq;
+        self.tcp.header.tcp.seq = ack;
+        self.tcp.header.tcp.flags = TcpFlags::A;
 
-        TransPort::send_tcp(self.tcp.clone(), data);
+        self.tcp.data = data;
+
+        TransPort::send_tcp(self.tcp.clone());
 
         len
     }
