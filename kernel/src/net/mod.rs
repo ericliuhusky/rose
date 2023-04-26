@@ -7,9 +7,7 @@ use crate::{
     drivers::virtio_net::NET_DEVICE,
 };
 use alloc::vec;
-use alloc::vec::Vec;
-use core_ext::UInt;
-
+use core::mem::transmute;
 use self::tcp::TCP;
 
 pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
@@ -464,44 +462,4 @@ fn check_sum(ptr: *const u8, mut len: usize, mut sum: u32) -> u16 {
         !sum as u16
     }
     fold(sum)
-}
-
-
-enum Header {
-    ETH(Eth),
-    ARP(Arp),
-    IP(Ip),
-    UDP(UDPHeader),
-    TCP(TCPHeader)
-}
-
-use core::mem::transmute;
-
-fn headers_to_data(headers: Vec<Header>) -> Vec<u8> {
-    let mut data = Vec::new();
-    for header in headers {
-        match header {
-            Header::ETH(eth) => {
-                let header_data: [u8; size_of::<Eth>()] = unsafe { transmute(eth) };
-                data.extend(header_data);
-            }
-            Header::ARP(arp) => {
-                let header_data: [u8; size_of::<Arp>()] = unsafe { transmute(arp) };
-                data.extend(header_data);
-            }
-            Header::IP(ip) => {
-                let header_data: [u8; size_of::<Ip>()] = unsafe { transmute(ip) };
-                data.extend(header_data);
-            }
-            Header::UDP(udp) => {
-                let header_data: [u8; size_of::<UDPHeader>()] = unsafe { transmute(udp) };
-                data.extend(header_data);
-            }
-            Header::TCP(tcp) => {
-                let header_data: [u8; size_of::<TCPHeader>()] = unsafe { transmute(tcp) };
-                data.extend(header_data);
-            }
-        }
-    }
-    data
 }
