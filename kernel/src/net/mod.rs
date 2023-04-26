@@ -239,7 +239,7 @@ struct ArpPacket {
     arp: Arp,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(packed)]
 struct UDPPacketHeader {
     eth: Eth,
@@ -247,6 +247,7 @@ struct UDPPacketHeader {
     udp: UDPHeader,
 }
 
+#[derive(Clone, Default)]
 struct UDPPacket {
     header: UDPPacketHeader,
     data: Vec<u8>,

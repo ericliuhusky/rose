@@ -7,14 +7,14 @@ use page_table::PhysicalBufferList;
 
 pub struct UDP {
     pub source_port: u16,
-    udp: Option<UDPPacket>,
+    udp: UDPPacket,
 }
 
 impl UDP {
     pub fn new() -> Self {
         Self {
             source_port: 0,
-            udp: None,
+            udp: UDPPacket::default(),
         }
     }
 }
@@ -32,7 +32,7 @@ impl File for UDP {
 
         let data = udp.data.clone();
 
-        self.udp = Some(udp);
+        self.udp = udp;
 
         for (i, byte) in buf.iter_mut().enumerate() {
             if i >= data.len() {
@@ -51,8 +51,8 @@ impl File for UDP {
         }
 
         let len = data.len();
-        self.udp.as_mut().unwrap().data = data;
-        TransPort::send_udp(self.udp.take().unwrap());
+        self.udp.data = data;
+        TransPort::send_udp(self.udp.clone());
         len
     }
 
