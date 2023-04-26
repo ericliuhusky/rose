@@ -86,7 +86,7 @@ pub fn send_udp(udp: UDPPacket) {
     );
 
     re_udp.eth.dhost = udp.header.eth.shost;
-    re_udp.eth.shost = LOCALHOST_MAC.to_bytes();
+    re_udp.eth.shost = udp.header.eth.dhost;
 
     let data: [u8; size_of::<UDPPacketHeader>()] = unsafe { transmute(re_udp) };
     let mut data = data.to_vec();
@@ -158,7 +158,7 @@ pub fn send_tcp(tcp: TCPPacket) {
     );
 
     re_tcp.eth.dhost = tcp.header.eth.shost;
-    re_tcp.eth.shost = LOCALHOST_MAC.to_bytes();
+    re_tcp.eth.shost = tcp.header.eth.dhost;
 
     let header_data: [u8; size_of::<TCPPacketHeader>()] = unsafe { transmute(re_tcp) };
     let mut total_data = header_data.to_vec();
