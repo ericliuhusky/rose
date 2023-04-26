@@ -10,7 +10,7 @@ use self::net::{recv_arp, send_arp, recv_tcp, send_tcp};
 use self::tcp::TCP;
 
 pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
-pub const LOCALHOST_MAC: MacAddress = MacAddress::new([1, 2, 3, 4, 5, 6]);
+pub const LOCALHOST_MAC: [u8; 6] = [1, 2, 3, 4, 5, 6];
 
 
 pub fn net_arp() {
@@ -80,20 +80,6 @@ impl IPv4 {
         self.0
     }
 }
-
-#[derive(Clone, Copy, Default)]
-pub struct MacAddress([u8; 6]);
-
-impl MacAddress {
-    pub const fn new(addr: [u8; 6]) -> Self {
-        MacAddress(addr)
-    }
-
-    pub fn to_bytes(&self) -> [u8; 6] {
-        self.0
-    }
-}
-
 
 #[derive(PartialEq, Eq)]
 pub enum EthType {
