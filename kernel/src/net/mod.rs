@@ -136,13 +136,13 @@ pub enum EthType {
 
 #[derive(Clone, Copy, Default)]
 #[repr(packed)]
-pub struct Eth {
+pub struct EthernetHeader {
     pub dhost: [u8; 6], // destination host
     pub shost: [u8; 6], // source host
     pub rtype: u16      // packet type, arp or ip
 }
 
-impl Eth {
+impl EthernetHeader {
     pub fn type_(&self) -> EthType {
         match self.rtype.to_be() {
             0x800 => EthType::IP,
@@ -164,7 +164,7 @@ impl Eth {
 #[allow(dead_code)]
 #[repr(packed)]
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Ip {
+pub struct IPHeader {
     pub vhl: u8,    // version << 4 | header length >> 2
     pub tos: u8,    // type of service
     pub len: u16,   // total length, packet length
@@ -183,7 +183,7 @@ pub enum IPProtocal {
     UDP,
 }
 
-impl Ip {
+impl IPHeader {
     pub fn protocol(&self) -> IPProtocal {
         match self.pro {
             6 => IPProtocal::TCP,
@@ -202,7 +202,7 @@ pub enum ArpType {
 
 #[repr(packed)]
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Arp {
+pub struct ARPHeader {
     pub httype: u16, // Hardware type
     pub pttype: u16, // Protocol type, For IPv4, this has the value 0x0800.
     pub hlen: u8,    // Hardware length: Ethernet address length is 6.
@@ -214,7 +214,7 @@ pub struct Arp {
     pub tpa: u32     // Target protocol address
 }
 
-impl Arp {
+impl ARPHeader {
     pub fn type_(&self) -> ArpType {
         match self.op.to_be() {
             1 => ArpType::Request,
@@ -234,16 +234,16 @@ impl Arp {
 
 #[derive(Clone)]
 #[repr(packed)]
-struct ArpPacket {
-    eth: Eth,
-    arp: Arp,
+struct ARPPacket {
+    eth: EthernetHeader,
+    arp: ARPHeader,
 }
 
 #[derive(Clone, Default)]
 #[repr(packed)]
 struct UDPPacketHeader {
-    eth: Eth,
-    ip: Ip,
+    eth: EthernetHeader,
+    ip: IPHeader,
     udp: UDPHeader,
 }
 
@@ -256,8 +256,8 @@ struct UDPPacket {
 #[derive(Clone, Default)]
 #[repr(packed)]
 struct TCPPacketHeader {
-    eth: Eth,
-    ip: Ip,
+    eth: EthernetHeader,
+    ip: IPHeader,
     tcp: TCPHeader,
 }
 
@@ -327,12 +327,12 @@ impl TCPHeader {
 struct Net;
 
 impl Net {
-    fn recv_arp() -> Option<ArpPacket> {
+    fn recv_arp() -> Option<ARPPacket> {
         let mut recv_buf = vec![0u8; 1024];
         let len = NET_DEVICE.receive(&mut recv_buf);
         let data = &recv_buf[..len];
 
-        let arp_ptr = data.as_ptr() as *const ArpPacket;
+        let arp_ptr = data.as_ptr() as *const ARPPacket;
         let arp = unsafe { core::ptr::read(arp_ptr) };
 
         if arp.eth.type_() == EthType::ARP {
@@ -342,7 +342,7 @@ impl Net {
         }
     }
 
-    fn send_arp(arp: ArpPacket) {
+    fn send_arp(arp: ARPPacket) {
         let mut re_arp = arp.clone();
         re_arp.arp.spa = LOCALHOST_IP.to_u32().to_be();
         re_arp.arp.sha = LOCALHOST_MAC.to_bytes();
@@ -353,7 +353,7 @@ impl Net {
         re_arp.eth.dhost = arp.eth.shost;
         re_arp.eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let data: [u8; size_of::<ArpPacket>()] = unsafe { transmute(re_arp) };
+        let data: [u8; size_of::<ARPPacket>()] = unsafe { transmute(re_arp) };
 
         NET_DEVICE.transmit(&data);
     }
@@ -370,7 +370,7 @@ impl TransPort {
         let udp_ptr = data.as_ptr() as *const UDPPacketHeader;
         let udp = unsafe { core::ptr::read(udp_ptr) };
         let data_ptr = unsafe { udp_ptr.offset(1) } as *const u8;
-        let data_len = len - size_of::<UDPHeader>() - size_of::<Ip>() - size_of::<Eth>();
+        let data_len = len - size_of::<UDPHeader>() - size_of::<IPHeader>() - size_of::<EthernetHeader>();
         let data = unsafe { core::slice::from_raw_parts(data_ptr, data_len) };
 
         let udp = UDPPacket { header: udp, data: data.to_vec() };
@@ -391,12 +391,12 @@ impl TransPort {
         re_udp.udp.sum = 0;
         re_udp.udp.ulen = (len as u16).to_be();
 
-        let len = data_len + size_of::<Ip>() + size_of::<UDPHeader>();
+        let len = data_len + size_of::<IPHeader>() + size_of::<UDPHeader>();
         re_udp.ip.src = udp.header.ip.dst;
         re_udp.ip.dst = udp.header.ip.src;
         re_udp.ip.len = (len as u16).to_be();
         re_udp.ip.sum = 0;
-        re_udp.ip.sum = check_sum(&re_udp.ip as *const Ip as *const u8, size_of::<Ip>(), 0);
+        re_udp.ip.sum = check_sum(&re_udp.ip as *const IPHeader as *const u8, size_of::<IPHeader>(), 0);
 
         re_udp.eth.dhost = udp.header.eth.shost;
         re_udp.eth.shost = LOCALHOST_MAC.to_bytes();
@@ -416,7 +416,7 @@ impl TransPort {
         let tcp_ptr = data.as_ptr() as *const TCPPacketHeader;
         let tcp = unsafe { core::ptr::read(tcp_ptr) };
         let data_ptr = unsafe { tcp_ptr.offset(1) } as *const u8;
-        let data_len = len - size_of::<TCPHeader>() - size_of::<Ip>() - size_of::<Eth>();
+        let data_len = len - size_of::<TCPHeader>() - size_of::<IPHeader>() - size_of::<EthernetHeader>();
         let data = unsafe { core::slice::from_raw_parts(data_ptr, data_len) };
 
         let tcp = TCPPacket { header: tcp, data: data.to_vec() };
@@ -449,12 +449,12 @@ impl TransPort {
         re_tcp.tcp.sum = ans;
 
 
-        let len = tcp.data.len() + size_of::<Ip>() + size_of::<TCPHeader>();
+        let len = tcp.data.len() + size_of::<IPHeader>() + size_of::<TCPHeader>();
         re_tcp.ip.src = tcp.header.ip.dst;
         re_tcp.ip.dst = tcp.header.ip.src;
         re_tcp.ip.len = (len as u16).to_be();
         re_tcp.ip.sum = 0;
-        re_tcp.ip.sum = check_sum(&re_tcp.ip as *const Ip as *const u8, size_of::<Ip>(), 0);
+        re_tcp.ip.sum = check_sum(&re_tcp.ip as *const IPHeader as *const u8, size_of::<IPHeader>(), 0);
 
         re_tcp.eth.dhost = tcp.header.eth.shost;
         re_tcp.eth.shost = LOCALHOST_MAC.to_bytes();
