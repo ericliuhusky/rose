@@ -9,7 +9,7 @@ use alloc::vec::Vec;
 use self::net::{recv_arp, send_arp, recv_tcp, send_tcp};
 use self::tcp::TCP;
 
-pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
+pub const LOCALHOST_IP: u32 = 10 << 24 | 0 << 16 | 2 << 8 | 15;
 pub const LOCALHOST_MAC: [u8; 6] = [1, 2, 3, 4, 5, 6];
 
 
@@ -65,19 +65,6 @@ pub fn busy_wait_accept(lport: u16) -> TCP {
         if let Some(socket) = net_accept(lport) {
             return socket;
         }
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Default)]
-pub struct IPv4(u32);
-
-impl IPv4 {
-    pub const fn new(a1: u8, a2: u8, a3: u8, a4: u8) -> Self {
-        IPv4((a1 as u32) << 24 | (a2 as u32) << 16 | (a3 as u32) << 8 | (a4 as u32))
-    }
-
-    pub fn to_u32(&self) -> u32 {
-        self.0
     }
 }
 

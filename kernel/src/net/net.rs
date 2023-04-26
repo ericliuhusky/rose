@@ -24,7 +24,7 @@ pub fn recv_arp() -> Option<ARPPacket> {
 
 pub fn send_arp(arp: ARPPacket) {
     let mut re_arp = arp.clone();
-    re_arp.arp.spa = LOCALHOST_IP.to_u32().to_be();
+    re_arp.arp.spa = LOCALHOST_IP.to_be();
     re_arp.arp.sha = LOCALHOST_MAC;
     re_arp.arp.tpa = arp.arp.spa;
     re_arp.arp.tha = arp.arp.sha;
