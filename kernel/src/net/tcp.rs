@@ -1,6 +1,6 @@
 use super::TCPPacket;
-use super::TransPort;
 use super::busy_wait_tcp_read;
+use super::net::send_tcp;
 use crate::fs::File;
 use alloc::vec;
 use super::TcpFlags;
@@ -63,7 +63,7 @@ impl File for TCP {
 
         self.tcp.data = data;
 
-        TransPort::send_tcp(self.tcp.clone());
+        send_tcp(self.tcp.clone());
 
         len
     }

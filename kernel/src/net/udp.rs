@@ -1,5 +1,5 @@
-use super::TransPort;
 use super::UDPPacket;
+use super::net::{recv_udp, send_udp};
 use crate::fs::File;
 use crate::net::net_arp;
 use alloc::vec;
@@ -24,7 +24,7 @@ impl File for UDP {
         net_arp();
         let udp: UDPPacket;
         loop {
-            if let Some(_udp) = TransPort::recv_udp(self.source_port) {
+            if let Some(_udp) = recv_udp(self.source_port) {
                 udp = _udp;
                 break;
             }
@@ -52,7 +52,7 @@ impl File for UDP {
 
         let len = data.len();
         self.udp.data = data;
-        TransPort::send_udp(self.udp.clone());
+        send_udp(self.udp.clone());
         len
     }
 
