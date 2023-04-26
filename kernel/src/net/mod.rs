@@ -2,14 +2,10 @@ pub mod port_table;
 pub mod tcp;
 pub mod udp;
 mod net;
+mod check_sum;
 
-use core::mem::size_of;
-use crate::{
-    drivers::virtio_net::NET_DEVICE,
-};
 use alloc::vec;
 use alloc::vec::Vec;
-use core::mem::transmute;
 use self::net::{recv_arp, send_arp, recv_tcp, send_tcp};
 use self::tcp::TCP;
 
@@ -274,27 +270,4 @@ impl TCPHeader {
             sum: 0,
         }
     }
-}
-
-
-fn check_sum(ptr: *const u8, mut len: usize, mut sum: u32) -> u16 {
-    let mut ptr = ptr as *const u16;
-
-    while len > 1 {
-        sum += unsafe { *ptr } as u32;
-        unsafe { ptr = ptr.offset(1); }
-        len -= 2;
-    }
-
-    if len == 1 {
-        sum += unsafe { *(ptr as *const u8) } as u32;
-    }
-
-    fn fold(mut sum: u32) -> u16 {
-        while (sum >> 16) != 0 {
-            sum = (sum & 0xffff) + (sum >> 16);
-        }
-        !sum as u16
-    }
-    fold(sum)
 }

@@ -1,6 +1,7 @@
+use super::check_sum::check_sum;
 use super::{
-    check_sum, ARPPacket, ArpType, EthType, EthernetHeader, IPHeader, IPProtocal, TCPHeader,
-    TCPPacket, TCPPacketHeader, UDPHeader, UDPPacket, UDPPacketHeader, LOCALHOST_IP, LOCALHOST_MAC,
+    ARPPacket, ArpType, EthType, EthernetHeader, IPHeader, IPProtocal, TCPHeader, TCPPacket,
+    TCPPacketHeader, UDPHeader, UDPPacket, UDPPacketHeader, LOCALHOST_IP, LOCALHOST_MAC,
 };
 use crate::drivers::virtio_net::NET_DEVICE;
 use alloc::vec;
