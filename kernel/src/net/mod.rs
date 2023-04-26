@@ -14,33 +14,6 @@ use self::tcp::TCP;
 pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
 pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
 
-// pub fn net_interrupt_handler() {
-//     let mut recv_buf = vec![0u8; 1024];
-
-//     let len = NET_DEVICE.receive(&mut recv_buf);
-
-//     let packet = LOSE_NET_STACK.analysis(&recv_buf[..len]);
-
-//     match packet {
-//         Packet::TCP(tcp_packet) => {
-//             let target = tcp_packet.source_ip;
-//             let lport = tcp_packet.dest_port;
-//             let rport = tcp_packet.source_port;
-//             let flags = tcp_packet.flags;
-
-//             if flags.contains(TcpFlags::F) {
-//                 // tcp disconnected
-//                 let reply_packet = tcp_packet.ack();
-//                 NET_DEVICE.transmit(&reply_packet.build_data());
-
-//                 let mut end_packet = reply_packet.ack();
-//                 end_packet.flags |= TcpFlags::F;
-//                 NET_DEVICE.transmit(&end_packet.build_data());
-//             }
-//         }
-//         _ => {}
-//     }
-// }
 
 pub fn net_arp() {
     if let Some(arp) = Net::recv_arp() {
@@ -105,10 +78,6 @@ impl IPv4 {
         IPv4((a1 as u32) << 24 | (a2 as u32) << 16 | (a3 as u32) << 8 | (a4 as u32))
     }
 
-    pub fn from_u32(ip: u32) -> Self {
-        IPv4(ip)
-    }
-
     pub fn to_u32(&self) -> u32 {
         self.0
     }
@@ -150,14 +119,6 @@ impl EthernetHeader {
             _ => panic!()
         }
     }
-
-    pub fn set_type(&mut self, type_: EthType) {
-        let type_: u16 = match type_ {
-            EthType::IP => 0x800,
-            EthType::ARP => 0x806,
-        };
-        self.rtype = type_.to_be();
-    }
 }
 
 
@@ -196,7 +157,6 @@ impl IPHeader {
 
 #[derive(Debug, Clone, Copy)]
 pub enum ArpType {
-    Request,
     Reply,
 }
 
@@ -215,17 +175,8 @@ pub struct ARPHeader {
 }
 
 impl ARPHeader {
-    pub fn type_(&self) -> ArpType {
-        match self.op.to_be() {
-            1 => ArpType::Request,
-            2 => ArpType::Reply,
-            _ => panic!()
-        }
-    }
-
     pub fn set_type(&mut self, type_: ArpType) {
         let op: u16 = match type_ {
-            ArpType::Request => 1,
             ArpType::Reply => 2,
         };
         self.op = op.to_be();

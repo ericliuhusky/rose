@@ -8,7 +8,7 @@ extern crate lib;
 #[macro_use]
 extern crate alloc;
 
-use lib::{connect, read, write, socket, bind};
+use lib::{read, write, socket, bind};
 
 #[no_mangle]
 pub fn main() {

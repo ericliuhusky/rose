@@ -37,7 +37,6 @@ pub fn syscall(id: usize, args: [usize; 3]) -> Result<usize, usize> {
         SYS_SEMAPHORE_CREATE => Ok(semaphore_create(args[0])),
         SYS_SEMAPHORE_DOWN => Ok(semaphore_down(args[0])),
         SYS_SEMAPHORE_UP => Ok(semaphore_up(args[0])),
-        SYS_CONNECT => Ok(connect(args[0], args[1] as u32, args[2] as u16)),
         SYS_LISTEN => Ok(listen(args[0])),
         SYS_ACCEPT => Ok(accept(args[0])),
         SYS_SOCKET => Ok(socket(args[0] == 1)),
@@ -277,12 +276,8 @@ fn semaphore_up(sem_id: usize) -> usize {
 
 use crate::net::port_table;
 use crate::net::udp::UDP;
-use crate::net::{IPv4, net_arp, busy_wait_accept};
+use crate::net::{net_arp, busy_wait_accept};
 
-// just support udp
-fn connect(fd: usize, ip: u32, port: u16) -> usize {
-    unimplemented!();
-}
 
 // listen a port
 fn listen(fd: usize) -> usize {

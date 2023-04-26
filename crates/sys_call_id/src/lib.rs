@@ -22,7 +22,6 @@ pub const SYS_MUTEX_UNLOCK: usize = 18;
 pub const SYS_SEMAPHORE_CREATE: usize = 19;
 pub const SYS_SEMAPHORE_DOWN: usize = 20;
 pub const SYS_SEMAPHORE_UP: usize = 21;
-pub const SYS_CONNECT: usize = 22;
 pub const SYS_LISTEN: usize = 23;
 pub const SYS_ACCEPT: usize = 24;
 pub const SYS_SOCKET: usize = 25;

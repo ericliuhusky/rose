@@ -103,10 +103,6 @@ pub fn semaphore_up(sem_id: usize) -> usize {
     sys_call(SYS_SEMAPHORE_UP, [sem_id, 0, 0])
 }
 
-pub fn connect(fd: usize, ip: u32, port: u16) -> usize {
-    sys_call(SYS_CONNECT, [fd, ip as usize, port as usize])
-}
-
 pub fn listen(fd: usize) -> usize {
     sys_call(SYS_LISTEN, [fd as usize, 0, 0])
 }
