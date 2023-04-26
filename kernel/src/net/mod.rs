@@ -10,7 +10,7 @@ use self::net::{recv_arp, send_arp, recv_tcp, send_tcp};
 use self::tcp::TCP;
 
 pub const LOCALHOST_IP: IPv4 = IPv4::new(10, 0, 2, 15);
-pub const LOCALHOST_MAC: MacAddress = MacAddress::new([0x52, 0x54, 0x00, 0x12, 0x34, 0x56]);
+pub const LOCALHOST_MAC: MacAddress = MacAddress::new([1, 2, 3, 4, 5, 6]);
 
 
 pub fn net_arp() {
