@@ -49,11 +49,11 @@ pub fn net_arp() {
 }
 
 pub fn net_accept(lport: u16) -> Option<TCP> {
-    if let Some((tcp, data_len)) = TransPort::recv_tcp(lport) {    
+    if let Some((tcp, data)) = TransPort::recv_tcp(lport) {    
         if tcp.tcp.flags.contains(TcpFlags::S) {
             let mut re_tcp = tcp.clone();
             re_tcp.tcp = tcp.tcp.ack();
-            TransPort::send_tcp(re_tcp, 0);
+            TransPort::send_tcp(re_tcp, vec![]);
     
             Some(TCP::new(
                 tcp.tcp.dport.to_be(),
@@ -66,13 +66,13 @@ pub fn net_accept(lport: u16) -> Option<TCP> {
     }
 }
 
-pub fn net_tcp_read(lport: u16) -> Option<(TCPPacket, usize)> {
-    if let Some((tcp, data_len)) = TransPort::recv_tcp(lport) {
+pub fn net_tcp_read(lport: u16) -> Option<(TCPPacket, Vec<u8>)> {
+    if let Some((tcp, data)) = TransPort::recv_tcp(lport) {
         if tcp.tcp.flags.contains(TcpFlags::A) {
-            if data_len == 0 {
+            if data.len() == 0 {
                 return None;
             }
-            Some((tcp, data_len))
+            Some((tcp, data))
         } else {
             None
         }
@@ -81,7 +81,7 @@ pub fn net_tcp_read(lport: u16) -> Option<(TCPPacket, usize)> {
     }
 }
 
-pub fn busy_wait_tcp_read(lport: u16) -> (TCPPacket, usize) {
+pub fn busy_wait_tcp_read(lport: u16) -> (TCPPacket, Vec<u8>) {
     loop {
         if let Some(data) = net_tcp_read(lport) {
             return data;
@@ -253,13 +253,12 @@ struct UDPPacket {
     data: Vec<u8>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(packed)]
 pub struct TCPPacket {
     eth: Eth,
     ip: Ip,
     tcp: TCPHeader,
-    data: [u8; 1024],
 }
 
 #[repr(packed)]
@@ -403,23 +402,25 @@ impl TransPort {
         NET_DEVICE.transmit(&data);
     }
 
-    fn recv_tcp(port: u16) -> Option<(TCPPacket, usize)> {
+    fn recv_tcp(port: u16) -> Option<(TCPPacket, Vec<u8>)> {
         let mut recv_buf = vec![0u8; 1024];
         let len = NET_DEVICE.receive(&mut recv_buf);
         let data = &recv_buf[..len];
 
         let tcp_ptr = data.as_ptr() as *const TCPPacket;
         let tcp = unsafe { core::ptr::read(tcp_ptr) };
+        let data_ptr = unsafe { tcp_ptr.offset(1) } as *const u8;
         let data_len = len - size_of::<TCPHeader>() - size_of::<Ip>() - size_of::<Eth>();
+        let data = unsafe { core::slice::from_raw_parts(data_ptr, data_len) };
 
         if tcp.eth.type_() == EthType::IP && tcp.ip.protocol() == IPProtocal::TCP && tcp.tcp.dport.to_be() == port {
-            Some((tcp, data_len))
+            Some((tcp, data.to_vec()))
         } else {
             None
         }
     }
 
-    fn send_tcp(tcp: TCPPacket, data_len: usize) {
+    fn send_tcp(tcp: TCPPacket, data: Vec<u8>) {
         let mut re_tcp = tcp.clone();
         re_tcp.tcp.sport = tcp.tcp.dport;
         re_tcp.tcp.dport = tcp.tcp.sport;
@@ -429,14 +430,18 @@ impl TransPort {
         let mut sum = re_tcp.ip.dst.to_be().to_be();
         sum += re_tcp.ip.src.to_be().to_be();
         sum += (re_tcp.ip.pro as u16).to_be() as u32;
-        sum += ((data_len + size_of::<TCPHeader>()) as u16).to_be() as u32;
+        sum += ((data.len() + size_of::<TCPHeader>()) as u16).to_be() as u32;
 
-        let ans = check_sum(&re_tcp.tcp as *const TCPHeader as *const u8, data_len + size_of::<TCPHeader>(), sum);
+        let re_tcp_data: [u8; size_of::<TCPHeader>()] = unsafe { transmute(re_tcp.tcp) };
+        let mut re_tcp_data = re_tcp_data.to_vec();
+        re_tcp_data.extend(data.clone());
+
+        let ans = check_sum(re_tcp_data.as_slice().as_ptr(), data.len() + size_of::<TCPHeader>(), sum);
 
         re_tcp.tcp.sum = ans;
 
 
-        let len = data_len + size_of::<Ip>() + size_of::<TCPHeader>();
+        let len = data.len() + size_of::<Ip>() + size_of::<TCPHeader>();
         re_tcp.ip.src = tcp.ip.dst;
         re_tcp.ip.dst = tcp.ip.src;
         re_tcp.ip.len = (len as u16).to_be();
@@ -446,10 +451,11 @@ impl TransPort {
         re_tcp.eth.dhost = tcp.eth.shost;
         re_tcp.eth.shost = LOCALHOST_MAC.to_bytes();
 
-        let data: [u8; size_of::<TCPPacket>()] = unsafe { transmute(re_tcp) };
-        let data = &data[..(size_of::<Eth>() + size_of::<Ip>() + size_of::<TCPHeader>() + data_len)];
+        let header_data: [u8; size_of::<TCPPacket>()] = unsafe { transmute(re_tcp) };
+        let mut total_data = header_data.to_vec();
+        total_data.extend(data);
 
-        NET_DEVICE.transmit(data);
+        NET_DEVICE.transmit(&total_data);
     }
 }
 

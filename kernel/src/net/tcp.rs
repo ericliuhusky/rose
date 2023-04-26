@@ -9,14 +9,14 @@ use page_table::PhysicalBufferList;
 // add tcp packet info to this structure
 pub struct TCP {
     pub source_port: u16,
-    tcp: Option<TCPPacket>,
+    tcp: TCPPacket,
 }
 
 impl TCP {
     pub fn new_server() -> Self {
         Self {
             source_port: 0,
-            tcp: None,
+            tcp: TCPPacket::default(),
         }
     }
 
@@ -25,17 +25,17 @@ impl TCP {
     ) -> Self {
         Self {
             source_port: dest_port,
-            tcp: None,
+            tcp: TCPPacket::default(),
         }
     }
 }
 
 impl File for TCP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
-        let (tcp, data_len) = busy_wait_tcp_read(self.source_port);
-        self.tcp = Some(tcp.clone());
+        let (tcp, data) = busy_wait_tcp_read(self.source_port);
+        self.tcp = tcp.clone();
         let offset = ((tcp.tcp.offset >> 4 & 0xf) as usize - 5) * 4;
-        let data = &tcp.data[offset..data_len];
+        let data = &data[offset..];
 
         for (i, byte) in buf.iter_mut().enumerate() {
             if i >= data.len() {
@@ -55,20 +55,13 @@ impl File for TCP {
 
         let len = data.len();
 
-        let mut tcp = self.tcp.as_ref().unwrap().clone();
 
-        let mut tcp_h = tcp.tcp;
+        let (seq, ack) = (self.tcp.tcp.seq, self.tcp.tcp.ack);
+        self.tcp.tcp.ack = seq;
+        self.tcp.tcp.seq = ack;
+        self.tcp.tcp.flags = TcpFlags::A;
 
-        let (seq, ack) = (tcp_h.seq, tcp_h.ack);
-        tcp_h.ack = seq;
-        tcp_h.seq = ack;
-        tcp_h.flags = TcpFlags::A;
-
-        tcp.tcp = tcp_h;
-
-        let dst = &mut tcp.data;
-        dst[..len].copy_from_slice(&data);
-        TransPort::send_tcp(tcp, len);
+        TransPort::send_tcp(self.tcp.clone(), data);
 
         len
     }
