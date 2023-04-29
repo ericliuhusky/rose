@@ -3,24 +3,15 @@ use alloc::rc::Rc;
 use core::cell::RefCell;
 
 struct LinkedHashList<K: Ord + Clone, V> {
-    list: VecDeque<Rc<RefCell<V>>>,
+    keys: VecDeque<K>,
     dict: BTreeMap<K, Rc<RefCell<V>>>,
 }
 
 impl<K: Ord + Clone, V> LinkedHashList<K, V> {
     fn new() -> Self {
         Self {
-            list: VecDeque::new(),
+            keys: VecDeque::new(),
             dict: BTreeMap::new(),
-        }
-    }
-
-    fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
-        if let Some(r) = self.dict.get_mut(&k) {
-            *r = v;
-        } else {
-            self.dict.insert(k, Rc::clone(&v));
-            self.list.push_front(Rc::clone(&v));
         }
     }
 
@@ -28,26 +19,19 @@ impl<K: Ord + Clone, V> LinkedHashList<K, V> {
         self.dict.get(k)
     }
 
-    fn move_to_fisrt(&mut self, k: &K) {
-        if let Some(r) = self.dict.get(k) {
-            if let Some((i, _)) = self.list.iter().enumerate().find(|(_, t)| Rc::ptr_eq(t, r)) {
-                self.list.remove(i);
-            }
-            self.list.push_front(Rc::clone(r));
+    fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
+        if !self.dict.contains_key(&k) {
+            self.keys.push_back(k.clone());
         }
+        self.dict.insert(k, v.clone());
     }
 
-    fn remove_last(&mut self) {
-        if let Some(last) = self.list.pop_back() {
-            if let Some(k) = self
-                .dict
-                .iter()
-                .find(|(_, t)| Rc::ptr_eq(t, &last))
-                .map(|(k, _)| k.clone())
-            {
-                self.dict.remove(&k);
-            }
+    fn remove(&mut self, k: &K) {
+        if self.dict.contains_key(k) {
+            let (i, _) = self.keys.iter().enumerate().find(|(_, _k)| **_k == k.clone()).unwrap();
+            self.keys.remove(i);
         }
+        self.dict.remove(k);
     }
 }
 
@@ -64,27 +48,36 @@ impl<K: Ord + Clone, V> LRUCache<K, V> {
         }
     }
 
-    pub fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
-        self.refresh_used(&k);
-        self.l.set(k, v);
-
-        if self.l.list.len() > self.capacity {
-            self.l.remove_last();
+    fn refresh(&mut self, k: K) {
+        if let Some((i, _)) = self.l.keys.iter().enumerate().find(|(_, _k)| **_k == k) {
+            self.l.keys.remove(i);
+            self.l.keys.push_back(k);
         }
+    }
+
+    fn remove_least_used(&mut self) {
+        if let Some(k) = self.l.keys.front().map(|x| x.clone()) {
+            self.l.remove(&k);
+        }
+    }
+
+    pub fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
+        if self.l.get(&k).is_some() {
+            self.refresh(k.clone());
+        } else {
+            if self.l.keys.len() == self.capacity {
+                self.remove_least_used();
+            }
+        }
+        self.l.set(k, v);
     }
 
     pub fn get(&mut self, k: &K) -> Option<&Rc<RefCell<V>>> {
-        self.refresh_used(k);
+        self.refresh(k.clone());
         self.l.get(k)
     }
 
-    fn refresh_used(&mut self, k: &K) {
-        if self.l.dict.contains_key(k) {
-            self.l.move_to_fisrt(k);
-        }
-    }
-
-    pub fn list(&self) -> &VecDeque<Rc<RefCell<V>>> {
-        &self.l.list
+    pub fn list(&self) -> VecDeque<Rc<RefCell<V>>> {
+        self.l.keys.iter().map(|k| self.l.dict[k].clone()).collect()
     }
 }
