@@ -69,7 +69,7 @@ impl Drop for BlockCache {
 const BLOCK_CACHE_SIZE: usize = 16;
 
 pub struct BlockCacheManager {
-    lru: LRUCache<usize, BlockCache>,
+    lru: LRUCache<usize, Rc<RefCell<BlockCache>>>,
 }
 
 impl BlockCacheManager {

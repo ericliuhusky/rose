@@ -1,10 +1,8 @@
 use alloc::collections::{BTreeMap, VecDeque};
-use alloc::rc::Rc;
-use core::cell::RefCell;
 
 struct LinkedHashList<K: Ord + Clone, V> {
     keys: VecDeque<K>,
-    dict: BTreeMap<K, Rc<RefCell<V>>>,
+    dict: BTreeMap<K, V>,
 }
 
 impl<K: Ord + Clone, V> LinkedHashList<K, V> {
@@ -15,15 +13,15 @@ impl<K: Ord + Clone, V> LinkedHashList<K, V> {
         }
     }
 
-    fn get(&self, k: &K) -> Option<&Rc<RefCell<V>>> {
+    fn get(&self, k: &K) -> Option<&V> {
         self.dict.get(k)
     }
 
-    fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
+    fn set(&mut self, k: K, v: V) {
         if !self.dict.contains_key(&k) {
             self.keys.push_back(k.clone());
         }
-        self.dict.insert(k, v.clone());
+        self.dict.insert(k, v);
     }
 
     fn remove(&mut self, k: &K) {
@@ -61,7 +59,7 @@ impl<K: Ord + Clone, V> LRUCache<K, V> {
         }
     }
 
-    pub fn set(&mut self, k: K, v: Rc<RefCell<V>>) {
+    pub fn set(&mut self, k: K, v: V) {
         if self.l.get(&k).is_some() {
             self.refresh(k.clone());
         } else {
@@ -72,12 +70,16 @@ impl<K: Ord + Clone, V> LRUCache<K, V> {
         self.l.set(k, v);
     }
 
-    pub fn get(&mut self, k: &K) -> Option<&Rc<RefCell<V>>> {
+    pub fn get(&mut self, k: &K) -> Option<&V> {
         self.refresh(k.clone());
         self.l.get(k)
     }
 
-    pub fn list(&self) -> VecDeque<Rc<RefCell<V>>> {
-        self.l.keys.iter().map(|k| self.l.dict[k].clone()).collect()
+    pub fn list(&self) -> VecDeque<&V> {
+        let mut v = VecDeque::new();
+        for key in &self.l.keys {
+            v.push_back(&self.l.dict[key])
+        }
+        v
     }
 }
