@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+alloc_ext = { version = "0.1.0", path = "../crates/alloc_ext" }
 lazy_static = { version = "0.1.0", path = "../crates/lazy_static" }

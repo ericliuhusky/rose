@@ -13,5 +13,4 @@ use block_cache::{block_cache_sync_all, get_block_cache};
 pub use block_dev::BlockDevice;
 pub use efs::FileSystem;
 use layout::*;
-pub mod lru;
 mod inode;

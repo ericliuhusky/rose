@@ -1,4 +1,4 @@
-use super::lru::LRUCache;
+use alloc_ext::collections::LRUCache;
 use super::{BlockDevice, BLOCK_SZ};
 use alloc::rc::Rc;
 use core::cell::RefCell;
