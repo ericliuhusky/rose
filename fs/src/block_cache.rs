@@ -108,7 +108,7 @@ pub fn get_block_cache(
 }
 /// Sync all block cache to block device
 pub fn block_cache_sync_all() {
-    for cache in BLOCK_CACHE_MANAGER.borrow().lru.list().iter() {
+    for cache in BLOCK_CACHE_MANAGER.borrow().lru.values().iter() {
         cache.borrow_mut().sync();
     }
 }

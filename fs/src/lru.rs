@@ -1,11 +1,14 @@
-use alloc::collections::{BTreeMap, VecDeque};
+use alloc::{
+    collections::{BTreeMap, VecDeque},
+    vec::Vec,
+};
 
-struct LinkedHashList<K: Ord + Clone, V> {
+struct OrderedDictionary<K: Ord + Clone, V> {
     keys: VecDeque<K>,
     dict: BTreeMap<K, V>,
 }
 
-impl<K: Ord + Clone, V> LinkedHashList<K, V> {
+impl<K: Ord + Clone, V> OrderedDictionary<K, V> {
     fn new() -> Self {
         Self {
             keys: VecDeque::new(),
@@ -13,73 +16,82 @@ impl<K: Ord + Clone, V> LinkedHashList<K, V> {
         }
     }
 
-    fn get(&self, k: &K) -> Option<&V> {
-        self.dict.get(k)
+    fn get(&self, key: &K) -> Option<&V> {
+        self.dict.get(key)
     }
 
-    fn set(&mut self, k: K, v: V) {
-        if !self.dict.contains_key(&k) {
-            self.keys.push_back(k.clone());
+    fn set(&mut self, key: K, value: V) {
+        if !self.dict.contains_key(&key) {
+            self.keys.push_back(key.clone());
         }
-        self.dict.insert(k, v);
+        self.dict.insert(key, value);
     }
 
-    fn remove(&mut self, k: &K) {
-        if self.dict.contains_key(k) {
-            let (i, _) = self.keys.iter().enumerate().find(|(_, _k)| **_k == k.clone()).unwrap();
-            self.keys.remove(i);
+    fn remove(&mut self, key: &K) {
+        if self.dict.contains_key(key) {
+            let (index, _) = self
+                .keys
+                .iter()
+                .enumerate()
+                .find(|(_, _k)| **_k == *key)
+                .unwrap();
+            self.keys.remove(index);
         }
-        self.dict.remove(k);
+        self.dict.remove(key);
+    }
+
+    fn values(&self) -> Vec<&V> {
+        let mut v = Vec::new();
+        for key in &self.keys {
+            v.push(self.dict.get(key).unwrap());
+        }
+        v
     }
 }
 
 pub struct LRUCache<K: Ord + Clone, V> {
-    l: LinkedHashList<K, V>,
+    dict: OrderedDictionary<K, V>,
     capacity: usize,
 }
 
 impl<K: Ord + Clone, V> LRUCache<K, V> {
     pub fn new(capacity: usize) -> Self {
         Self {
-            l: LinkedHashList::new(),
+            dict: OrderedDictionary::new(),
             capacity,
         }
     }
 
-    fn refresh(&mut self, k: K) {
-        if let Some((i, _)) = self.l.keys.iter().enumerate().find(|(_, _k)| **_k == k) {
-            self.l.keys.remove(i);
-            self.l.keys.push_back(k);
+    fn refresh(&mut self, k: &K) {
+        if let Some((index, _)) = self.dict.keys.iter().enumerate().find(|(_, _k)| **_k == *k) {
+            self.dict.keys.remove(index);
+            self.dict.keys.push_back(k.clone());
         }
     }
 
     fn remove_least_used(&mut self) {
-        if let Some(k) = self.l.keys.front().map(|x| x.clone()) {
-            self.l.remove(&k);
+        if let Some(key) = self.dict.keys.front().map(|x| x.clone()) {
+            self.dict.remove(&key);
         }
     }
 
-    pub fn set(&mut self, k: K, v: V) {
-        if self.l.get(&k).is_some() {
-            self.refresh(k.clone());
+    pub fn get(&mut self, key: &K) -> Option<&V> {
+        self.refresh(key);
+        self.dict.get(key)
+    }
+
+    pub fn set(&mut self, key: K, value: V) {
+        if self.dict.get(&key).is_some() {
+            self.refresh(&key);
         } else {
-            if self.l.keys.len() == self.capacity {
+            if self.dict.keys.len() == self.capacity {
                 self.remove_least_used();
             }
         }
-        self.l.set(k, v);
+        self.dict.set(key, value);
     }
 
-    pub fn get(&mut self, k: &K) -> Option<&V> {
-        self.refresh(k.clone());
-        self.l.get(k)
-    }
-
-    pub fn list(&self) -> VecDeque<&V> {
-        let mut v = VecDeque::new();
-        for key in &self.l.keys {
-            v.push_back(&self.l.dict[key])
-        }
-        v
+    pub fn values(&self) -> Vec<&V> {
+        self.dict.values()
     }
 }
