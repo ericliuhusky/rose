@@ -32,9 +32,11 @@ impl LinkedList {
     }
 
     pub fn remove(&mut self, item: usize) -> bool {
-        let dummy = (&self.head as *const *mut usize) as *mut usize;
-        let mut pre = dummy;
-        let mut cur = self.head;
+        if self.head as usize == item {
+            self.head = unsafe { *self.head } as *mut usize;
+        }
+        let mut pre = self.head;
+        let mut cur = unsafe { *pre } as *mut usize;
         while !cur.is_null() {
             if cur as usize == item {
                 unsafe {

@@ -8,10 +8,10 @@ fn panic(info: &PanicInfo) -> ! {
             "Panicked at {}:{} {}",
             location.file(),
             location.line(),
-            info.message().unwrap()
+            info.message()
         );
     } else {
-        println!("Panicked: {}", info.message().unwrap());
+        println!("Panicked: {}", info.message());
     }
     unsafe {
         CORE_EXT.as_ref().unwrap().exit();

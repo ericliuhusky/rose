@@ -35,7 +35,7 @@ impl BlockCache {
 
     pub fn modify<T, V>(&mut self, offset: usize, f: impl FnOnce(&mut T) -> V) -> V {
         self.modified = true;
-        let addr = &self.cache[offset] as *const u8 as usize;
+        let addr = self.cache.as_mut_ptr();
         f(unsafe { &mut *(addr as *mut T) })
     }
 
@@ -46,7 +46,7 @@ impl BlockCache {
 
     pub fn set<V>(&mut self, offset: usize, value: V) {
         self.modified = true;
-        let addr = &self.cache[offset] as *const u8 as usize;
+        let addr = self.cache.as_mut_ptr();
         unsafe {
             *(addr as *mut V) = value;
         }
