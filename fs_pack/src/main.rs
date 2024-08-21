@@ -1,53 +1,43 @@
+use core::cell::RefCell;
 use fs::{BlockDevice, FileSystem};
-use std::{
-    fs::{read_dir, File},
-    io::{Read, Write},
-    rc::Rc,
-};
+use lazy_static::lazy_static;
+use std::fs::{read_dir, File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
+use std::rc::Rc;
 
-/*
-SuperBlock          1
-InodeBitmapBlock    1
-InodeAreaBlock      64
-DataBitmapBlock     16
-DataAreaBlock       16 * 4096
-*/
-pub const INODE_BITMAP_BLOCK_NUM: u32 = 1;
-pub const INODE_AREA_BLOCK_NUM: u32 = 64;
-pub const DATA_BITMAP_BLOCK_NUM: u32 = 16;
-pub const DATA_AREA_BLOCK_NUM: u32 = DATA_BITMAP_BLOCK_NUM * 4096;
-pub const TOTAL_BLOCK_NUM: u32 =
-    1 + INODE_BITMAP_BLOCK_NUM + INODE_AREA_BLOCK_NUM + DATA_BITMAP_BLOCK_NUM + DATA_AREA_BLOCK_NUM;
+const BLOCK_SIZE: u64 = 0x200;
 
-static mut BLOCKS: [[u8; 0x200]; TOTAL_BLOCK_NUM as usize] = [[0; 0x200]; TOTAL_BLOCK_NUM as usize];
+lazy_static! {
+    static ref FILE: RefCell<File> = RefCell::new(
+        OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open("../user/target/riscv64gc-unknown-none-elf/release/fs.img")
+            .unwrap()
+    );
+}
 
-pub struct MemoryBlockDevice;
-
-impl BlockDevice for MemoryBlockDevice {
-    fn read_block(&self, block_id: usize, buf: &mut [u8]) {
-        let block = unsafe { BLOCKS[block_id] };
-        for i in 0..buf.len() {
-            buf[i] = block[i];
-        }
+struct FileBlockDevice;
+impl BlockDevice for FileBlockDevice {
+    fn read_block(&self, i: usize, buf: &mut [u8]) {
+        FILE.borrow_mut()
+            .seek(SeekFrom::Start(i as u64 * BLOCK_SIZE))
+            .unwrap();
+        FILE.borrow_mut().read(buf).unwrap();
     }
 
-    fn write_block(&self, block_id: usize, buf: &[u8]) {
-        let block = unsafe { &mut BLOCKS[block_id] };
-        for i in 0..buf.len() {
-            block[i] = buf[i];
-        }
+    fn write_block(&self, i: usize, buf: &[u8]) {
+        FILE.borrow_mut()
+            .seek(SeekFrom::Start(i as u64 * BLOCK_SIZE))
+            .unwrap();
+        FILE.borrow_mut().write(buf).unwrap();
     }
 }
 
 pub fn fs_pack() {
-    let block_device = Rc::new(MemoryBlockDevice);
-    let mut fs = FileSystem::create(
-        block_device,
-        INODE_BITMAP_BLOCK_NUM,
-        INODE_AREA_BLOCK_NUM,
-        DATA_BITMAP_BLOCK_NUM,
-        DATA_AREA_BLOCK_NUM,
-    );
+    let block_device = Rc::new(FileBlockDevice);
+    let fs = FileSystem::format(block_device, 64000000);
 
     let apps: Vec<String> = read_dir("../user/src/bin")
         .unwrap()
@@ -66,15 +56,9 @@ pub fn fs_pack() {
         .unwrap();
         let mut all_data = Vec::<u8>::new();
         f.read_to_end(&mut all_data).unwrap();
-        let inode = fs.create_inode(&app).unwrap();
-        fs.write_at(inode, 0, &all_data);
+        let i = fs.create(&app);
+        fs.write(i, &all_data);
     }
-
-    let mut f = File::create(format!(
-        "../user/target/riscv64gc-unknown-none-elf/release/fs.img",
-    ))
-    .unwrap();
-    f.write_all(unsafe { &BLOCKS.concat() }).unwrap();
 }
 
 fn main() {

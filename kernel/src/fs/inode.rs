@@ -1,12 +1,12 @@
 use super::File;
 use crate::drivers::BLOCK_DEVICE;
-use alloc_ext::rc::MutRc;
-use page_table::PhysicalBufferList;
-use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
+use alloc_ext::rc::MutRc;
+use core::cell::RefCell;
 use fs::FileSystem;
 use lazy_static::*;
+use page_table::PhysicalBufferList;
 /// A wrapper around a filesystem inode
 /// to implement File trait atop
 pub struct OSInode {
@@ -24,23 +24,13 @@ impl OSInode {
     }
     /// Read all data inside a inode into vector
     pub fn read_all(&self) -> Vec<u8> {
-        let mut offset = self.offset.borrow_mut();
-        let mut buffer = [0u8; 512];
-        let mut v: Vec<u8> = Vec::new();
-        loop {
-            let len = FILE_SYSTEM.borrow().read_at(self.inode, *offset, &mut buffer);
-            if len == 0 {
-                break;
-            }
-            *offset += len;
-            v.extend_from_slice(&buffer[..len]);
-        }
-        v
+        FILE_SYSTEM.borrow().read(self.inode)
     }
 }
 
 lazy_static! {
-    static ref FILE_SYSTEM: RefCell<FileSystem> = RefCell::new(FileSystem::open(BLOCK_DEVICE.clone()));
+    static ref FILE_SYSTEM: RefCell<FileSystem> =
+        RefCell::new(FileSystem::open(BLOCK_DEVICE.clone()));
 }
 /// List all files in the filesystems
 pub fn list_apps() {
@@ -53,51 +43,41 @@ pub fn list_apps() {
 
 ///Open file with flags
 pub fn open_file(name: &str, create: bool) -> Option<MutRc<OSInode>> {
-    let mut fs = FILE_SYSTEM.borrow_mut();
+    let fs = FILE_SYSTEM.borrow_mut();
     if create {
         if let Some(inode) = fs.find(name) {
-            fs.clear(inode);
             Some(MutRc::new(OSInode::new(inode)))
         } else {
             // create file
-            fs
-                .create_inode(name)
-                .map(|inode| MutRc::new(OSInode::new(inode)))
+            let inode = fs.create(name);
+            Some(MutRc::new(OSInode::new(inode)))
         }
     } else {
-        fs.find(name).map(|inode| {
-            MutRc::new(OSInode::new(inode))
-        })
+        fs.find(name).map(|inode| MutRc::new(OSInode::new(inode)))
     }
 }
 
 impl File for OSInode {
     fn read(&mut self, buf: PhysicalBufferList) -> usize {
-        let mut offset = self.offset.borrow_mut();
-        let mut total_read_size = 0usize;
+        let v = FILE_SYSTEM.borrow().read(self.inode);
+        let mut start = 0;
         for slice in buf.list {
-            let read_size = FILE_SYSTEM.borrow().read_at(self.inode, *offset, slice);
-            if read_size == 0 {
-                break;
-            }
-            *offset += read_size;
-            total_read_size += read_size;
+            let end = (start + slice.len()).min(v.len());
+            slice[..v.len()].copy_from_slice(&v[start..end]);
+            start += slice.len();
         }
-        total_read_size
+        v.len()
     }
     fn write(&mut self, buf: PhysicalBufferList) -> usize {
-        let mut offset = self.offset.borrow_mut();
-        let mut total_write_size = 0usize;
+        let mut v = Vec::new();
         for slice in buf.list {
-            let write_size = FILE_SYSTEM.borrow_mut().write_at(self.inode, *offset, slice);
-            assert_eq!(write_size, slice.len());
-            *offset += write_size;
-            total_write_size += write_size;
+            v.extend_from_slice(slice);
         }
-        total_write_size
+        FILE_SYSTEM.borrow_mut().write(self.inode, &v);
+        0
     }
 
     fn file_type(&self) -> super::FileType {
-        super::FileType::INODE    
+        super::FileType::INODE
     }
 }

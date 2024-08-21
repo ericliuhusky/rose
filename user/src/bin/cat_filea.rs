@@ -14,12 +14,7 @@ pub fn main() {
         panic!("Error occured when opening file");
     }
     let mut buf = [0u8; 256];
-    loop {
-        let size = read(fd, &mut buf);
-        if size == 0 {
-            break;
-        }
-        println!("{}", core::str::from_utf8(&buf[..size]).unwrap());
-    }
+    let size = read(fd, &mut buf);
+    println!("{}", core::str::from_utf8(&buf[..size]).unwrap());
     close(fd);
 }
