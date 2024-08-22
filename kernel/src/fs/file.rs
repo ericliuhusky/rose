@@ -1,4 +1,4 @@
-use super::File;
+use super::FileInterface;
 use crate::drivers::BLOCK_DEVICE;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
@@ -7,30 +7,26 @@ use core::cell::RefCell;
 use fs::FileSystem;
 use lazy_static::*;
 use page_table::PhysicalBufferList;
-/// A wrapper around a filesystem inode
 /// to implement File trait atop
-pub struct OSInode {
-    inode: usize,
-    offset: RefCell<usize>,
+pub struct File {
+    dir_entry_i: usize,
 }
 
-impl OSInode {
-    /// Construct an OS inode from a inode
-    pub fn new(inode: usize) -> Self {
+impl File {
+    pub fn new(dir_entry_i: usize) -> Self {
         Self {
-            inode,
-            offset: RefCell::new(0),
+            dir_entry_i,
         }
     }
-    /// Read all data inside a inode into vector
+
     pub fn read_all(&self) -> Vec<u8> {
-        FILE_SYSTEM.borrow().read(self.inode)
+        FILE_SYSTEM.borrow().read(self.dir_entry_i)
     }
 }
 
 lazy_static! {
     static ref FILE_SYSTEM: RefCell<FileSystem> =
-        RefCell::new(FileSystem::open(BLOCK_DEVICE.clone()));
+        RefCell::new(FileSystem::mount(BLOCK_DEVICE.clone()));
 }
 /// List all files in the filesystems
 pub fn list_apps() {
@@ -42,24 +38,24 @@ pub fn list_apps() {
 }
 
 ///Open file with flags
-pub fn open_file(name: &str, create: bool) -> Option<MutRc<OSInode>> {
+pub fn open_file(name: &str, create: bool) -> Option<MutRc<File>> {
     let fs = FILE_SYSTEM.borrow_mut();
     if create {
-        if let Some(inode) = fs.find(name) {
-            Some(MutRc::new(OSInode::new(inode)))
+        if let Some(f) = fs.find(name) {
+            Some(MutRc::new(File::new(f)))
         } else {
             // create file
-            let inode = fs.create(name);
-            Some(MutRc::new(OSInode::new(inode)))
+            let f = fs.create(name);
+            Some(MutRc::new(File::new(f)))
         }
     } else {
-        fs.find(name).map(|inode| MutRc::new(OSInode::new(inode)))
+        fs.find(name).map(|f| MutRc::new(File::new(f)))
     }
 }
 
-impl File for OSInode {
+impl FileInterface for File {
     fn read(&mut self, buf: PhysicalBufferList) -> usize {
-        let v = FILE_SYSTEM.borrow().read(self.inode);
+        let v = FILE_SYSTEM.borrow().read(self.dir_entry_i);
         let mut start = 0;
         for slice in buf.list {
             let end = (start + slice.len()).min(v.len());
@@ -73,11 +69,11 @@ impl File for OSInode {
         for slice in buf.list {
             v.extend_from_slice(slice);
         }
-        FILE_SYSTEM.borrow_mut().write(self.inode, &v);
+        FILE_SYSTEM.borrow_mut().write(self.dir_entry_i, &v);
         0
     }
 
     fn file_type(&self) -> super::FileType {
-        super::FileType::INODE
+        super::FileType::FILE
     }
 }

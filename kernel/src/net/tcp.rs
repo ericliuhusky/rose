@@ -1,7 +1,7 @@
 use super::TCPPacket;
 use super::busy_wait_tcp_read;
 use super::net::send_tcp;
-use crate::fs::File;
+use crate::fs::FileInterface;
 use alloc::vec;
 use super::TcpFlags;
 use page_table::PhysicalBufferList;
@@ -30,7 +30,7 @@ impl TCP {
     }
 }
 
-impl File for TCP {
+impl FileInterface for TCP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         let tcp = busy_wait_tcp_read(self.source_port);
         self.tcp = tcp.clone();

@@ -115,8 +115,8 @@ pub static mut PROCESSES: IDAllocDict<MutRc<Process>> = IDAllocDict::new();
 
 pub fn add_initproc() {
     use crate::fs::open_file;
-    let inode = open_file("initproc", false).unwrap();
-    let elf_data = inode.read_all();
+    let f = open_file("initproc", false).unwrap();
+    let elf_data = f.read_all();
     let mut initproc = Process::new(&elf_data);
     let pid = unsafe {
         PROCESSES.insert(initproc.clone())

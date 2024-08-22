@@ -4,13 +4,13 @@ use crate::semaphore::Semaphore;
 use alloc_ext::{rc::{MutRc, MutWeak}, collections::IDAllocDict};
 use exception::context::Context;
 use super::{add_task, PROCESSES};
-use crate::fs::{File, Stdin, Stdout};
+use crate::fs::{FileInterface, Stdin, Stdout};
 
 pub struct Process {
     pub pid: Option<usize>,
     pub is_exited: bool,
     pub memory_set: UserSpace,
-    pub fd_table: IDAllocDict<MutRc<dyn File>>,
+    pub fd_table: IDAllocDict<MutRc<dyn FileInterface>>,
     pub tasks: IDAllocDict<MutRc<Task>>,
     pub mutexs: IDAllocDict<MutRc<Mutex>>,
     pub semaphores: IDAllocDict<MutRc<Semaphore>>,
@@ -26,7 +26,7 @@ impl Process {
     pub fn new(elf_data: &[u8]) -> MutRc<Self> {
         let (memory_set, entry_address) = UserSpace::new(elf_data);
 
-        let mut fd_table: IDAllocDict<MutRc<dyn File>> = IDAllocDict::new();
+        let mut fd_table: IDAllocDict<MutRc<dyn FileInterface>> = IDAllocDict::new();
         fd_table.insert(MutRc::new(Stdin));
         fd_table.insert(MutRc::new(Stdout));
         fd_table.insert(MutRc::new(Stdout));

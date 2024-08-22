@@ -1,4 +1,4 @@
-use super::File;
+use super::FileInterface;
 use crate::task::suspend_and_run_next;
 use alloc::collections::VecDeque;
 use alloc_ext::rc::MutRc;
@@ -39,7 +39,7 @@ impl Pipe {
     }
 }
 
-impl File for Pipe {
+impl FileInterface for Pipe {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         if self.buffer.is_empty() {
             suspend_and_run_next();

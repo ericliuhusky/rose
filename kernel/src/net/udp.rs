@@ -1,6 +1,6 @@
 use super::UDPPacket;
 use super::net::{recv_udp, send_udp};
-use crate::fs::File;
+use crate::fs::FileInterface;
 use crate::net::net_arp;
 use alloc::vec;
 use page_table::PhysicalBufferList;
@@ -19,7 +19,7 @@ impl UDP {
     }
 }
 
-impl File for UDP {
+impl FileInterface for UDP {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         net_arp();
         let udp: UDPPacket;

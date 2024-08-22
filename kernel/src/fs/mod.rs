@@ -1,11 +1,11 @@
 //! File system in os
-mod inode;
+mod file;
 mod stdio;
 mod pipe;
 
 
 /// File trait
-pub trait File {
+pub trait FileInterface {
     /// Read file to `UserBuffer`
     fn read(&mut self, buf: PhysicalBufferList) -> usize;
     /// Write `UserBuffer` to file
@@ -16,13 +16,13 @@ pub trait File {
 pub enum FileType {
     STDIN,
     STDOUT,
-    INODE,
+    FILE,
     PIPE,
     TCP,
     UDP,
 }
 
-pub use inode::{list_apps, open_file, OSInode};
+pub use file::{list_apps, open_file, File};
 use page_table::PhysicalBufferList;
 pub use stdio::{Stdin, Stdout};
 pub use pipe::Pipe;

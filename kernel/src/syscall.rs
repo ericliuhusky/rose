@@ -136,8 +136,8 @@ mod 系统调用_进程 {
             .page_table
             .translate_buffer(path, len)
             .to_string();
-        if let Some(elf_inode) = open_file(&应用名称, false) {
-            let elf_data = elf_inode.read_all();
+        if let Some(elf_f) = open_file(&应用名称, false) {
+            let elf_data = elf_f.read_all();
             process.exec(&elf_data);
             1
         } else {
@@ -156,7 +156,7 @@ mod 系统调用_进程 {
     }
 }
 
-use crate::fs::{open_file, File};
+use crate::fs::{open_file, FileInterface};
 use crate::mutex::Mutex;
 use crate::net::tcp::TCP;
 use crate::semaphore::Semaphore;
@@ -171,8 +171,8 @@ pub fn open(path: usize, len: usize, create: bool) -> usize {
         .page_table
         .translate_buffer(path, len)
         .to_string();
-    if let Some(inode) = open_file(path.as_str(), create) {
-        let fd = process.fd_table.insert(inode);
+    if let Some(f) = open_file(path.as_str(), create) {
+        let fd = process.fd_table.insert(f);
         fd
     } else {
         0
@@ -304,7 +304,7 @@ fn accept(fd: usize) -> usize {
 
 fn socket(tcp: bool) -> usize {
     let mut process = current_process();
-    let socket: MutRc<dyn File> = if tcp {
+    let socket: MutRc<dyn FileInterface> = if tcp {
         MutRc::new(TCP::new_server())
     } else {
         MutRc::new(UDP::new())

@@ -76,7 +76,7 @@ impl FileSystem {
         }
     }
 
-    pub fn open(block_device: Rc<dyn BlockDevice>) -> Self {
+    pub fn mount(block_device: Rc<dyn BlockDevice>) -> Self {
         let mb = block_device.get::<MetaBlock>(0, 0);
         let fat_blocks = mb.fat_blocks;
         Self {

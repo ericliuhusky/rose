@@ -1,10 +1,10 @@
-use super::File;
+use super::FileInterface;
 use page_table::PhysicalBufferList;
 
 pub struct Stdin;
 pub struct Stdout;
 
-impl File for Stdin {
+impl FileInterface for Stdin {
     fn read(&mut self, mut buf: PhysicalBufferList) -> usize {
         assert_eq!(buf.len(), 1);
         let c = sbi_call::getchar();
@@ -21,7 +21,7 @@ impl File for Stdin {
     }
 }
 
-impl File for Stdout {
+impl FileInterface for Stdout {
     fn read(&mut self, _buf: PhysicalBufferList) -> usize {
         unimplemented!()
     }
