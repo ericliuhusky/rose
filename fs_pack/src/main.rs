@@ -56,8 +56,8 @@ pub fn fs_pack() {
         .unwrap();
         let mut all_data = Vec::<u8>::new();
         f.read_to_end(&mut all_data).unwrap();
-        let i = fs.create(&app);
-        fs.write(i, &all_data);
+        let f = fs.create(&app);
+        f._write(&all_data);
     }
 }
 

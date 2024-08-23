@@ -114,9 +114,9 @@ pub fn wakeup_task(task: MutRc<Task>) {
 pub static mut PROCESSES: IDAllocDict<MutRc<Process>> = IDAllocDict::new();
 
 pub fn add_initproc() {
-    use crate::fs::open_file;
-    let f = open_file("initproc", false).unwrap();
-    let elf_data = f.read_all();
+    use crate::fs::FILE_SYSTEM;
+    let f = FILE_SYSTEM.open("initproc", false).unwrap();
+    let elf_data = f._read();
     let mut initproc = Process::new(&elf_data);
     let pid = unsafe {
         PROCESSES.insert(initproc.clone())

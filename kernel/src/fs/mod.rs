@@ -22,7 +22,7 @@ pub enum FileType {
     UDP,
 }
 
-pub use file::{list_apps, open_file, File};
+pub use file::{list_apps, FILE_SYSTEM};
 use page_table::PhysicalBufferList;
 pub use stdio::{Stdin, Stdout};
 pub use pipe::Pipe;

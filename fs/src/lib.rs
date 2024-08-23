@@ -43,35 +43,49 @@ impl DirEntry {
     }
 }
 
-pub struct FileSystem {
+pub struct File {
+    dir_entry_i: usize,
     block_device: Rc<dyn BlockDevice>,
 }
 
-impl FileSystem {
-    pub fn format(block_device: Rc<dyn BlockDevice>) -> Self {
-        // erase
-        for i in 0..TOTAL_BLOCKS {
-            block_device.write_block(i, &[0; BLOCK_SIZE]);
+impl File {
+    fn new(dir_entry_i: usize, block_device: Rc<dyn BlockDevice>) -> Self {
+        Self {
+            dir_entry_i,
+            block_device,
         }
-        block_device.set(0, 0, usize::MAX);
-        Self { block_device }
     }
 
-    pub fn mount(block_device: Rc<dyn BlockDevice>) -> Self {
-        Self { block_device }
+    pub fn _read(&self) -> Vec<u8> {
+        let mut v = Vec::new();
+        let dir_entry = self
+            .block_device
+            .get::<DirEntry>(FAT_BLOCKS, self.dir_entry_i);
+        let file_len = dir_entry.file_size;
+        let mut cluster_i = dir_entry.cluster;
+        let mut start = 0;
+        loop {
+            for sector in 0..BLOCKS_PER_CLUSTER {
+                let mut buf = [0; 0x200];
+                self.block_device.read_block(
+                    FAT_BLOCKS + cluster_i * BLOCKS_PER_CLUSTER + sector,
+                    &mut buf,
+                );
+                start += 0x200;
+                if start >= file_len {
+                    v.extend_from_slice(&buf[..file_len % 0x200]);
+                    return v;
+                }
+                v.extend_from_slice(&buf);
+            }
+            let next_cluster_i = self.block_device.get::<usize>(0, cluster_i);
+            cluster_i = *next_cluster_i;
+        }
     }
 
-    pub fn create(&self, name: &str) -> usize {
-        let cluster_i = self.find_free_cluster();
-        self.set_cluster(cluster_i, usize::MAX);
-        let dir_entry_i = self.find_free_dir_entry();
-        self.set_dir_entry(dir_entry_i, DirEntry::new(name, cluster_i, 0));
-        dir_entry_i
-    }
-
-    pub fn write(&self, i: usize, buf: &[u8]) {
+    pub fn _write(&self, buf: &[u8]) {
         self.block_device
-            .set_closure::<DirEntry>(FAT_BLOCKS, i, |dir_entry| {
+            .set_closure::<DirEntry>(FAT_BLOCKS, self.dir_entry_i, |dir_entry| {
                 let mut cluster_i = dir_entry.cluster;
                 let mut start = 0;
                 loop {
@@ -95,9 +109,9 @@ impl FileSystem {
                     if start >= buf.len() {
                         break;
                     }
-                    let next_cluster_i = self.find_free_cluster();
-                    self.set_cluster(next_cluster_i, usize::MAX);
-                    self.set_cluster(cluster_i, next_cluster_i);
+                    let next_cluster_i = self.block_device.find_free_cluster();
+                    self.block_device.set_cluster(next_cluster_i, usize::MAX);
+                    self.block_device.set_cluster(cluster_i, next_cluster_i);
                     cluster_i = next_cluster_i;
                 }
 
@@ -106,29 +120,46 @@ impl FileSystem {
                 new_dir_entry
             });
     }
+}
 
-    pub fn read(&self, i: usize) -> Vec<u8> {
-        let mut v = Vec::new();
-        let dir_entry = self.block_device.get::<DirEntry>(FAT_BLOCKS, i);
-        let file_len = dir_entry.file_size;
-        let mut cluster_i = dir_entry.cluster;
-        let mut start = 0;
-        loop {
-            for sector in 0..BLOCKS_PER_CLUSTER {
-                let mut buf = [0; 0x200];
-                self.block_device.read_block(
-                    FAT_BLOCKS + cluster_i * BLOCKS_PER_CLUSTER + sector,
-                    &mut buf,
-                );
-                start += 0x200;
-                if start >= file_len {
-                    v.extend_from_slice(&buf[..file_len % 0x200]);
-                    return v;
-                }
-                v.extend_from_slice(&buf);
+pub struct FileSystem {
+    block_device: Rc<dyn BlockDevice>,
+}
+
+impl FileSystem {
+    pub fn format(block_device: Rc<dyn BlockDevice>) -> Self {
+        // erase
+        for i in 0..TOTAL_BLOCKS {
+            block_device.write_block(i, &[0; BLOCK_SIZE]);
+        }
+        block_device.set(0, 0, usize::MAX);
+        Self { block_device }
+    }
+
+    pub fn mount(block_device: Rc<dyn BlockDevice>) -> Self {
+        Self { block_device }
+    }
+
+    pub fn create(&self, name: &str) -> File {
+        let cluster_i = self.block_device.find_free_cluster();
+        self.block_device.set_cluster(cluster_i, usize::MAX);
+        let dir_entry_i = self.block_device.find_free_dir_entry();
+        self.block_device
+            .set_dir_entry(dir_entry_i, DirEntry::new(name, cluster_i, 0));
+        File::new(dir_entry_i, self.block_device.clone())
+    }
+
+    pub fn open(&self, name: &str, create: bool) -> Option<File> {
+        if create {
+            if let Some(f) = self.find(name) {
+                Some(File::new(f, self.block_device.clone()))
+            } else {
+                let f = self.create(name);
+                Some(f)
             }
-            let next_cluster_i = self.block_device.get::<usize>(0, cluster_i);
-            cluster_i = *next_cluster_i;
+        } else {
+            self.find(name)
+                .map(|f| File::new(f, self.block_device.clone()))
         }
     }
 
@@ -144,23 +175,6 @@ impl FileSystem {
     pub fn find(&self, name: &str) -> Option<usize> {
         self.block_device
             .find::<DirEntry>(FAT_BLOCKS, BLOCKS_PER_CLUSTER, |item| item.name() == name)
-    }
-
-    fn find_free_cluster(&self) -> usize {
-        self.block_device.find_free::<usize>(0, FAT_BLOCKS)
-    }
-
-    fn find_free_dir_entry(&self) -> usize {
-        self.block_device
-            .find_free::<DirEntry>(FAT_BLOCKS, BLOCKS_PER_CLUSTER)
-    }
-
-    fn set_dir_entry(&self, i: usize, v: DirEntry) {
-        self.block_device.set::<DirEntry>(FAT_BLOCKS, i, v);
-    }
-
-    fn set_cluster(&self, i: usize, v: usize) {
-        self.block_device.set::<usize>(0, i, v);
     }
 }
 
@@ -222,5 +236,21 @@ impl dyn BlockDevice {
 
     fn set<Item>(&self, start: usize, i: usize, v: Item) {
         self.set_closure(start, i, |_| v);
+    }
+
+    fn find_free_cluster(&self) -> usize {
+        self.find_free::<usize>(0, FAT_BLOCKS)
+    }
+
+    fn find_free_dir_entry(&self) -> usize {
+        self.find_free::<DirEntry>(FAT_BLOCKS, BLOCKS_PER_CLUSTER)
+    }
+
+    fn set_dir_entry(&self, i: usize, v: DirEntry) {
+        self.set::<DirEntry>(FAT_BLOCKS, i, v);
+    }
+
+    fn set_cluster(&self, i: usize, v: usize) {
+        self.set::<usize>(0, i, v);
     }
 }
