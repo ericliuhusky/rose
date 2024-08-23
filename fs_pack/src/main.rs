@@ -37,7 +37,7 @@ impl BlockDevice for FileBlockDevice {
 
 pub fn fs_pack() {
     let block_device = Rc::new(FileBlockDevice);
-    let fs = FileSystem::format(block_device, 64000000);
+    let fs = FileSystem::format(block_device);
 
     let apps: Vec<String> = read_dir("../user/src/bin")
         .unwrap()

@@ -10,20 +10,9 @@ use core::ptr::{slice_from_raw_parts, slice_from_raw_parts_mut};
 use core::usize;
 
 const BLOCK_SIZE: usize = 0x200;
+const TOTAL_BLOCKS: usize = 0x20040;
+const FAT_BLOCKS: usize = 0x40;
 const BLOCKS_PER_CLUSTER: usize = 0x20;
-
-/// 记录文件系统元数据的块
-#[repr(C, packed)]
-struct MetaBlock {
-    /// 文件分配表的块数
-    fat_blocks: usize,
-}
-
-impl MetaBlock {
-    fn new(fat_blocks: usize) -> Self {
-        Self { fat_blocks }
-    }
-}
 
 /// 目录项
 #[derive(Default, PartialEq, Clone)]
@@ -56,33 +45,20 @@ impl DirEntry {
 
 pub struct FileSystem {
     block_device: Rc<dyn BlockDevice>,
-    fat_blocks: usize,
 }
 
 impl FileSystem {
-    pub fn format(block_device: Rc<dyn BlockDevice>, size: usize) -> Self {
-        let total_sectors = size / BLOCK_SIZE;
-        let fat_blocks = (total_sectors - 1) / (1 + 64 * BLOCKS_PER_CLUSTER);
+    pub fn format(block_device: Rc<dyn BlockDevice>) -> Self {
         // erase
-        for i in 0..total_sectors {
+        for i in 0..TOTAL_BLOCKS {
             block_device.write_block(i, &[0; BLOCK_SIZE]);
         }
-        let mb = MetaBlock::new(fat_blocks);
-        block_device.set(0, 0, mb);
-        block_device.set(1, 0, usize::MAX);
-        Self {
-            block_device,
-            fat_blocks,
-        }
+        block_device.set(0, 0, usize::MAX);
+        Self { block_device }
     }
 
     pub fn mount(block_device: Rc<dyn BlockDevice>) -> Self {
-        let mb = block_device.get::<MetaBlock>(0, 0);
-        let fat_blocks = mb.fat_blocks;
-        Self {
-            block_device,
-            fat_blocks,
-        }
+        Self { block_device }
     }
 
     pub fn create(&self, name: &str) -> usize {
@@ -95,7 +71,7 @@ impl FileSystem {
 
     pub fn write(&self, i: usize, buf: &[u8]) {
         self.block_device
-            .set_closure::<DirEntry>(1 + self.fat_blocks, i, |dir_entry| {
+            .set_closure::<DirEntry>(FAT_BLOCKS, i, |dir_entry| {
                 let mut cluster_i = dir_entry.cluster;
                 let mut start = 0;
                 loop {
@@ -111,7 +87,7 @@ impl FileSystem {
                             block.copy_from_slice(&buf[start..end]);
                         }
                         self.block_device.write_block(
-                            1 + self.fat_blocks + cluster_i * BLOCKS_PER_CLUSTER + sector,
+                            FAT_BLOCKS + cluster_i * BLOCKS_PER_CLUSTER + sector,
                             &block,
                         );
                         start += 0x200;
@@ -133,7 +109,7 @@ impl FileSystem {
 
     pub fn read(&self, i: usize) -> Vec<u8> {
         let mut v = Vec::new();
-        let dir_entry = self.block_device.get::<DirEntry>(1 + self.fat_blocks, i);
+        let dir_entry = self.block_device.get::<DirEntry>(FAT_BLOCKS, i);
         let file_len = dir_entry.file_size;
         let mut cluster_i = dir_entry.cluster;
         let mut start = 0;
@@ -141,7 +117,7 @@ impl FileSystem {
             for sector in 0..BLOCKS_PER_CLUSTER {
                 let mut buf = [0; 0x200];
                 self.block_device.read_block(
-                    1 + self.fat_blocks + cluster_i * BLOCKS_PER_CLUSTER + sector,
+                    FAT_BLOCKS + cluster_i * BLOCKS_PER_CLUSTER + sector,
                     &mut buf,
                 );
                 start += 0x200;
@@ -151,7 +127,7 @@ impl FileSystem {
                 }
                 v.extend_from_slice(&buf);
             }
-            let next_cluster_i = self.block_device.get::<usize>(1, cluster_i);
+            let next_cluster_i = self.block_device.get::<usize>(0, cluster_i);
             cluster_i = *next_cluster_i;
         }
     }
@@ -159,7 +135,7 @@ impl FileSystem {
     pub fn ls(&self) -> Vec<String> {
         let mut v = Vec::new();
         self.block_device
-            .for_each::<DirEntry>(1 + self.fat_blocks, BLOCKS_PER_CLUSTER, |_, i| {
+            .for_each::<DirEntry>(FAT_BLOCKS, BLOCKS_PER_CLUSTER, |_, i| {
                 v.push(String::from(i.name()))
             });
         v
@@ -167,26 +143,24 @@ impl FileSystem {
 
     pub fn find(&self, name: &str) -> Option<usize> {
         self.block_device
-            .find::<DirEntry>(1 + self.fat_blocks, BLOCKS_PER_CLUSTER, |item| {
-                item.name() == name
-            })
+            .find::<DirEntry>(FAT_BLOCKS, BLOCKS_PER_CLUSTER, |item| item.name() == name)
     }
 
     fn find_free_cluster(&self) -> usize {
-        self.block_device.find_free::<usize>(1, self.fat_blocks)
+        self.block_device.find_free::<usize>(0, FAT_BLOCKS)
     }
 
     fn find_free_dir_entry(&self) -> usize {
         self.block_device
-            .find_free::<DirEntry>(1 + self.fat_blocks, BLOCKS_PER_CLUSTER)
+            .find_free::<DirEntry>(FAT_BLOCKS, BLOCKS_PER_CLUSTER)
     }
 
     fn set_dir_entry(&self, i: usize, v: DirEntry) {
-        self.block_device.set::<DirEntry>(1 + self.fat_blocks, i, v);
+        self.block_device.set::<DirEntry>(FAT_BLOCKS, i, v);
     }
 
     fn set_cluster(&self, i: usize, v: usize) {
-        self.block_device.set::<usize>(1, i, v);
+        self.block_device.set::<usize>(0, i, v);
     }
 }
 
