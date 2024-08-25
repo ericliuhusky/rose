@@ -1,6 +1,6 @@
 use super::FileInterface;
 use crate::drivers::BLOCK_DEVICE;
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 use fs::{File, FileSystem};
 use lazy_static::*;
 use page_table::PhysicalBufferList;
@@ -11,7 +11,12 @@ lazy_static! {
 /// List all files in the filesystems
 pub fn list_apps() {
     println!("/**** APPS ****");
-    for app in FILE_SYSTEM.ls() {
+    let apps: Vec<String> = FILE_SYSTEM
+        .files()
+        .iter()
+        .map(|f| String::from(f.name()))
+        .collect();
+    for app in apps {
         println!("{}", app);
     }
     println!("**************/");
