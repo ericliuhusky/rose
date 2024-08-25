@@ -1,6 +1,4 @@
 #![no_std]
-#![feature(allow_internal_unstable)]
-#![feature(panic_info_message)]
 
 extern crate alloc;
 

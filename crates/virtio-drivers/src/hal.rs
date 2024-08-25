@@ -1,4 +1,3 @@
-use super::*;
 use core::marker::PhantomData;
 
 /// A virtual memory address in the address space of the program.

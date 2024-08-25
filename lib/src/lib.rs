@@ -6,7 +6,7 @@ extern crate alloc;
 mod syscall;
 
 use alloc::boxed::Box;
-use core_ext::{println, print, CoreExt, CORE_EXT};
+pub use core_ext::{println, print, CoreExt, CORE_EXT};
 use syscall::putchar;
 pub use syscall::{exit, read, write, close, yield_, get_time, getpid, fork, exec, pipe, thread_create, mutex_create, mutex_lock, mutex_unlock, semaphore_create, semaphore_down, semaphore_up, listen, accept, socket, bind};
 use alloc_ext::heap_alloc;

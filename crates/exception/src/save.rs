@@ -2,7 +2,6 @@ use crate::TRAP_CONTEXT_ADDR;
 use crate::restore::TEMP_CONTEXT;
 
 use super::context::Context;
-use super::restore::restore_context;
 use core::arch::asm;
 
 extern "C" {

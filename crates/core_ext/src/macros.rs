@@ -6,12 +6,11 @@ macro_rules! print {
 }
 
 #[macro_export]
-#[allow_internal_unstable(format_args_nl)]
 macro_rules! println {
     () => {
         $crate::print!("\n")
     };
     ($($arg:tt)*) => {{
-        $crate::io::_print(format_args_nl!($($arg)*));
+        $crate::io::_print(format_args!("{}\n", format_args!($($arg)*)));
     }};
 }

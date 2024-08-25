@@ -8,7 +8,6 @@ mod page_table;
 mod physical_buffer_list;
 
 pub use address::{Page, Address};
-use alloc::string::String;
 use page_table::PageTableEntryFlags;
 pub use address::{VPN, PPN, VA, PA};
 use page_table::{PageTableEntry, PageTable};

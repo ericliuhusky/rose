@@ -182,7 +182,6 @@ pub fn open(path: usize, len: usize, create: bool) -> usize {
 
 pub fn close(fd: usize) -> usize {
     let mut process = current_process();
-    let fd_table = &process.fd_table;
     process.fd_table.remove(fd);
     0
 }
@@ -282,7 +281,7 @@ use crate::net::{net_arp, busy_wait_accept};
 
 // listen a port
 fn listen(fd: usize) -> usize {
-    let mut process = current_process();
+    let process = current_process();
     let mut socket = process.fd_table.get(fd).unwrap().clone();
     let socket =  unsafe { &mut *(&mut socket as *mut _ as *mut MutRc<TCP>) };
     port_table::listen(socket.source_port);

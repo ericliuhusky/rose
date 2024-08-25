@@ -4,7 +4,6 @@ extern crate alloc;
 
 mod header;
 
-use core::ops::Range;
 use alloc::vec::Vec;
 use header::{Header, ProgromHeader};
 
