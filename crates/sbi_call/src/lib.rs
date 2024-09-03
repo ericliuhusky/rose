@@ -1,5 +1,7 @@
 #![no_std]
 
+mod uart16550;
+
 use core::arch::asm;
 
 #[inline(always)]
@@ -17,9 +19,6 @@ fn sbi_call(eid: usize, fid: usize, arg0: usize, arg1: usize) -> (usize, usize) 
     (error, value)
 }
 
-const SBI_PUTCHAR: usize = 1;
-const SBI_GETCHAR: usize = 2;
-
 const EID_SRST: usize = eid_from_str("SRST");
 const SYSTEM_RESET: usize = 0;
 const SHUTDOWN: usize = 0;
@@ -34,11 +33,11 @@ const fn eid_from_str(name: &str) -> usize {
 }
 
 pub fn putchar(c: usize) {
-    sbi_call(SBI_PUTCHAR, 0, c, 0);
+    uart16550::putchar(c as u8)
 }
 
 pub fn getchar() -> usize {
-    sbi_call(SBI_GETCHAR, 0, 0, 0).0
+    uart16550::getchar() as usize
 }
 
 pub fn shutdown() -> ! {
