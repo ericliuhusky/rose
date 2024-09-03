@@ -19,11 +19,6 @@ fn sbi_call(eid: usize, fid: usize, arg0: usize, arg1: usize) -> (usize, usize) 
     (error, value)
 }
 
-const EID_SRST: usize = eid_from_str("SRST");
-const SYSTEM_RESET: usize = 0;
-const SHUTDOWN: usize = 0;
-const NOREASON: usize = 0;
-
 const EID_TIME: usize = eid_from_str("TIME");
 const SET_TIMER: usize = 0;
 
@@ -41,7 +36,12 @@ pub fn getchar() -> usize {
 }
 
 pub fn shutdown() -> ! {
-    sbi_call(EID_SRST, SYSTEM_RESET, SHUTDOWN, NOREASON);
+    const PASS: u32 = 0x5555;
+    const TEST_BASE: usize = 0x100000;
+    static mut TEST: *mut u32 = TEST_BASE as *mut u32;
+    unsafe {
+        *TEST = PASS;
+    }
     unreachable!()
 }
 
