@@ -3,7 +3,7 @@ use core::arch::asm;
 #[inline(always)]
 pub fn switch(satp: usize) {
     unsafe {
-        riscv_register::satp::write(satp);
+        riscv::register::satp::write(satp);
         asm!("sfence.vma");
     }
 }

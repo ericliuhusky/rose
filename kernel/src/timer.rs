@@ -1,4 +1,4 @@
-use riscv_register::{time, sie};
+use riscv::register::{time, sie};
 use sbi_call::set_timer;
 
 const 一毫秒时钟计数器的增量: usize = 12500;
@@ -17,5 +17,7 @@ pub fn 为下一次时钟中断定时() {
 }
 
 pub fn 开启时钟中断() {
-    sie::enable_timer_interrupt();
+    unsafe {
+        sie::set_stimer();
+    }
 }

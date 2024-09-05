@@ -7,12 +7,14 @@ pub mod restore;
 mod save;
 pub mod memory_set;
 
-use riscv_register::stvec;
+use riscv::register::stvec;
 use save::save;
 
 pub fn init() {
     // 设置异常处理入口地址为save
-    stvec::write(save as usize);
+    unsafe {
+        stvec::write(save as usize, stvec::TrapMode::Direct);
+    }
 }
 
 #[no_mangle]

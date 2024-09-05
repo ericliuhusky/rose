@@ -13,8 +13,8 @@ extern "C" {
 fn save_context(cx_user_va: usize) {
     unsafe {
         let cx = &mut *(cx_user_va as *mut Context);
-        cx.sepc = riscv_register::sepc::read();
-        cx.x[10] = riscv_register::sscratch::read();
+        cx.sepc = riscv::register::sepc::read();
+        cx.x[10] = riscv::register::sscratch::read();
         super::memory_set::switch_kernel();
         let cx = &mut *(TRAP_CONTEXT_ADDR as *mut Context);
         for i in 0..32 {
