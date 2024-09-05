@@ -1,50 +1,45 @@
 #![no_std]
 
-mod uart16550;
-
 use core::arch::asm;
 
 #[inline(always)]
-fn sbi_call(eid: usize, fid: usize, arg0: usize, arg1: usize) -> (usize, usize) {
-    let (error, value);
+fn sbi_call(id: usize, args: [usize; 3]) -> usize {
+    let ret;
     unsafe {
         asm!(
             "ecall",
-            in("a7") eid,
-            in("a6") fid,
-            inlateout("a0") arg0 => error,
-            inlateout("a1") arg1 => value,
+            inlateout("x10") args[0] => ret,
+            in("x11") args[1],
+            in("x12") args[2],
+            in("x17") id
         );
     }
-    (error, value)
+    ret
 }
 
-const EID_TIME: usize = eid_from_str("TIME");
 const SET_TIMER: usize = 0;
-
-const fn eid_from_str(name: &str) -> usize {
-    let bytes = name.as_bytes();
-    u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize
-}
+const GET_TIME: usize = 1;
+const SHUTDOWN: usize = 2;
+const PUTCHAR: usize = 3;
+const GETCHAR: usize = 4;
 
 pub fn putchar(c: usize) {
-    uart16550::putchar(c as u8)
+    sbi_call(PUTCHAR, [c, 0, 0]);
 }
 
 pub fn getchar() -> usize {
-    uart16550::getchar() as usize
+    sbi_call(GETCHAR, [0, 0, 0])
 }
 
 pub fn shutdown() -> ! {
-    const PASS: u32 = 0x5555;
-    const TEST_BASE: usize = 0x100000;
-    static mut TEST: *mut u32 = TEST_BASE as *mut u32;
-    unsafe {
-        *TEST = PASS;
-    }
+    sbi_call(SHUTDOWN, [0, 0, 0]);
     unreachable!()
 }
 
 pub fn set_timer(time: usize) {
-    sbi_call(EID_TIME, SET_TIMER, time, 0);
+    sbi_call(SET_TIMER, [time, 0, 0]);
+}
+
+pub fn get_time() -> usize {
+    sbi_call(GET_TIME, [0, 0, 0])
 }

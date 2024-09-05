@@ -138,8 +138,6 @@ impl KernelSpace {
         memory_space.map(Segment::new_identical(
             ekernel as usize..AVAILABLE_MEMORY_END,
         ));
-        memory_space.map(Segment::new_identical(0x100000..0x102000)); // MMIO VIRT_TEST/RTC  in virt machine
-        memory_space.map(Segment::new_identical(0x10000000..0x10001000));
         memory_space.map(Segment::new_identical(0x10007000..0x10008000));
         memory_space.map(Segment::new_identical(0x10008000..0x10009000)); // MMIO VIRT_TEST/RTC  in virt machine
         memory_space.map(Segment::new_identical(DMA_START_ADDR..DMA_END_ADDR));

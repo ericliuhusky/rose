@@ -1,10 +1,10 @@
-use riscv::register::{time, sie};
-use sbi_call::set_timer;
+use riscv::register::sie;
+use sbi_call::{get_time, set_timer};
 
 const 一毫秒时钟计数器的增量: usize = 12500;
 
 fn 读取时钟计数器的值() -> usize {
-    time::read()
+    get_time()
 }
 
 pub fn 读取时钟计数器的毫秒值() -> usize {
