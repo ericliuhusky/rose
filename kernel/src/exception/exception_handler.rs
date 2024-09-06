@@ -1,11 +1,9 @@
+use crate::exception::restore::restore_context;
 use crate::syscall::syscall;
-use crate::task::{current_task, suspend_and_run_next, exit_and_run_next, current_process};
+use crate::task::{current_process, current_task, exit_and_run_next, suspend_and_run_next};
 use crate::timer::为下一次时钟中断定时;
-use exception::restore::restore_context;
 use riscv::register::scause::Trap;
-use riscv::register::{
-    scause::{self, Exception, Interrupt},
-};
+use riscv::register::scause::{self, Exception, Interrupt};
 
 #[no_mangle]
 /// 处理中断、异常或系统调用
@@ -17,8 +15,7 @@ pub fn exception_handler() {
         Trap::Exception(Exception::UserEnvCall) => {
             // ecall指令长度为4个字节，sepc加4以在sret的时候返回ecall指令的下一个指令继续执行
             上下文.sepc += 4;
-            let result =
-                syscall(上下文.x[17], [上下文.x[10], 上下文.x[11], 上下文.x[12]]);
+            let result = syscall(上下文.x[17], [上下文.x[10], 上下文.x[11], 上下文.x[12]]);
             match result {
                 Ok(ret) => 上下文.x[10] = ret,
                 Err(id) => {

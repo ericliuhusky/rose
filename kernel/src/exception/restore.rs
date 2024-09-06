@@ -1,4 +1,4 @@
-use crate::TRAP_CONTEXT_ADDR;
+use super::TRAP_CONTEXT_ADDR;
 use super::context::Context;
 use core::arch::asm;
 
@@ -17,7 +17,6 @@ pub fn restore_context(cx_ptr: *const Context, user_satp: usize) {
     }
 }
 
-#[no_mangle]
 #[link_section = ".text.trampoline"]
 pub static mut TEMP_CONTEXT: Context = Context { x: [0; 32], sepc: 0 };
 

@@ -7,8 +7,6 @@ edition = "2021"
 page_table = { path = "../crates/page_table" }
 elf_reader = { path = "../crates/elf_reader" }
 sbi_call = { path = "../crates/sbi_call" }
-entry = { path = "../crates/entry" }
-exception = { path = "../crates/exception" }
 lazy_static = { version = "0.1.0", path = "../crates/lazy_static" }
 frame_allocator = { version = "0.1.0", path = "../crates/frame_allocator" }
 virtio-drivers = { path = "../crates/virtio-drivers", version = "0.1.0" }

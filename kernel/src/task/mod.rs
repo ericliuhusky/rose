@@ -3,7 +3,7 @@ pub mod task;
 use alloc_ext::{rc::MutRc, collections::IDAllocDict};
 use self::task::{Task, Process};
 use alloc::vec::Vec;
-use exception::restore::restore_context;
+use crate::exception::restore::restore_context;
 use sbi_call::shutdown;
 
 pub struct TaskManager {

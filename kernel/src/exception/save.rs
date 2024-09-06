@@ -1,15 +1,10 @@
-use crate::TRAP_CONTEXT_ADDR;
-use crate::restore::TEMP_CONTEXT;
-
 use super::context::Context;
+use super::exception_handler::exception_handler;
+use super::restore::TEMP_CONTEXT;
+use super::TRAP_CONTEXT_ADDR;
 use core::arch::asm;
 
-extern "C" {
-    fn exception_handler();
-}
-
 #[link_section = ".text.trampoline"]
-#[no_mangle]
 fn save_context(cx_user_va: usize) {
     unsafe {
         let cx = &mut *(cx_user_va as *mut Context);
@@ -25,6 +20,8 @@ fn save_context(cx_user_va: usize) {
     }
 }
 
+const KERNEL_STACK_TOP: usize = 0x87800000;
+
 #[link_section = ".text.trampoline"]
 #[repr(align(8))]
 #[naked]
@@ -34,7 +31,7 @@ pub extern "C" fn save() {
             "
             csrw sscratch, a0
 
-            la a0, TEMP_CONTEXT
+            la a0, {TEMP_CONTEXT}
             
             sd x1, 1*8(a0)
             sd x2, 2*8(a0)
@@ -68,10 +65,13 @@ pub extern "C" fn save() {
             sd x31, 31*8(a0)
 
 
-            ld sp, KERNEL_STACK_TOP
+            li sp, {KERNEL_STACK_TOP}
 
-            call save_context
+            call {save_context}
         ",
+        KERNEL_STACK_TOP = const KERNEL_STACK_TOP,
+        TEMP_CONTEXT = sym TEMP_CONTEXT,
+        save_context = sym save_context,
             options(noreturn)
         )
     }
