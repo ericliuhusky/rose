@@ -13,10 +13,10 @@ run:
 	@cd sbi && cargo build --release --target $(TARGET)
 	@rust-objcopy $(BOOTLOADER_ELF) --strip-all -O binary $(BOOTLOADER_BIN)
 
-	@cd kernel && cargo build --release
+	@cd kernel && cargo build --release --target $(TARGET)
 	@rust-objcopy $(KERNEL_ELF) --strip-all -O binary $(KERNEL_BIN)
 
-	@cd user && cargo build --release
+	@cd user && cargo build --release --target $(TARGET)
 	@cd fs_pack && cargo run
 	
 	@qemu-system-riscv64 \
