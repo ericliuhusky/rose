@@ -1,4 +1,4 @@
-use crate::{println, CORE_EXT};
+use crate::{println, self_impl};
 use core::panic::PanicInfo;
 
 #[panic_handler]
@@ -13,7 +13,5 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         println!("Panicked: {}", info.message());
     }
-    unsafe {
-        CORE_EXT.as_ref().unwrap().exit();
-    }
+    self_impl().exit();
 }

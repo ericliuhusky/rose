@@ -1,20 +1,26 @@
 #![no_std]
 
-extern crate alloc;
-
 #[macro_use]
 mod macros;
 pub mod io;
 pub mod panic;
-
-use alloc::boxed::Box;
 
 pub trait CoreExt {
     fn putchar(&self, c: char);
     fn exit(&self) -> !;
 }
 
-pub static mut CORE_EXT: Option<Box<dyn CoreExt>> = None;
+static mut CORE_EXT: Option<&'static dyn CoreExt> = None;
+
+pub fn init(core_ext_impl: &'static dyn CoreExt) {
+    unsafe {
+        CORE_EXT = Some(core_ext_impl);
+    }
+}
+
+fn self_impl() -> &'static dyn CoreExt {
+    unsafe { CORE_EXT.unwrap() }
+}
 
 pub struct UInt(pub usize);
 

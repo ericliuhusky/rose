@@ -8,25 +8,22 @@ extern crate core_ext;
 extern crate bitflags;
 extern crate entry;
 
-mod syscall;
+mod drivers;
 mod exception_handler;
+mod fs;
+mod mm;
+mod mutex;
+mod net;
+mod semaphore;
+mod syscall;
 mod task;
 mod timer;
-mod mm;
-mod drivers;
-mod fs;
-mod mutex;
-mod semaphore;
-mod net;
 
-use alloc::boxed::Box;
-use core_ext::{CoreExt, CORE_EXT};
+use core_ext::CoreExt;
 
 #[no_mangle]
 fn main() {
-    unsafe {
-        CORE_EXT = Some(Box::new(CoreExtImpl));
-    }
+    core_ext::init(&CoreExtImpl);
     println!("[kernel] Hello, world!");
     mm::初始化();
     exception::init();
