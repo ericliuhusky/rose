@@ -32,7 +32,7 @@ pub fn fs_pack() {
                 .read(true)
                 .write(true)
                 .create(true)
-                .open("../user/target/riscv64gc-unknown-none-elf/release/fs.img")
+                .open("../user/target/riscv64imac-unknown-none-elf/release/fs.img")
                 .unwrap(),
         );
     }
@@ -50,7 +50,7 @@ pub fn fs_pack() {
 
     for app in apps {
         let mut f = File::open(format!(
-            "../user/target/riscv64gc-unknown-none-elf/release/{}",
+            "../user/target/riscv64imac-unknown-none-elf/release/{}",
             app
         ))
         .unwrap();
