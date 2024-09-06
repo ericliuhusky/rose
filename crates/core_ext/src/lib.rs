@@ -2,6 +2,7 @@
 
 #[macro_use]
 mod macros;
+pub mod cell;
 pub mod io;
 pub mod panic;
 
@@ -10,16 +11,16 @@ pub trait CoreExt {
     fn exit(&self) -> !;
 }
 
-static mut CORE_EXT: Option<&'static dyn CoreExt> = None;
+static_var! {
+    CORE_EXT: Option<&'static dyn CoreExt> = None;
+}
 
 pub fn init(core_ext_impl: &'static dyn CoreExt) {
-    unsafe {
-        CORE_EXT = Some(core_ext_impl);
-    }
+    CORE_EXT::set(Some(core_ext_impl));
 }
 
 fn self_impl() -> &'static dyn CoreExt {
-    unsafe { CORE_EXT.unwrap() }
+    CORE_EXT.unwrap()
 }
 
 pub struct UInt(pub usize);

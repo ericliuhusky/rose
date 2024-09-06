@@ -2,11 +2,10 @@ use super::virtio_bus::VirtioHal;
 use alloc::rc::Rc;
 use core::cell::RefCell;
 use fs::BlockDevice;
-use lazy_static::*;
 use virtio_drivers::{VirtIOBlk, VirtIOHeader};
 
-lazy_static! {
-    pub static ref BLOCK_DEVICE: Rc<dyn BlockDevice> = Rc::new(VirtIOBlock::new());
+static_var! {
+    BLOCK_DEVICE: Rc<dyn BlockDevice> = Rc::new(VirtIOBlock::new());
 }
 
 #[allow(unused)]

@@ -2,7 +2,6 @@ use alloc::vec::Vec;
 use core::ops::Range;
 use elf_reader::ElfFile;
 use frame_allocator::FrameAllocator;
-use lazy_static::lazy_static;
 
 pub const AVAILABLE_MEMORY_END: usize = DMA_START_ADDR;
 pub const DMA_SIZE: usize = 6 * 0x1000;
@@ -30,8 +29,8 @@ extern "C" {
     fn etrampoline();
 }
 
-use page_table::{Address, Page, SV39PageTable, HIGH_START_ADDR, HIGH_END_ADDR};
 use page_table::VA;
+use page_table::{Address, Page, SV39PageTable, HIGH_END_ADDR, HIGH_START_ADDR};
 
 trait Space {
     fn new_bare() -> Self;
@@ -108,7 +107,7 @@ impl Clone for UserSpace {
             let len = segment.va_range.len();
             let src = self.page_table.translate_buffer(va, len);
             let mut dst = memory_space.page_table.translate_buffer(va, len);
-            dst.copy_from_slice(&src);        
+            dst.copy_from_slice(&src);
         }
         memory_space
     }
@@ -153,8 +152,8 @@ impl KernelSpace {
     }
 }
 
-lazy_static! {
-    pub static ref KERNEL_SPACE: KernelSpace = KernelSpace::new();
+static_var! {
+    KERNEL_SPACE: KernelSpace = KernelSpace::new();
 }
 
 #[derive(Clone)]

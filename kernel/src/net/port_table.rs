@@ -1,9 +1,8 @@
 use alloc::collections::BTreeSet;
 use core::cell::RefCell;
-use lazy_static::lazy_static;
 
-lazy_static! {
-    static ref LISTEN_PORTS: RefCell<BTreeSet<u16>> = RefCell::new(BTreeSet::new());
+static_var! {
+    LISTEN_PORTS: RefCell<BTreeSet<u16>> = RefCell::new(BTreeSet::new());
 }
 
 pub fn listen(port: u16) {

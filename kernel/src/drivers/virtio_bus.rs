@@ -3,7 +3,7 @@ use core::cell::RefCell;
 use page_table::{Address, Page, PA, PPN};
 use virtio_drivers::Hal;
 
-struct DMAAllocator {
+pub struct DMAAllocator {
     current: usize,
     end: usize,
 }
@@ -26,8 +26,8 @@ impl DMAAllocator {
     }
 }
 
-lazy_static::lazy_static! {
-    static ref DMA_ALLOCATOR: RefCell<DMAAllocator> = RefCell::new(DMAAllocator::new(DMA_START_ADDR, DMA_END_ADDR));
+static_var! {
+    DMA_ALLOCATOR: RefCell<DMAAllocator> = RefCell::new(DMAAllocator::new(DMA_START_ADDR, DMA_END_ADDR));
 }
 
 pub struct VirtioHal;

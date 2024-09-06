@@ -1,14 +1,14 @@
 use core::cell::RefCell;
+use core_ext::static_var;
 use fs::{BlockDevice, FileSystem};
-use lazy_static::lazy_static;
 use std::fs::{read_dir, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::rc::Rc;
 
 const BLOCK_SIZE: u64 = 0x200;
 
-lazy_static! {
-    static ref FILE: RefCell<File> = RefCell::new(
+static_var! {
+    FILE: RefCell<File> = RefCell::new(
         OpenOptions::new()
             .read(true)
             .write(true)

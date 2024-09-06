@@ -2,11 +2,10 @@ use super::FileInterface;
 use crate::drivers::BLOCK_DEVICE;
 use alloc::{string::String, vec::Vec};
 use fs::{File, FileSystem};
-use lazy_static::*;
 use page_table::PhysicalBufferList;
 
-lazy_static! {
-    pub static ref FILE_SYSTEM: FileSystem = FileSystem::mount(BLOCK_DEVICE.clone());
+static_var! {
+    FILE_SYSTEM: FileSystem = FileSystem::mount(BLOCK_DEVICE.clone());
 }
 /// List all files in the filesystems
 pub fn list_apps() {

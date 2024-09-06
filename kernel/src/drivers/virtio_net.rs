@@ -1,13 +1,12 @@
 use super::virtio_bus::VirtioHal;
 use alloc::rc::Rc;
 use core::cell::RefCell;
-use lazy_static::*;
 use virtio_drivers::{VirtIOHeader, VirtIONet};
 
 const VIRTIO8: usize = 0x10007000;
 
-lazy_static! {
-    pub static ref NET_DEVICE: Rc<dyn NetDevice> = Rc::new(VirtIONetWrapper::new());
+static_var! {
+    NET_DEVICE: Rc<dyn NetDevice> = Rc::new(VirtIONetWrapper::new());
 }
 
 pub trait NetDevice {

@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 fs = { path = "../fs" }
-lazy_static = { version = "0.1.0", path = "../crates/lazy_static" }
+core_ext = { version = "0.1.0", path = "../crates/core_ext" }
