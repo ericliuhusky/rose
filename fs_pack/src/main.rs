@@ -1,41 +1,41 @@
-use core::cell::RefCell;
-use core_ext::static_var;
 use fs::{BlockDevice, FileSystem};
 use std::fs::{read_dir, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
+use std::mem::MaybeUninit;
 use std::rc::Rc;
 
 const BLOCK_SIZE: u64 = 0x200;
 
-static_var! {
-    FILE: RefCell<File> = RefCell::new(
-        OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open("../user/target/riscv64gc-unknown-none-elf/release/fs.img")
-            .unwrap()
-    );
-}
+static mut FILE: MaybeUninit<File> = MaybeUninit::uninit();
 
 struct FileBlockDevice;
 impl BlockDevice for FileBlockDevice {
     fn read_block(&self, i: usize, buf: &mut [u8]) {
-        FILE.borrow_mut()
+        unsafe { FILE.assume_init_ref() }
             .seek(SeekFrom::Start(i as u64 * BLOCK_SIZE))
             .unwrap();
-        FILE.borrow_mut().read(buf).unwrap();
+        unsafe { FILE.assume_init_ref() }.read(buf).unwrap();
     }
 
     fn write_block(&self, i: usize, buf: &[u8]) {
-        FILE.borrow_mut()
+        unsafe { FILE.assume_init_ref() }
             .seek(SeekFrom::Start(i as u64 * BLOCK_SIZE))
             .unwrap();
-        FILE.borrow_mut().write(buf).unwrap();
+        unsafe { FILE.assume_init_ref() }.write(buf).unwrap();
     }
 }
 
 pub fn fs_pack() {
+    unsafe {
+        FILE = MaybeUninit::new(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .open("../user/target/riscv64gc-unknown-none-elf/release/fs.img")
+                .unwrap(),
+        );
+    }
     let block_device = Rc::new(FileBlockDevice);
     let fs = FileSystem::format(block_device);
 
