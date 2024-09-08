@@ -64,3 +64,53 @@ macro_rules! static_var {
         }
     };
 }
+
+#[macro_export]
+macro_rules! registers_to_a0 {
+    ($op:ident,$($i:expr),*) => {
+        concat!(
+            $(
+                stringify!($op), " x", $i, ", ", $i, "*8(a0)\n",
+            )*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! store_registers_to_a0 {
+    () => {
+        registers_to_a0!(
+            sd, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! load_registers_from_a0 {
+    () => {
+        registers_to_a0!(
+            ld, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! write_a0_to_scratch {
+    ($mode:ident) => {
+        concat!("csrw ", stringify!($mode), "scratch, a0")
+    };
+}
+
+#[macro_export]
+macro_rules! read_scratch_and_store_to_a0 {
+    ($mode:ident) => {
+        concat!(
+            "csrr t0, ",
+            stringify!($mode),
+            "scratch\n",
+            "sd t0, 10*8(a0)"
+        )
+    };
+}
