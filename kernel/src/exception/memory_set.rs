@@ -8,13 +8,8 @@ pub fn switch(satp: usize) {
     }
 }
 
-#[inline(always)]
-pub fn switch_user(satp: usize) {
-    switch(satp);
-}
-
 #[link_section = ".text.trampoline"]
-static mut KERNEL_SATP: usize = 0;
+pub static mut KERNEL_SATP: usize = 0;
 
 pub fn set_kernel_satp(satp: usize) {
     unsafe {

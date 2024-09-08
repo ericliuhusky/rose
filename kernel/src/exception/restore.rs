@@ -3,37 +3,31 @@ use super::TRAP_CONTEXT_ADDR;
 use core::arch::asm;
 
 #[link_section = ".text.trampoline"]
-#[inline(never)]
-pub fn restore_context(cx_ptr: *const Context, user_satp: usize) {
-    unsafe {
-        for i in 0..32 {
-            TEMP_CONTEXT.x[i] = (*cx_ptr).x[i];
-        }
-        TEMP_CONTEXT.sepc = (*cx_ptr).sepc;
-        TRAP_CONTEXT_ADDR = cx_ptr as usize;
-        super::memory_set::switch_user(user_satp);
-        riscv::register::sepc::write(TEMP_CONTEXT.sepc);
-        restore(&TEMP_CONTEXT);
-    }
-}
-
-#[link_section = ".text.trampoline"]
-pub static mut TEMP_CONTEXT: Context = Context {
-    x: [0; 32],
-    sepc: 0,
-};
-
-#[link_section = ".text.trampoline"]
 #[repr(align(8))]
 #[naked]
-unsafe extern "C" fn restore(cx: &Context) {
-    asm!(
-        load_registers_from_a0!(),
-        "
-        ld a0, 10*8(a0)
-
-        sret
-    ",
-        options(noreturn)
-    )
+pub extern "C" fn restore_context(cx_ptr: *const Context, user_satp: usize) {
+    unsafe {
+        asm!(
+            "csrw sscratch, a1", // write user_satp to sscratch
+            "
+            la t0, {TRAP_CONTEXT_ADDR}
+            sd a0, (t0)
+            ", // TRAP_CONTEXT_ADDR = cx_ptr as usize;
+            "
+            ld t0, 32*8(a0)
+            csrw sepc, t0
+            ", // write context sepc to sepc register
+            load_registers_from_a0!(),
+            "ld a0, 10*8(a0)",
+            "
+            csrrw a0, sscratch, a0
+            csrw satp, a0
+            sfence.vma
+            csrrw a0, sscratch, a0
+            ", // switch to user memory set
+            "sret",
+            TRAP_CONTEXT_ADDR = sym TRAP_CONTEXT_ADDR,
+            options(noreturn)
+        )
+    }
 }
