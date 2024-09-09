@@ -1,5 +1,5 @@
 use crate::mm::memory_set::{DMA_END_ADDR, DMA_START_ADDR};
-use core::cell::RefCell;
+use core_ext::cell::SafeCell;
 use page_table::{Address, Page, PA, PPN};
 use virtio_drivers::Hal;
 
@@ -27,7 +27,7 @@ impl DMAAllocator {
 }
 
 static_var! {
-    DMA_ALLOCATOR: RefCell<DMAAllocator> = RefCell::new(DMAAllocator::new(DMA_START_ADDR, DMA_END_ADDR));
+    DMA_ALLOCATOR: SafeCell<DMAAllocator> = SafeCell::new(DMAAllocator::new(DMA_START_ADDR, DMA_END_ADDR));
 }
 
 pub struct VirtioHal;

@@ -18,4 +18,8 @@ impl<T> SafeCell<T> {
     pub fn get(&self) -> *mut T {
         self.cell.get()
     }
+
+    pub fn borrow_mut(&self) -> &mut T {
+        unsafe { &mut *self.get() }
+    }
 }

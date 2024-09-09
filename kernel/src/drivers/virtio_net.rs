@@ -1,6 +1,6 @@
 use super::virtio_bus::VirtioHal;
 use alloc::rc::Rc;
-use core::cell::RefCell;
+use core_ext::cell::SafeCell;
 use virtio_drivers::{VirtIOHeader, VirtIONet};
 
 const VIRTIO8: usize = 0x10007000;
@@ -14,7 +14,7 @@ pub trait NetDevice {
     fn receive(&self, data: &mut [u8]) -> usize;
 }
 
-pub struct VirtIONetWrapper(RefCell<VirtIONet<VirtioHal>>);
+pub struct VirtIONetWrapper(SafeCell<VirtIONet<VirtioHal>>);
 
 impl NetDevice for VirtIONetWrapper {
     fn transmit(&self, data: &[u8]) {
@@ -30,7 +30,7 @@ impl VirtIONetWrapper {
     pub fn new() -> Self {
         unsafe {
             let virtio = VirtIONet::<VirtioHal>::new(&mut *(VIRTIO8 as *mut VirtIOHeader));
-            VirtIONetWrapper(RefCell::new(virtio))
+            VirtIONetWrapper(SafeCell::new(virtio))
         }
     }
 }

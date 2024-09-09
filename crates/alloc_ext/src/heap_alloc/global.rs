@@ -1,6 +1,6 @@
+use core_ext::cell::SafeCell;
 use super::linked_list::LinkedList;
 use core::alloc::{GlobalAlloc, Layout};
-use core::cell::RefCell;
 use core::cmp::min;
 use core::mem::size_of;
 
@@ -12,18 +12,18 @@ pub struct Global {
     代表从起始地址开始，尺寸为1 << level(2的level次方)的地址块为可用地址
     start..(start + (1 << level))
      */
-    free_list: RefCell<[LinkedList; 32]>,
+    free_list: SafeCell<[LinkedList; 32]>,
 }
 
 impl Global {
     pub const fn new() -> Self {
         Self {
-            free_list: RefCell::new([LinkedList::new(); 32]),
+            free_list: SafeCell::new([LinkedList::new(); 32]),
         }
     }
 
     pub fn init(&self, start: usize, size: usize) {
-        let mut free_list = self.free_list.borrow_mut();
+        let free_list = self.free_list.borrow_mut();
 
         let mut start = start;
         let end = start + size;
@@ -40,7 +40,7 @@ impl Global {
 
 unsafe impl GlobalAlloc for Global {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let mut free_list = self.free_list.borrow_mut();
+        let free_list = self.free_list.borrow_mut();
 
         // 尺寸二进制对齐，要大于所需要的尺寸才能放得下将要存放的数据
         let size = layout.size().next_power_of_two();
@@ -68,7 +68,7 @@ unsafe impl GlobalAlloc for Global {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        let mut free_list = self.free_list.borrow_mut();
+        let free_list = self.free_list.borrow_mut();
 
         let size = layout.size().next_power_of_two();
         let level = size.trailing_zeros() as usize;

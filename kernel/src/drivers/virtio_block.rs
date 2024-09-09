@@ -1,6 +1,6 @@
 use super::virtio_bus::VirtioHal;
 use alloc::rc::Rc;
-use core::cell::RefCell;
+use core_ext::cell::SafeCell;
 use fs::BlockDevice;
 use virtio_drivers::{VirtIOBlk, VirtIOHeader};
 
@@ -11,7 +11,7 @@ static_var! {
 #[allow(unused)]
 const VIRTIO0: usize = 0x10008000;
 
-pub struct VirtIOBlock(RefCell<VirtIOBlk<VirtioHal>>);
+pub struct VirtIOBlock(SafeCell<VirtIOBlk<VirtioHal>>);
 
 impl BlockDevice for VirtIOBlock {
     fn read_block(&self, block_id: usize, buf: &mut [u8]) {
@@ -30,7 +30,7 @@ impl VirtIOBlock {
     #[allow(unused)]
     pub fn new() -> Self {
         unsafe {
-            Self(RefCell::new(
+            Self(SafeCell::new(
                 VirtIOBlk::<VirtioHal>::new(&mut *(VIRTIO0 as *mut VirtIOHeader)),
             ))
         }
