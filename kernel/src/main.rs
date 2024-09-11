@@ -42,6 +42,7 @@ unsafe extern "C" fn _start() -> ! {
 fn main() {
     core_ext::init(&CoreExtImpl);
     println!("[kernel] Hello, world!");
+    drivers::init();
     mm::初始化();
     exception::init();
     timer::开启时钟中断();

@@ -127,7 +127,6 @@ mod 系统调用_进程 {
         new_pid
     }
 
-    use crate::fs::FILE_SYSTEM;
 
     pub fn exec(path: usize, len: usize) -> usize {
         let mut process = current_process();
@@ -136,7 +135,7 @@ mod 系统调用_进程 {
             .page_table
             .translate_buffer(path, len)
             .to_string();
-        if let Some(elf_f) = FILE_SYSTEM.open(&应用名称, false) {
+        if let Some(elf_f) = fs::open(&应用名称, false) {
             let elf_data = elf_f._read();
             process.exec(&elf_data);
             1
@@ -163,7 +162,6 @@ use crate::semaphore::Semaphore;
 use alloc_ext::rc::MutRc;
 use crate::task::{current_task, current_process, add_task};
 use crate::task::task::Task;
-use crate::fs::FILE_SYSTEM;
 
 pub fn open(path: usize, len: usize, create: bool) -> usize {
     let mut process = current_process();
@@ -172,7 +170,7 @@ pub fn open(path: usize, len: usize, create: bool) -> usize {
         .page_table
         .translate_buffer(path, len)
         .to_string();
-    if let Some(f) = FILE_SYSTEM.open(path.as_str(), create) {
+    if let Some(f) = fs::open(path.as_str(), create) {
         let fd = process.fd_table.insert(MutRc::new(f));
         fd
     } else {

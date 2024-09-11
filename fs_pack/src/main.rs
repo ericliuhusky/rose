@@ -1,8 +1,7 @@
-use fs::{BlockDevice, FileSystem};
+use fs::BlockDevice;
 use std::fs::{read_dir, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::mem::MaybeUninit;
-use std::rc::Rc;
 
 const BLOCK_SIZE: u64 = 0x200;
 
@@ -36,7 +35,9 @@ pub fn fs_pack() {
                 .unwrap(),
         );
     }
-    let fs = FileSystem::format(&FileBlockDevice);
+
+    fs::init(&FileBlockDevice);
+    fs::format();
 
     let apps: Vec<String> = read_dir("../user/src/bin")
         .unwrap()
@@ -55,7 +56,7 @@ pub fn fs_pack() {
         .unwrap();
         let mut all_data = Vec::<u8>::new();
         f.read_to_end(&mut all_data).unwrap();
-        let mut f = fs.open(&app, true).unwrap();
+        let mut f = fs::open(&app, true).unwrap();
         f._write(&all_data);
     }
 }

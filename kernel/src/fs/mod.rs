@@ -1,8 +1,7 @@
 //! File system in os
 mod file;
-mod stdio;
 mod pipe;
-
+mod stdio;
 
 /// File trait
 pub trait FileInterface {
@@ -22,7 +21,7 @@ pub enum FileType {
     UDP,
 }
 
-pub use file::{list_apps, FILE_SYSTEM};
+pub use file::list_apps;
 use page_table::PhysicalBufferList;
-pub use stdio::{Stdin, Stdout};
 pub use pipe::Pipe;
+pub use stdio::{Stdin, Stdout};

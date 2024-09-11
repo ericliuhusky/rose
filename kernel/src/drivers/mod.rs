@@ -1,4 +1,8 @@
 pub mod virtio_block;
 pub mod virtio_net;
 
-pub use virtio_block::BLOCK_DEVICE;
+use virtio_block::VirtIOBlock;
+
+pub fn init() {
+    fs::init(&VirtIOBlock);
+}

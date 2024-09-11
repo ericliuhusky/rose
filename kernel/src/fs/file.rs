@@ -1,20 +1,12 @@
 use super::FileInterface;
-use crate::drivers::BLOCK_DEVICE;
 use alloc::{string::String, vec::Vec};
-use fs::{File, FileSystem};
+use fs::File;
 use page_table::PhysicalBufferList;
 
-static_var! {
-    FILE_SYSTEM: FileSystem = FileSystem::mount(BLOCK_DEVICE.clone());
-}
 /// List all files in the filesystems
 pub fn list_apps() {
     println!("/**** APPS ****");
-    let apps: Vec<String> = FILE_SYSTEM
-        .files()
-        .iter()
-        .map(|f| String::from(f.name()))
-        .collect();
+    let apps: Vec<String> = fs::files().iter().map(|f| String::from(f.name())).collect();
     for app in apps {
         println!("{}", app);
     }
