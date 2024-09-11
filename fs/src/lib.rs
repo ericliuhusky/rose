@@ -2,7 +2,6 @@
 
 extern crate alloc;
 
-use alloc::rc::Rc;
 use alloc::vec::Vec;
 use core::mem::size_of;
 use core::ptr::{slice_from_raw_parts, slice_from_raw_parts_mut};
@@ -27,11 +26,11 @@ struct DirEntry {
 pub struct File {
     i: usize,
     dir_entry: DirEntry,
-    block_device: Rc<dyn BlockDevice>,
+    block_device: &'static dyn BlockDevice,
 }
 
 impl File {
-    fn new(i: usize, dir_entry: DirEntry, block_device: Rc<dyn BlockDevice>) -> Self {
+    fn new(i: usize, dir_entry: DirEntry, block_device: &'static dyn BlockDevice) -> Self {
         Self {
             i,
             dir_entry,
@@ -101,11 +100,11 @@ impl File {
 }
 
 pub struct FileSystem {
-    block_device: Rc<dyn BlockDevice>,
+    block_device: &'static dyn BlockDevice,
 }
 
 impl FileSystem {
-    pub fn format(block_device: Rc<dyn BlockDevice>) -> Self {
+    pub fn format(block_device: &'static dyn BlockDevice) -> Self {
         // erase
         for i in 0..TOTAL_BLOCKS {
             block_device.write_block(i, &[0; BLOCK_SIZE]);
@@ -113,7 +112,7 @@ impl FileSystem {
         Self { block_device }
     }
 
-    pub fn mount(block_device: Rc<dyn BlockDevice>) -> Self {
+    pub fn mount(block_device: &'static dyn BlockDevice) -> Self {
         Self { block_device }
     }
 
@@ -149,11 +148,7 @@ impl FileSystem {
             let list_len = BLOCK_SIZE / size_of::<DirEntry>();
             let list = unsafe { &*slice_from_raw_parts(buf.as_ptr() as *const DirEntry, list_len) };
             for (j, item) in list.iter().enumerate() {
-                v.push(File::new(
-                    i * list_len + j,
-                    item.clone(),
-                    self.block_device.clone(),
-                ));
+                v.push(File::new(i * list_len + j, item.clone(), self.block_device));
             }
         }
         v

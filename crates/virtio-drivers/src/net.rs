@@ -1,4 +1,5 @@
 use core::mem::{size_of, MaybeUninit};
+use core::marker::PhantomData;
 
 use super::*;
 use bitflags::*;
@@ -12,14 +13,15 @@ use log::*;
 /// Empty buffers are placed in one virtqueue for receiving packets, and
 /// outgoing packets are enqueued into another for transmission in that order.
 /// A third command queue is used to control advanced filtering features.
-pub struct VirtIONet<H: Hal> {
+pub struct VirtIONet<H> {
     header: &'static mut VirtIOHeader,
     mac: EthernetAddress,
-    recv_queue: VirtQueue<H>,
-    send_queue: VirtQueue<H>,
+    recv_queue: VirtQueue,
+    send_queue: VirtQueue,
+    _phantom: PhantomData<H>,
 }
 
-impl<H: Hal> VirtIONet<H> {
+impl<H> VirtIONet<H> {
     /// Create a new VirtIO-Net driver.
     pub fn new(header: &'static mut VirtIOHeader) -> Self {
         header.init();
@@ -28,14 +30,15 @@ impl<H: Hal> VirtIONet<H> {
         let mac = config.mac;
         debug!("Got MAC={:?}, status={:?}", mac, config.status);
 
-        let recv_queue = VirtQueue::new(header, QUEUE_RECEIVE, 16);
-        let send_queue = VirtQueue::new(header, QUEUE_TRANSMIT, 16);
+        let recv_queue = VirtQueue::new(header, QUEUE_RECEIVE, 16, "net1");
+        let send_queue = VirtQueue::new(header, QUEUE_TRANSMIT, 16, "net2");
 
         Self {
             header,
             mac,
             recv_queue,
             send_queue,
+            _phantom: PhantomData::default(),
         }
     }
 

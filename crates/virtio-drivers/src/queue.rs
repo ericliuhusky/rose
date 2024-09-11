@@ -4,7 +4,6 @@ use core::sync::atomic::{fence, Ordering};
 
 use super::*;
 use crate::header::VirtIOHeader;
-use core::marker::PhantomData;
 use bitflags::*;
 
 use crate::volatile::Volatile;
@@ -12,7 +11,7 @@ use crate::volatile::Volatile;
 /// The mechanism for bulk data transport on virtio devices.
 ///
 /// Each device can have zero or more virtqueues.
-pub struct VirtQueue<H: Hal> {
+pub struct VirtQueue{
     /// Descriptor table
     desc: &'static mut [Descriptor],
     /// Available ring
@@ -31,22 +30,35 @@ pub struct VirtQueue<H: Hal> {
     free_head: u16,
     avail_idx: u16,
     last_used_idx: u16,
-    _phantom: PhantomData<H>,
 }
 
-impl<H: Hal> VirtQueue<H> {
+impl VirtQueue {
     /// Create a new VirtQueue.
-    pub fn new(header: &mut VirtIOHeader, idx: usize, size: u16) -> Self {
+    pub fn new(header: &mut VirtIOHeader, idx: usize, size: u16, _type: &str) -> Self {
         let layout = VirtQueueLayout::new(size);
         // Allocate contiguous pages.
-        let dma = DMA::<H>::new(layout.size / PAGE_SIZE);
 
-        header.queue_set(idx as u32, size as u32, PAGE_SIZE as u32, dma.ppn());
+        let dma_start_pa: usize;
+        match _type {
+            "blk" => {
+                dma_start_pa = 0x877f8000;
+            }
+            "net1" => {
+                dma_start_pa = 0x877fa000;
+            }
+            "net2" => {
+                dma_start_pa = 0x877fc000;
+            }
+            _ => panic!()
+        }
+        let dma_ppn = dma_start_pa >> 12;
+
+        header.queue_set(idx as u32, size as u32, PAGE_SIZE as u32, dma_ppn as u32);
 
         let desc =
-            unsafe { slice::from_raw_parts_mut(dma.paddr as *mut Descriptor, size as usize) };
-        let avail = unsafe { &mut *((dma.paddr + layout.avail_offset) as *mut AvailRing) };
-        let used = unsafe { &mut *((dma.paddr + layout.used_offset) as *mut UsedRing) };
+            unsafe { slice::from_raw_parts_mut(dma_start_pa as *mut Descriptor, size as usize) };
+        let avail = unsafe { &mut *((dma_start_pa + layout.avail_offset) as *mut AvailRing) };
+        let used = unsafe { &mut *((dma_start_pa + layout.used_offset) as *mut UsedRing) };
 
         // Link descriptors together.
         for i in 0..(size - 1) {
@@ -62,7 +74,6 @@ impl<H: Hal> VirtQueue<H> {
             free_head: 0,
             avail_idx: 0,
             last_used_idx: 0,
-            _phantom: PhantomData,
         }
     }
 

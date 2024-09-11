@@ -7,21 +7,18 @@ use core::hint::spin_loop;
 ///
 /// Read and write requests (and other exotic requests) are placed in the queue,
 /// and serviced (probably out of order) by the device except where noted.
-pub struct VirtIOBlk<H: Hal> {
+pub struct VirtIOBlk {
     header: &'static mut VirtIOHeader,
-    queue: VirtQueue<H>,
+    queue: VirtQueue,
 }
 
-impl<H: Hal> VirtIOBlk<H> {
+impl VirtIOBlk {
     /// Create a new VirtIO-Blk driver.
     pub fn new(header: &'static mut VirtIOHeader) -> Self {
         header.init();
-        let queue = VirtQueue::new(header, 0, 16);
+        let queue = VirtQueue::new(header, 0, 16, "blk");
 
-        Self {
-            header,
-            queue,
-        }
+        Self { header, queue }
     }
 
     /// Read a block.

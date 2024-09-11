@@ -36,8 +36,7 @@ pub fn fs_pack() {
                 .unwrap(),
         );
     }
-    let block_device = Rc::new(FileBlockDevice);
-    let fs = FileSystem::format(block_device);
+    let fs = FileSystem::format(&FileBlockDevice);
 
     let apps: Vec<String> = read_dir("../user/src/bin")
         .unwrap()
