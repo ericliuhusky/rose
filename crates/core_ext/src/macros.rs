@@ -17,7 +17,7 @@ macro_rules! println {
 }
 
 /// # 超好用的`static`变量计算属性
-/// ## `A::set()`设置值，直接使用`A`访问值
+/// ## `A::set()`设置值，直接使用`A`访问值，`A::get()`获取&mut借用
 /// - 访问`static`变量时不需要`unsafe`
 /// - 允许初始化有非`const`函数，在访问时进行且仅进行一次初始化（懒加载）
 /// - 用`SafeCell`包裹提供内部可变性，访问`static mut`也不需要`unsafe`
@@ -44,9 +44,9 @@ macro_rules! static_var {
                 }
             }
 
-            fn get() -> &'static $T {
+            pub fn get() -> &'static mut $T {
                 Self::lazy_init();
-                unsafe { &*(*$N.data.get()).as_ptr() }
+                unsafe { &mut *(*$N.data.get()).as_mut_ptr() }
             }
 
             pub fn set(val: $T) {
