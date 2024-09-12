@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(linkage, naked_functions, asm_const, fn_align)]
+#![feature(linkage, naked_functions, fn_align)]
 
 extern crate alloc;
 #[macro_use]
